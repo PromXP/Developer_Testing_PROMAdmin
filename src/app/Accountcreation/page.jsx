@@ -67,6 +67,22 @@ const page = ({ isOpenacc, onCloseacc, userData }) => {
 
   const [showAlert, setShowAlert] = useState(false);
 
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [uhid, setUhid] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [heightbmi, setHeightbmi] = useState("");
+  const [weight, setWeight] = useState("");
+  const [bmi, setBmi] = useState("");
+  const [selectedGender, setSelectedGender] = useState(""); // "female" | "male" | "other"
+  const [doctorAssigned, setDoctorAssigned] = useState("");
+  const [adminAssigned, setAdminAssigned] = useState("");
+  const [password, setPassword] = useState("");
+  const [age, setAge] = useState(0);
+  const [selectedOptiondrop, setSelectedOptiondrop] = useState("Select");
+  const [selectedDate, setSelectedDate] = useState("");
+
   const dateInputRef = useRef(null);
 
   const openDatePicker = () => {
@@ -102,6 +118,78 @@ const page = ({ isOpenacc, onCloseacc, userData }) => {
       });
 
       console.log("Formatted Date:", formattedDate);
+      setSelectedDate(formattedDate);
+    }
+  };
+
+  const handleManualDateChange = (e) => {
+    let value = e.target.value.replace(/\D/g, ""); // Remove all non-digits
+
+    if (value.length >= 3 && value.length <= 4) {
+      value = value.slice(0, 2) + "-" + value.slice(2);
+    } else if (value.length > 4 && value.length <= 8) {
+      value =
+        value.slice(0, 2) + "-" + value.slice(2, 4) + "-" + value.slice(4);
+    } else if (value.length > 8) {
+      value = value.slice(0, 8);
+      value =
+        value.slice(0, 2) + "-" + value.slice(2, 4) + "-" + value.slice(4);
+    }
+
+    // Until full date entered, show raw value
+    setSelectedDate(value);
+
+    if (value.length === 10) {
+      const [dayStr, monthStr, yearStr] = value.split("-");
+      const day = parseInt(dayStr, 10);
+      const month = parseInt(monthStr, 10);
+      const year = parseInt(yearStr, 10);
+
+      const today = new Date();
+      const currentYear = today.getFullYear();
+
+      // Basic validations
+      if (
+        day < 1 ||
+        day > 31 ||
+        month < 1 ||
+        month > 12 ||
+        year >= currentYear
+      ) {
+        alert("Please enter a valid date of birth.");
+        setSelectedDate("");
+        return;
+      }
+
+      // Check valid real date
+      const manualDate = new Date(`${year}-${month}-${day}`);
+      if (
+        manualDate.getDate() !== day ||
+        manualDate.getMonth() + 1 !== month ||
+        manualDate.getFullYear() !== year
+      ) {
+        alert("Invalid date combination. Please enter a correct date.");
+        setSelectedDate("");
+        return;
+      }
+
+      // Check if future or today
+      today.setHours(0, 0, 0, 0);
+      manualDate.setHours(0, 0, 0, 0);
+
+      if (manualDate >= today) {
+        alert("Birth date cannot be today or a future date.");
+        setSelectedDate("");
+        return;
+      }
+
+      // If all valid, format as "dd Mmm yyyy"
+      const formattedDate = manualDate.toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
+
       setSelectedDate(formattedDate);
     }
   };
@@ -148,24 +236,6 @@ const page = ({ isOpenacc, onCloseacc, userData }) => {
     setOpendrop(false);
   };
 
-  // Auto calculate BMI whenever height or weight changes
-
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [uhid, setUhid] = useState("");
-  const [phone, setPhone] = useState("");
-  const [email, setEmail] = useState("");
-  const [heightbmi, setHeightbmi] = useState("");
-  const [weight, setWeight] = useState("");
-  const [bmi, setBmi] = useState("");
-  const [selectedGender, setSelectedGender] = useState(""); // "female" | "male" | "other"
-  const [doctorAssigned, setDoctorAssigned] = useState("");
-  const [adminAssigned, setAdminAssigned] = useState("");
-  const [password, setPassword] = useState("");
-  const [age, setAge] = useState(0);
-  const [selectedOptiondrop, setSelectedOptiondrop] = useState("Select");
-  const [selectedDate, setSelectedDate] = useState("");
-
   const clearAllFields = () => {
     setFirstName("");
     setLastName("");
@@ -185,7 +255,12 @@ const page = ({ isOpenacc, onCloseacc, userData }) => {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const [leftChecked, setLeftChecked] = useState(false);
+  const [rightChecked, setRightChecked] = useState(false);
+
   const handleSendremainder = async () => {
+    console.log("DOB", selectedDate);
+
     if (isSubmitting) {
       showWarning("Please wait submission on progress...");
       return; // Prevent double submission
@@ -214,6 +289,7 @@ const page = ({ isOpenacc, onCloseacc, userData }) => {
 
     if (age <= 0) return showWarning("Select Date of Birth Correctly");
     if (!selectedGender.trim()) return showWarning("Gender is required.");
+    if (!leftChecked && !rightChecked) return showWarning("Select Leg");
     if (selectedOptiondrop === "Select")
       return showWarning("Blood group must be selected.");
     if (!/^\d{10}$/.test(phone.trim())) {
@@ -228,11 +304,21 @@ const page = ({ isOpenacc, onCloseacc, userData }) => {
     const heightInMeters = parseFloat(heightbmi) / 100;
     const bmi = parseFloat(weight) / (heightInMeters * heightInMeters);
 
+    let currentStatus = [];
+
+    if (leftChecked) {
+      currentStatus.push("Left Leg");
+    }
+    if (rightChecked) {
+      currentStatus.push("Right Leg");
+    }
+
     const payload = {
       uhid: uhid,
       first_name: firstName,
       last_name: lastName,
       password: "patient@123", // change as needed
+      vip:0,
       dob: selectedDate,
       age: age,
       blood_grp: selectedOptiondrop,
@@ -246,36 +332,51 @@ const page = ({ isOpenacc, onCloseacc, userData }) => {
       doctor_name: "", // replace with real data
       admin_assigned: userData?.user?.email, // replace with real data
       admin_name: "",
-      questionnaire_assigned: [],
-      questionnaire_scores: [],
-      surgery_scheduled: {
+      questionnaire_assigned_left: [],
+      questionnaire_scores_left: [],
+      questionnaire_assigned_right: [],
+      questionnaire_scores_right: [],
+      surgery_scheduled_left: {
         date: "yyyy-mm-dd", // replace with actual selected date
         time: "hh:mm AM", // replace with actual selected time
       },
-      post_surgery_details: {
+      surgery_scheduled_right: {
+        date: "yyyy-mm-dd", // replace with actual selected date
+        time: "hh:mm AM", // replace with actual selected time
+      },
+      post_surgery_details_left: {
         date_of_surgery: "0001-01-01",
         surgeon: "", // replace accordingly
         surgery_name: "", // if different
+        sub_doctor:"",
         procedure: "", // replace
         implant: "", // replace
         technology: "", // replace
       },
-      current_status: "PRE OP",
+      post_surgery_details_right: {
+        date_of_surgery: "0001-01-01",
+        surgeon: "", // replace accordingly
+        surgery_name: "", // if different
+        sub_doctor:"",
+        procedure: "", // replace
+        implant: "", // replace
+        technology: "", // replace
+      },
+      current_status: currentStatus.join(", "),
     };
 
+    console.log("Patient Payload",JSON.stringify(payload, null, 2))
+    
     setIsSubmitting(true); // 🔒 Lock submission
 
     try {
-      const response = await fetch(
-        API_URL+"registerpatient",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
-        }
-      );
+      const response = await fetch(API_URL + "registerpatient", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
       console.log("Submission successful:", payload);
       if (!response.ok) {
         throw new Error("Failed to send data.");
@@ -296,6 +397,7 @@ const page = ({ isOpenacc, onCloseacc, userData }) => {
     }
   };
 
+  // Auto calculate BMI whenever height or weight changes
   useEffect(() => {
     const h = parseFloat(heightbmi);
     const w = parseFloat(weight);
@@ -430,18 +532,24 @@ const page = ({ isOpenacc, onCloseacc, userData }) => {
                     }}
                   />
                 </div>
+
                 <div
                   className={`flex flex-row justify-start items-center gap-4 ${
                     width < 550 ? "w-full" : "w-1/2"
                   }`}
                 >
-                  <p
-                    className={`text-base font-semibold ${
-                      selectedDate ? "text-black" : "text-[#B3B3B3]"
-                    }`}
-                  >
-                    {selectedDate || "DATE OF BIRTH"}
-                  </p>
+                  <input
+                    type="text"
+                    placeholder="dd-mm-yyyy"
+                    className="w-full text-black py-2 px-4 rounded-sm text-base outline-none"
+                    value={selectedDate || ""}
+                    onChange={handleManualDateChange}
+                    maxLength={10} // Very important: dd-mm-yyyy is 10 characters
+                    style={{
+                      backgroundColor: "rgba(217, 217, 217, 0.5)",
+                    }}
+                  />
+
                   <div
                     className="relative cursor-pointer"
                     onClick={openDatePicker}
@@ -583,8 +691,39 @@ const page = ({ isOpenacc, onCloseacc, userData }) => {
                 }`}
               >
                 <div
+                  className={`flex flex-col justify-center items-center gap-2 ${
+                    width < 550 ? "w-full" : "w-1/3"
+                  }`}
+                >
+                  <div className="w-full flex justify-between items-center gap-4 px-6">
+                    <label className="flex items-center gap-1 cursor-pointer justify-center">
+                      <input
+                        type="checkbox"
+                        checked={leftChecked}
+                        onChange={(e) => setLeftChecked(e.target.checked)}
+                        className="h-4 w-4"
+                      />
+                      <span className="text-sm font-medium text-[#475467]">
+                        Left Leg
+                      </span>
+                    </label>
+
+                    <label className="flex items-center gap-1 cursor-pointer justify-center">
+                      <input
+                        type="checkbox"
+                        checked={rightChecked}
+                        onChange={(e) => setRightChecked(e.target.checked)}
+                        className="h-4 w-4"
+                      />
+                      <span className="text-sm font-medium text-[#475467]">
+                        Right Leg
+                      </span>
+                    </label>
+                  </div>
+                </div>
+                <div
                   className={`flex flex-col justify-start items-center gap-2 ${
-                    width < 550 ? "w-full" : "w-1/2"
+                    width < 550 ? "w-full" : "w-1/3"
                   }`}
                 >
                   <input
@@ -602,7 +741,7 @@ const page = ({ isOpenacc, onCloseacc, userData }) => {
                 </div>
                 <div
                   className={`flex flex-col justify-center items-end gap-2 ${
-                    width < 550 ? "w-full" : "w-1/2"
+                    width < 550 ? "w-full" : "w-1/3"
                   }`}
                 >
                   <input

@@ -86,6 +86,78 @@ const page = ({ isOpenaccdoc, onCloseaccdoc, userData }) => {
     }
   };
 
+  const handleManualDateChange = (e) => {
+    let value = e.target.value.replace(/\D/g, ""); // Remove all non-digits
+
+    if (value.length >= 3 && value.length <= 4) {
+      value = value.slice(0, 2) + "-" + value.slice(2);
+    } else if (value.length > 4 && value.length <= 8) {
+      value =
+        value.slice(0, 2) + "-" + value.slice(2, 4) + "-" + value.slice(4);
+    } else if (value.length > 8) {
+      value = value.slice(0, 8);
+      value =
+        value.slice(0, 2) + "-" + value.slice(2, 4) + "-" + value.slice(4);
+    }
+
+    // Until full date entered, show raw value
+    setSelectedDate(value);
+
+    if (value.length === 10) {
+      const [dayStr, monthStr, yearStr] = value.split("-");
+      const day = parseInt(dayStr, 10);
+      const month = parseInt(monthStr, 10);
+      const year = parseInt(yearStr, 10);
+
+      const today = new Date();
+      const currentYear = today.getFullYear();
+
+      // Basic validations
+      if (
+        day < 1 ||
+        day > 31 ||
+        month < 1 ||
+        month > 12 ||
+        year >= currentYear
+      ) {
+        alert("Please enter a valid date of birth.");
+        setSelectedDate("");
+        return;
+      }
+
+      // Check valid real date
+      const manualDate = new Date(`${year}-${month}-${day}`);
+      if (
+        manualDate.getDate() !== day ||
+        manualDate.getMonth() + 1 !== month ||
+        manualDate.getFullYear() !== year
+      ) {
+        alert("Invalid date combination. Please enter a correct date.");
+        setSelectedDate("");
+        return;
+      }
+
+      // Check if future or today
+      today.setHours(0, 0, 0, 0);
+      manualDate.setHours(0, 0, 0, 0);
+
+      if (manualDate >= today) {
+        alert("Birth date cannot be today or a future date.");
+        setSelectedDate("");
+        return;
+      }
+
+      // If all valid, format as "dd Mmm yyyy"
+      const formattedDate = manualDate.toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
+
+      setSelectedDate(formattedDate);
+    }
+  };
+
   const [selectedGender, setSelectedGender] = useState(""); // "female" | "male" | "other"
 
   const [opendrop, setOpendrop] = useState(false);
@@ -152,6 +224,7 @@ const page = ({ isOpenaccdoc, onCloseaccdoc, userData }) => {
   const [lastName, setLastName] = useState("");
   const [uhid, setUhid] = useState("");
   const [phone, setPhone] = useState("");
+  const [designation, setDesignation] = useState("");
   const [email, setEmail] = useState("");
 
   const clearAllFields = () => {
@@ -167,18 +240,18 @@ const page = ({ isOpenaccdoc, onCloseaccdoc, userData }) => {
     setWeight("");
     setBmi("");
     setMessage("");
+    setDesignation("");
   };
 
   const [alertMessage, setAlertMessage] = useState("");
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-
   const handleSendremainder = async () => {
-    if (isSubmitting){
+    if (isSubmitting) {
       showWarning("Please wait submission on progress...");
       return; // Prevent double submission
-    } 
+    }
 
     if (!firstName.trim()) return showWarning("First Name is required.");
     if (!lastName.trim()) return showWarning("Last Name is required.");
@@ -201,61 +274,57 @@ const page = ({ isOpenaccdoc, onCloseaccdoc, userData }) => {
       age--;
     }
 
-
     if (age <= 0) return showWarning("Select Date of Birth Correctly");
     if (!selectedGender.trim()) return showWarning("Gender is required.");
     if (selectedOptiondrop === "Select")
       return showWarning("Blood group must be selected.");
+    if (!designation.trim()) return showWarning("Designation required.");
     if (!/^\d{10}$/.test(phone.trim())) {
       return showWarning("Phone number must be exactly 10 digits.");
     }
     if (!email.trim()) return showWarning("Email is required.");
 
-    
-
     const payload = {
       doctor_name: firstName.trim() + " " + lastName.trim(),
       gender: selectedGender.trim(),
       age: age,
-      designation: "leg surgeon here",
+      designation: designation,
       email: email.trim(),
       uhid: uhid.trim(),
       phone_number: phone.trim(),
       password: "doctor@123",
       admin_created: userData?.user?.email,
       patients_assigned: [],
-      blood_group: selectedOptiondrop.trim()
+      blood_group: selectedOptiondrop.trim(),
     };
 
     setIsSubmitting(true); // 🔒 Lock submission
 
-
     try {
-      const response = await fetch(
-        API_URL+"registerdoctor",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
-          });
-      
-          if (!response.ok) {
-            const errorData = await response.json();
-            console.error("Error response:", errorData);
-            throw new Error(errorData?.detail || "Failed to register doctor.");
-          }
-      
-          const result = await response.json();
-          console.log("Doctor registration successful:", result);
-          onCloseaccdoc(); // If you have a modal or dialog to close
-          window.location.reload();
-        } catch (error) {
+      const response = await fetch(API_URL + "registerdoctor", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Error response:", errorData);
+        throw new Error(errorData?.detail || "Failed to register doctor.");
+      }
+
+      const result = await response.json();
+      console.log("Doctor registration successful:", result);
+      onCloseaccdoc(); // If you have a modal or dialog to close
+      window.location.reload();
+    } catch (error) {
       console.error("Error submitting doctor data:", error);
-      showWarning("This UHID, email, or phone number is already used for another patient.");
-    }
-    finally{
+      showWarning(
+        "This UHID, email, or phone number is already used for another patient."
+      );
+    } finally {
       setIsSubmitting(false); // 🔓 Unlock submission
     }
   };
@@ -387,13 +456,18 @@ const page = ({ isOpenaccdoc, onCloseaccdoc, userData }) => {
                     width < 550 ? "w-full" : "w-1/2"
                   }`}
                 >
-                  <p
-                    className={`text-base font-semibold ${
-                      selectedDate ? "text-black" : "text-[#B3B3B3]"
-                    }`}
-                  >
-                    {selectedDate || "DATE OF BIRTH"}
-                  </p>
+                  <input
+                    type="text"
+                    placeholder="dd-mm-yyyy"
+                    className="w-full text-black py-2 px-4 rounded-sm text-base outline-none"
+                    value={selectedDate || ""}
+                    onChange={handleManualDateChange}
+                    maxLength={10} // Very important: dd-mm-yyyy is 10 characters
+                    style={{
+                      backgroundColor: "rgba(217, 217, 217, 0.5)",
+                    }}
+                  />
+
                   <div
                     className="relative cursor-pointer"
                     onClick={openDatePicker}
@@ -536,7 +610,24 @@ const page = ({ isOpenaccdoc, onCloseaccdoc, userData }) => {
               >
                 <div
                   className={`flex flex-col justify-start items-center gap-2 ${
-                    width < 550 ? "w-full" : "w-1/2"
+                    width < 550 ? "w-full" : "w-1/3"
+                  }`}
+                >
+                  <input
+                    type="text"
+                    placeholder="DESIGNATION"
+                    className="w-full text-black py-2 px-4 rounded-sm text-base  outline-none"
+                    value={designation}
+                    onChange={(e) => setDesignation(e.target.value)}
+                    style={{
+                      backgroundColor: "rgba(217, 217, 217, 0.5)", // white with 50% opacity
+                    }}
+                  />
+                </div>
+
+                <div
+                  className={`flex flex-col justify-start items-center gap-2 ${
+                    width < 550 ? "w-full" : "w-1/3"
                   }`}
                 >
                   <input
@@ -550,9 +641,10 @@ const page = ({ isOpenaccdoc, onCloseaccdoc, userData }) => {
                     }}
                   />
                 </div>
+
                 <div
                   className={`flex flex-col justify-center items-end gap-2 ${
-                    width < 550 ? "w-full" : "w-1/2"
+                    width < 550 ? "w-full" : "w-1/3"
                   }`}
                 >
                   <input
@@ -583,7 +675,7 @@ const page = ({ isOpenaccdoc, onCloseaccdoc, userData }) => {
                     style={{ backgroundColor: "rgba(0, 85, 133, 0.9)" }}
                     onClick={!isSubmitting ? handleSendremainder : undefined}
                   >
-                      {isSubmitting ? "CREATING..." : "CREATE"}
+                    {isSubmitting ? "CREATING..." : "CREATE"}
                   </p>
                 </div>
               </div>

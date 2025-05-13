@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { useWebSocket } from "../context/WebSocketContext"; 
+import { useWebSocket } from "../context/WebSocketContext";
 import Image from "next/image";
 
 import { API_URL } from "../libs/global";
@@ -33,7 +33,7 @@ const poppins = Poppins({
   variable: "--font-poppins",
 });
 
-const page = ({ isOpenrem, onCloserem, patient }) => {
+const page = ({ isOpenrem, onCloserem, patient, selectedLeg }) => {
   const useWindowSize = () => {
     const [size, setSize] = useState({
       width: 0,
@@ -61,15 +61,31 @@ const page = ({ isOpenrem, onCloserem, patient }) => {
 
   const completedItems = [];
   const pendingItems = [];
+  const period = [];
 
-  if (patient?.questionnaire_assigned?.length > 0) {
-    patient.questionnaire_assigned.forEach((q) => {
-      if (q.completed === 1) {
-        completedItems.push(q.name);
-      } else {
-        pendingItems.push(q.name);
-      }
-    });
+  if (selectedLeg === "left") {
+    if (patient?.questionnaire_assigned_left?.length > 0) {
+      patient.questionnaire_assigned_left.forEach((q) => {
+        if (q.completed === 1) {
+          completedItems.push(q.name);
+        } else {
+          pendingItems.push(q.name);
+          period.push(q.period);
+        }
+      });
+    }
+  }
+  if (selectedLeg === "right") {
+    if (patient?.questionnaire_assigned_right?.length > 0) {
+      patient.questionnaire_assigned_right.forEach((q) => {
+        if (q.completed === 1) {
+          completedItems.push(q.name);
+        } else {
+          pendingItems.push(q.name);
+          period.push(q.period);
+        }
+      });
+    }
   }
 
   const [message, setMessage] = useState("");
@@ -81,63 +97,61 @@ const page = ({ isOpenrem, onCloserem, patient }) => {
       setTimeout(() => setShowAlert(false), 2500);
       return;
     }
-  
+
     try {
-      const res = await fetch(API_URL+'send/', {
-        method: 'POST',
+      const res = await fetch(API_URL + "send/", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           email: patient.email,
-          subject: 'Questionnaire Pending Reminder',
+          subject: "Questionnaire Pending Reminder",
           message,
         }),
       });
-  
+
       let data;
       const text = await res.text();
       try {
         data = JSON.parse(text);
       } catch {
-        data = { error: 'Invalid JSON response', raw: text };
+        data = { error: "Invalid JSON response", raw: text };
       }
-  
-      console.log('Email API response:', data);
-  
+
+      console.log("Email API response:", data);
+
       if (res.ok) {
-        alert('Email sent (check console for details)');
+        alert("Email sent (check console for details)");
         sendRealTimeMessage();
       } else {
-        alert('Failed to send email. Check logs.');
+        alert("Failed to send email. Check logs.");
       }
     } catch (error) {
-      console.error('Error sending email:', error);
-      alert('Failed to send email.');
+      console.error("Error sending email:", error);
+      alert("Failed to send email.");
     }
   };
-  
+
   const socket = useWebSocket();
 
-const sendRealTimeMessage = () => {
-  if (!socket || socket.readyState !== WebSocket.OPEN) {
-    console.error("⚠️ WebSocket is not open. Cannot send message.");
-    return;
-  }
+  const sendRealTimeMessage = () => {
+    if (!socket || socket.readyState !== WebSocket.OPEN) {
+      console.error("⚠️ WebSocket is not open. Cannot send message.");
+      return;
+    }
 
-  const payload = {
-    uhid: patient.uhid,
-    email: patient.email,
-    phone_number: patient.phone_number || "N/A",
-    message: message,
+    const payload = {
+      uhid: patient.uhid,
+      email: patient.email,
+      phone_number: patient.phone_number || "N/A",
+      message: message,
+    };
+
+    socket.send(JSON.stringify(payload));
+    console.log("📤 Sent via WebSocket:", payload);
+    onCloserem();
   };
-
-  socket.send(JSON.stringify(payload));
-  console.log("📤 Sent via WebSocket:", payload);
-  onCloserem();
-};
-
-
 
   if (!isOpenrem) return null;
   return (
@@ -187,12 +201,14 @@ const sendRealTimeMessage = () => {
                       : "flex-row"
                   }`}
                 >
-                  <p className="font-bold text-5 text-black">PROGRESS STATUS</p>
+                  <p className="font-bold text-5 text-black">
+                    COMPLIANCE STATUS
+                  </p>
                 </div>
               </div>
 
               <div className="w-full flex flex-row">
-                <div className="w-1/2 flex flex-col justify-center items-start gap-2">
+                {/* <div className="w-1/2 flex flex-col justify-center items-start gap-2">
                   <p className="font-semibold text-4 text-[#60F881]">
                     COMPLETED
                   </p>
@@ -210,24 +226,51 @@ const sendRealTimeMessage = () => {
                       <p className="text-base text-black font-medium">-</p>
                     )}
                   </div>
-                </div>
-                <div className="w-1/2 flex flex-col justify-center items-end gap-2">
+                </div> */}
+                <div className="w-full flex flex-col justify-center items-center gap-2">
                   <p className="font-semibold text-4 text-[#FFB978]">PENDING</p>
-                  <div className="flex flex-col gap-1 items-end">
-                    {pendingItems.length > 0 ? (
-                      pendingItems.map((item, index) => (
-                        <p
-                          key={index}
-                          className="text-base text-black font-medium text-end"
-                        >
-                          {item}
-                        </p>
-                      ))
-                    ) : (
-                      <p className="text-base text-black font-medium text-end">
-                        -
-                      </p>
-                    )}
+                  <div className="flex flex-col gap-1 items-center">
+                    <div className="overflow-x-auto w-full">
+                      <table className="min-w-full ">
+                        <thead className="bg-gray-100 shadow-md">
+                          <tr>
+                            <th className="px-4 py-2 text-left text-black font-semibold">
+                              S. NO
+                            </th>
+                            <th className="px-4 py-2 text-left text-black font-semibold">
+                              Questionnaire Name
+                            </th>
+                            <th className="px-4 py-2 text-left text-black font-semibold">
+                              Period
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {pendingItems.length > 0 ? (
+                            pendingItems.map((item, index) => (
+                              <tr key={index}>
+                                <td className="px-4 py-2 text-black text-center">
+                                  {index + 1}
+                                </td>
+                                <td className="px-4 py-2 text-black">{item}</td>
+                                <td className="px-4 py-2 text-black text-center">
+                                  {period[index]}
+                                </td>
+                              </tr>
+                            ))
+                          ) : (
+                            <tr>
+                              <td
+                                colSpan="3"
+                                className="p-2 text-center text-black"
+                              >
+                                No Pending Questionnaires
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 </div>
               </div>

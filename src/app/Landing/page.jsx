@@ -17,6 +17,8 @@ import Docacc from "@/app/assets/docacc.png";
 
 import HomeDashboard from "@/app/Homedashboard/page";
 import PatientReport from "@/app/Patientreport/page";
+import Compliance from "@/app/Compliance/page";
+import PatientCompliance from "@/app/Patientcompliance/page";
 
 import "@/app/globals.css";
 
@@ -56,6 +58,8 @@ const page = () => {
   const [selected, setSelected] = useState(0);
 
   const handleSelect = (index) => {
+    setIsReportOpen(false); // Close report
+    setIsCompopen(false);
     setSelected(index);
   };
 
@@ -63,11 +67,13 @@ const page = () => {
 
   const [selectedPatient, setSelectedPatientreport] = useState(null);
   const [isReportOpen, setIsReportOpen] = useState(false);
+  const [isCompopen, setIsCompopen] = useState(false);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
       const storedSelected = sessionStorage.getItem("selectedTab");
       const storedOpen = sessionStorage.getItem("isReportOpen");
+      const storedcompOpen = sessionStorage.getItem("isCompOpen");
       const storedPatient = sessionStorage.getItem("selectedPatient");
       const storedDoctors = sessionStorage.getItem("doctorListreport");
 
@@ -76,6 +82,9 @@ const page = () => {
       }
       if (storedOpen === "true") {
         setIsReportOpen(true);
+      }
+      if (storedcompOpen === "true") {
+        setIsCompopen(true);
       }
       if (storedPatient) {
         setSelectedPatientreport(JSON.parse(storedPatient));
@@ -99,8 +108,15 @@ const page = () => {
     if (typeof window !== "undefined") {
       sessionStorage.setItem("isReportOpen", isReportOpen);
     }
-    setSelected(isReportOpen ? 1 : 0);
+    setSelected((prevSelected) => (isReportOpen ? 1 : prevSelected));
   }, [isReportOpen]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("isCompOpen", isCompopen);
+    }
+    setSelected((prevSelected) => (isCompopen ? 3 : prevSelected));
+  }, [isCompopen]);
 
   const renderSelectedComponent = () => {
     switch (selected) {
@@ -121,6 +137,24 @@ const page = () => {
             doctor={doctorListreport}
           />
         );
+
+      case 2:
+        return (
+          <Compliance
+            setSelectedPatientreport={setSelectedPatientreport}
+            setIsReportOpen={setIsReportOpen}
+            setIsCompopen={setIsCompopen}
+            setDoctorListreport={setDoctorListreport}
+          />
+        );
+
+      case 3:
+        return (
+          <PatientCompliance
+          isOpencomp={isCompopen}
+          patient11={selectedPatient}
+          />
+        );
       default:
         return null;
     }
@@ -134,7 +168,7 @@ const page = () => {
         <div className="w-full h-[65%] flex flex-col justify-center items-center gap-6 sm:gap-8 md:gap-10">
           {/* Button 1 */}
           <button
-            className={`cursor-pointer p-2 rounded-lg transition-all invisible ${
+            className={`cursor-pointer p-2 rounded-lg transition-all visible ${
               selected === 0
                 ? "bg-white/40 backdrop-blur-md shadow-lg border border-white/30"
                 : "opacity-100"
@@ -169,12 +203,12 @@ const page = () => {
 
           {/* Button 2 */}
           <button
-            className={`cursor-pointer p-2 rounded-lg transition-all invisible ${
-              selected === 1
+            className={`cursor-pointer p-2 rounded-lg transition-all visible ${
+              selected === 2
                 ? "bg-white/40 backdrop-blur-md shadow-lg border border-white/30"
                 : "opacity-100"
             }`}
-            onClick={() => handleSelect(1)}
+            onClick={() => handleSelect(2)}
           >
             <svg
               width="31"
@@ -205,11 +239,11 @@ const page = () => {
           {/* Button 3 */}
           <button
             className={`cursor-pointer p-2 rounded-lg transition-all invisible ${
-              selected === 2
+              selected === 5
                 ? "bg-white/40 backdrop-blur-md shadow-lg border border-white/30"
                 : "opacity-100"
             }`}
-            onClick={() => handleSelect(2)}
+            onClick={() => handleSelect(5)}
           >
             <svg
               width="33"
@@ -240,7 +274,7 @@ const page = () => {
           {/* Button 4 */}
           <button
             className={`cursor-pointer p-2 rounded-lg transition-all ${
-              selected === 3
+              selected === 4
                 ? "bg-white/40 backdrop-blur-md shadow-lg border border-white/30"
                 : "opacity-100"
             }`}
