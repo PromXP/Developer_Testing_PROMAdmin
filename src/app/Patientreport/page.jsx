@@ -484,7 +484,8 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
       }
 
       alert("✅ Email sent (check console for details)");
-      sendRealTimeMessage();
+      // sendRealTimeMessage();
+      sendwhatsapp();
     } catch (error) {
       console.error("❌ Error sending email:", error);
       alert("Failed to send email.");
@@ -515,6 +516,30 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
 
     window.location.reload();
   };
+
+  const sendwhatsapp = async () => {
+      const res = await fetch(API_URL + "send-whatsapp/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          message:
+            "Hey User\nHope Your doing well !\nQuestionnaire has been assigned"+
+            "\nhttps://promwebformslower.onrender.com/ " +
+            "\nThank you with love,\nXolabsHealth ",
+          phone_number: "+91" + patient?.phone_number,
+        }),
+      });
+  
+      let data;
+      const text = await res.text();
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = { error: "Invalid JSON response", raw: text };
+      }
+    };
 
   const [userData, setUserData] = useState(null);
 

@@ -123,7 +123,8 @@ const page = ({ isOpenrem, onCloserem, patient, selectedLeg }) => {
 
       if (res.ok) {
         alert("Email sent (check console for details)");
-        sendRealTimeMessage();
+        sendwhatsapp();
+        // sendRealTimeMessage();
       } else {
         alert("Failed to send email. Check logs.");
       }
@@ -151,6 +152,31 @@ const page = ({ isOpenrem, onCloserem, patient, selectedLeg }) => {
     socket.send(JSON.stringify(payload));
     console.log("📤 Sent via WebSocket:", payload);
     onCloserem();
+  };
+
+  const sendwhatsapp = async () => {
+    const res = await fetch(API_URL + "send-whatsapp/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        message:
+          "Hey User\nHope Your doing well !\n" +
+          message +
+          "\nhttps://promwebformslower.onrender.com/ " +
+          "\nThank you with love,\nXolabsHealth ",
+        phone_number: "+91" + patient.phone_number,
+      }),
+    });
+
+    let data;
+    const text = await res.text();
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = { error: "Invalid JSON response", raw: text };
+    }
   };
 
   if (!isOpenrem) return null;

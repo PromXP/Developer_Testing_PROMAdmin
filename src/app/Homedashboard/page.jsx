@@ -381,65 +381,69 @@ const page = ({
     return currentPeriod;
   };
 
-  const filteredPatients = patients.filter((patient) => {
-    const status = patient.current_status?.toLowerCase() || "";
-    const selectedFilter = patfilter.toLowerCase();
-    const subFilter = postopfilter.toLowerCase();
-    const selectedLegSide = selectedLeg.toLowerCase(); // "left" or "right"
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchDoctorTerm, setSearchDoctorTerm] = useState("");
 
-    const hasLeft =
-      patient.questionnaire_assigned_left &&
-      patient.questionnaire_assigned_left.length > 0;
-    const hasRight =
-      patient.questionnaire_assigned_right &&
-      patient.questionnaire_assigned_right.length > 0;
+  const filteredPatients = patients
+    .filter((patient) => {
+      const status = patient.current_status?.toLowerCase() || "";
+      const selectedFilter = patfilter.toLowerCase();
+      const subFilter = postopfilter.toLowerCase();
+      const selectedLegSide = selectedLeg.toLowerCase(); // "left" or "right"
 
-    let matchByQuestionnaire = false;
-    let matchByStatus = false;
+      const hasLeft =
+        patient.questionnaire_assigned_left &&
+        patient.questionnaire_assigned_left.length > 0;
+      const hasRight =
+        patient.questionnaire_assigned_right &&
+        patient.questionnaire_assigned_right.length > 0;
 
-    // Always check questionnaire assigned
-    if (selectedLegSide === "left" && hasLeft) {
-      matchByQuestionnaire = true;
-    }
-    if (selectedLegSide === "right" && hasRight) {
-      matchByQuestionnaire = true;
-    }
+      let matchByQuestionnaire = false;
+      let matchByStatus = false;
 
-    // Always check current_status
-    if (status.includes("left") && selectedLegSide === "left") {
-      matchByStatus = true;
-    }
-    if (status.includes("right") && selectedLegSide === "right") {
-      matchByStatus = true;
-    }
+      // Check questionnaire assignment
+      if (selectedLegSide === "left" && hasLeft) matchByQuestionnaire = true;
+      if (selectedLegSide === "right" && hasRight) matchByQuestionnaire = true;
 
-    // If neither match questionnaire nor status, don't show
-    if (!matchByQuestionnaire && !matchByStatus) {
-      return false;
-    }
+      // Check status
+      if (status.includes("left") && selectedLegSide === "left")
+        matchByStatus = true;
+      if (status.includes("right") && selectedLegSide === "right")
+        matchByStatus = true;
 
-    // Now apply pre/post-op filter
-    if (selectedFilter === "all patients") {
-      return true;
-    }
+      // Filter out if no match
+      if (!matchByQuestionnaire && !matchByStatus) return false;
 
-    const period = getCurrentPeriod(patient, selectedLegSide).toLowerCase();
+      // Apply pre/post-op filter
+      if (selectedFilter === "all patients") return true;
 
-    console.log("Inside period", period);
+      const period = getCurrentPeriod(patient, selectedLegSide).toLowerCase();
 
-    if (selectedFilter === "pre operative") {
-      return period.includes("pre");
-    }
+      if (selectedFilter === "pre operative") return period.includes("pre");
 
-    if (selectedFilter === "post operative") {
-      if (subFilter === "all") {
-        return !period.includes("pre");
+      if (selectedFilter === "post operative") {
+        if (subFilter === "all") return !period.includes("pre");
+        return !period.includes("pre") && period.includes(subFilter);
       }
-      return !period.includes("pre") && period.includes(subFilter);
-    }
 
-    return false;
-  });
+      return false;
+    })
+    .filter((patient) => {
+      if (!searchTerm.trim()) return true;
+
+      const term = searchTerm.toLowerCase();
+
+      const first = patient.first_name?.toLowerCase() || "";
+      const last = patient.last_name?.toLowerCase() || "";
+      const fullName = `${first} ${last}`.trim();
+
+      return (
+        first.includes(term) ||
+        last.includes(term) ||
+        fullName.includes(term) || // ✅ check "first last"
+        patient.uhid?.toLowerCase().includes(term)
+      );
+    });
 
   const convertToDateString = (utcDate) => {
     const date = new Date(utcDate); // Parse the UTC date string into a Date object
@@ -660,9 +664,8 @@ const page = ({
           completionRate *= 100;
           // Round to nearest whole number
           completionRate = Math.round(completionRate);
-        }
-        else{
-          completionRate =-1;
+        } else {
+          completionRate = -1;
         }
 
         // Final safety check in case of weird NaN
@@ -733,19 +736,110 @@ const page = ({
     console.log("Category", clickedCategory);
   };
 
+  const containerRef = useRef(null);
+  const cardRef = useRef(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [cardsPerPage, setCardsPerPage] = useState(6);
+
+  // Calculate total pages and current visible patients
+  const totalPages = Math.ceil(filteredPatients.length / cardsPerPage);
+  const paginatedPatients = filteredPatients.slice(
+    (currentPage - 1) * cardsPerPage,
+    currentPage * cardsPerPage
+  );
+
+  // Dynamically calculate cards per page
+  useEffect(() => {
+    const updateCardsPerPage = () => {
+      if (containerRef.current && cardRef.current) {
+        const containerHeight = containerRef.current.clientHeight;
+        const cardHeight = cardRef.current.clientHeight;
+        const gap = 16; // tailwind gap-4
+        const fit = Math.floor(containerHeight / (cardHeight + gap));
+        setCardsPerPage(fit - 1 || 1);
+      }
+    };
+
+    updateCardsPerPage();
+    window.addEventListener("resize", updateCardsPerPage);
+    return () => window.removeEventListener("resize", updateCardsPerPage);
+  }, []);
+
+  const doctorContainerRef = useRef(null);
+  const doctorCardRef = useRef(null);
+  const [doctorPage, setDoctorPage] = useState(1);
+  const [doctorsPerPage, setDoctorsPerPage] = useState(6);
+
+  const totalDoctorPages = Math.ceil(doctors.length / doctorsPerPage);
+
+  const paginatedDoctors = doctors.slice(
+    (doctorPage - 1) * doctorsPerPage,
+    doctorPage * doctorsPerPage
+  );
+
+  useEffect(() => {
+    const updateDoctorsPerPage = () => {
+      if (doctorContainerRef.current && doctorCardRef.current) {
+        const containerHeight = doctorContainerRef.current.clientHeight;
+        const cardHeight = doctorCardRef.current.clientHeight;
+        const gap = 16; // assuming Tailwind gap-4 = 16px
+        const fit = Math.floor(containerHeight / (cardHeight + gap));
+        setDoctorsPerPage(fit - 1 || 1);
+      }
+    };
+
+    updateDoctorsPerPage();
+    window.addEventListener("resize", updateDoctorsPerPage);
+    return () => window.removeEventListener("resize", updateDoctorsPerPage);
+  }, []);
+
   return (
     <>
-      <div className="flex flex-col md:flex-row w-[95%] mx-auto mt-4 items-center justify-between">
-        {/* Greeting Section */}
-        <div className="flex flex-col md:flex-row items-center md:items-end gap-1 md:gap-4">
-          <h4 className="font-medium text-black text-xl md:text-[26px]">
-            Welcome
-          </h4>
-          <h2 className="font-bold text-[#005585] text-2xl md:text-4xl">
-            {userData?.user?.admin_name
-              ? `${userData.user.admin_name}`
-              : "Loading..."}
-          </h2>
+      <div className="flex flex-col md:flex-row md:gap-4 w-[95%] mx-auto mt-4 items-center justify-between">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 w-full">
+          {/* Welcome Section */}
+          <div className="flex flex-col md:flex-row items-center md:items-end gap-1 md:gap-4">
+            <h4 className="font-medium text-black text-xl md:text-[26px]">
+              Welcome
+            </h4>
+            <h2 className="font-bold text-[#005585] text-2xl md:text-4xl">
+              {userData?.user?.admin_name
+                ? `${userData.user.admin_name}`
+                : "Loading..."}
+            </h2>
+          </div>
+
+          {/* Search Bar */}
+          <div className="relative w-full md:w-3/5">
+            <input
+              type="text"
+              placeholder="Search using Name or UHID"
+              value={selectedBox === "patients" ? searchTerm : searchDoctorTerm}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (selectedBox === "patients") {
+                  setSearchTerm(value);
+                } else {
+                  setSearchDoctorTerm(value);
+                }
+              }}
+              className="text-black w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#005585]"
+            />
+            <svg
+              className="w-5 h-5 text-gray-500 absolute left-3 top-1/2 transform -translate-y-1/2 pointer-events-none"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-4.35-4.35M17 10.5a6.5 6.5 0 11-13 0 6.5 6.5 0 0113 0z"
+              />
+            </svg>
+          </div>
         </div>
 
         {/* Right Side: Icons + Profile */}
@@ -837,6 +931,7 @@ const page = ({
                     onClick={() => {
                       setSortByStatus((prev) => !prev);
                       setSortAsc((prev) => !prev);
+                      setSearchTerm("");
                     }}
                   >
                     <Image
@@ -863,7 +958,10 @@ const page = ({
                 <div className="w-full flex flex-row justify-between items-center gap-4">
                   <div className="flex justify-end gap-2">
                     <button
-                      onClick={() => setSelectedLeg("left")}
+                      onClick={() => {
+                        setSelectedLeg("left");
+                        setSearchTerm("");
+                      }}
                       className={`px-4 py-0.5 rounded-full font-semibold ${
                         selectedLeg === "left"
                           ? "bg-[#005585] text-white"
@@ -891,6 +989,7 @@ const page = ({
                         onClick={() => {
                           setpatFilter(option);
                           setSortByStatus(true);
+                          setSearchTerm("");
                         }}
                         className={` cursor-pointer  font-semibold transition-all duration-200 rounded-full text-center
             ${
@@ -919,6 +1018,7 @@ const page = ({
                         onClick={() => {
                           setpostopFitler(option);
                           setSortByStatus(true);
+                          setSearchTerm("");
                         }}
                         className={`px-2 py-1 cursor-pointer text-xs font-semibold transition-all duration-200 rounded-lg
             ${
@@ -958,7 +1058,7 @@ const page = ({
           </div>
 
           <div
-            className={`overflow-y-scroll flex-grow pr-2 mt-4 ${
+            className={`pr-2 mt-4 ${
               width < 650 && width >= 450
                 ? patfilter.toLowerCase() === "post operative"
                   ? "h-[68%]"
@@ -980,399 +1080,424 @@ const page = ({
                         : "h-[84%]"
             }`}
           >
-            {selectedBox === "patients" &&
-              filteredPatients
-                .slice()
-                .sort((a, b) => {
-                  const getStatusRank = (patient) => {
-                    if (patient.questionnaire_assigned?.length === 0) return 1; // NOT ASSIGNED
-                    if (
-                      patient.questionnaire_assigned?.every(
-                        (q) => q.completed === 1
-                      )
-                    )
-                      return 3; // COMPLETED
-                    return 2; // PENDING
-                  };
-
-                  const rankA = getStatusRank(a);
-                  const rankB = getStatusRank(b);
-
-                  return sortByStatus ? rankA - rankB : rankB - rankA;
-                  // normal or reversed based on button click
-                })
-                .map((patient) => (
-                  <div
-                    key={patient.uhid}
-                    style={{ backgroundColor: "rgba(0, 85, 133, 0.1)" }}
-                    className={`w-full rounded-lg flex  my-1 py-2 px-3 ${
-                      width < 530
-                        ? "flex-col justify-center items-center"
-                        : "flex-row justify-between items-center"
-                    }
-                ${width < 1000 ? "mb-2" : "mb-6"}`}
-                  >
-                    <div
-                      className={`${
-                        width < 640 && width >= 530
-                          ? "w-3/5"
-                          : width < 530
-                            ? "w-full"
-                            : "w-[50%]"
-                      }`}
-                    >
-                      <div
-                        className={`flex gap-4 py-0  items-center  ${
-                          width < 710 && width >= 640
-                            ? "px-0 flex-row"
-                            : width < 530
-                              ? "flex-col justify-center items-center"
-                              : "px-2 flex-row"
-                        }`}
-                      >
-                        <Image
-                          className={`rounded-full ${
-                            width < 530
-                              ? "w-11 h-11 flex justify-center items-center"
-                              : "w-10 h-10"
-                          }`}
-                          src={Patientimg}
-                          alt={patient.uhid}
-                        />
-
-                        <div
-                          className={`w-full flex items-center ${
-                            width < 710 ? "flex-col" : "flex-row"
-                          }`}
-                        >
-                          <div
-                            className={`flex  flex-col ${
-                              width < 710 ? "w-full" : "w-[70%]"
-                            }`}
-                          >
-                            <div
-                              className={`flex items-center justify-between `}
-                            >
-                              <p
-                                className={`text-[#475467] font-poppins font-medium text-base ${
-                                  width < 530 ? "w-full text-center" : ""
-                                }`}
-                              >
-                                {patient.first_name + " " + patient.last_name}
-                              </p>
-                            </div>
-                            <p
-                              className={`font-poppins font-medium text-sm text-[#475467] ${
-                                width < 530 ? "text-center" : "text-start"
-                              }`}
-                            >
-                              {patient.age}, {patient.gender}
-                            </p>
-                          </div>
-
-                          <div
-                            className={`text-sm font-normal font-poppins text-[#475467]   ${
-                              width < 710 && width >= 530
-                                ? "w-full text-start"
-                                : width < 530
-                                  ? "w-full text-center"
-                                  : "w-[30%] text-center"
-                            }`}
-                          >
-                            UHID {patient.uhid}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div
-                      className={`flex ${
-                        width < 640 && width >= 530
-                          ? "w-2/5 flex-col text-start"
-                          : width < 530
-                            ? "w-full flex-col text-start"
-                            : "w-[50%] flex-row"
-                      }`}
-                    >
-                      <div
-                        className={` flex ${
-                          width <= 750 && width >= 530
-                            ? "flex-col items-end"
-                            : width < 530
-                              ? "flex-col items-center"
-                              : "flex-row"
-                        } 
-                    ${width < 640 ? "w-full justify-end" : "w-[70%]"}`}
-                      >
-                        <div
-                          className={` text-sm font-medium text-[#475467] ${
-                            width <= 750 && width >= 530
-                              ? "w-3/4 text-start"
-                              : width < 530
-                                ? "w-full text-center"
-                                : "w-[35%] text-end"
-                          }`}
-                        >
-                          {getCurrentPeriod(patient, selectedLeg)}
-                        </div>
-                        <div
-                          className={`text-sm font-medium text-black ${
-                            width <= 750 && width >= 530
-                              ? "w-3/4 text-start"
-                              : width < 530
-                                ? "w-full text-center"
-                                : "w-[65%] text-end"
-                          }`}
-                        >
-                          {(
-                            selectedLeg === "left"
-                              ? patient.questionnaire_assigned_left?.length ===
-                                0
-                              : patient.questionnaire_assigned_right?.length ===
-                                0
+            <div className="overflow-hidden flex-1">
+              <div
+                ref={containerRef}
+                className="grid grid-cols-1 transition-all duration-300"
+              >
+                {selectedBox === "patients" &&
+                  paginatedPatients
+                    .slice()
+                    .sort((a, b) => {
+                      const getStatusRank = (patient) => {
+                        if (patient.questionnaire_assigned?.length === 0)
+                          return 1; // NOT ASSIGNED
+                        if (
+                          patient.questionnaire_assigned?.every(
+                            (q) => q.completed === 1
                           )
-                            ? "NOT ASSIGNED"
-                            : (
-                                  selectedLeg === "left"
-                                    ? patient.questionnaire_assigned_left?.every(
-                                        (q) => q.completed === 1
-                                      )
-                                    : patient.questionnaire_assigned_right?.every(
-                                        (q) => q.completed === 1
-                                      )
-                                )
-                              ? "COMPLETED"
-                              : "PENDING"}
-                        </div>
-                      </div>
+                        )
+                          return 3; // COMPLETED
+                        return 2; // PENDING
+                      };
 
+                      const rankA = getStatusRank(a);
+                      const rankB = getStatusRank(b);
+
+                      return sortByStatus ? rankA - rankB : rankB - rankA;
+                      // normal or reversed based on button click
+                    })
+                    .map((patient) => (
                       <div
-                        className={` flex flex-row justify-end items-center ${
-                          width < 640 ? "w-full" : "w-[30%]"
-                        }`}
-                      >
-                        <div
-                          className={`flex flex-row gap-1 items-center ${
-                            width < 640 && width >= 530
-                              ? "w-3/4"
-                              : width < 530
-                                ? "w-full justify-center"
-                                : ""
-                          }`}
-                          onClick={() => handleViewReport(patient)}
-                        >
-                          <div className="text-sm font-medium border-b-2 text-[#476367] border-blue-gray-500 cursor-pointer">
-                            Report
-                          </div>
-                          <ArrowUpRightIcon
-                            color="blue"
-                            className="w-4 h-4 cursor-pointer"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-
-            {selectedBox === "doctors" &&
-              doctors
-                .map((doc) => {
-                  const stat = doctorPatientStats.find(
-                    (s) => s.doctorEmail === doc.email
-                  );
-                  const completionRate = stat ? stat.completionRate : 0;
-                  return { ...doc, completionRate };
-                })
-                .sort((a, b) => {
-                  return sortDirection === "asc"
-                    ? a.completionRate - b.completionRate
-                    : b.completionRate - a.completionRate;
-                })
-                .map((doc) => {
-                  const stat = doctorPatientStats.find(
-                    (s) => s.doctorEmail === doc.email
-                  );
-
-                  console.log("Status of completion",stat);
-
-                  const completionRate = stat ? stat.completionRate : -1; // Default 0 if not found
-
-                  return (
-                    <div
-                      key={doc.uhid}
-                      style={{ backgroundColor: "rgba(0, 85, 133, 0.1)" }}
-                      className={`w-full rounded-lg flex  my-1 py-2 px-3 ${
-                        width < 530
-                          ? "flex-col justify-center items-center"
-                          : "flex-row justify-between items-center"
-                      }
+                        ref={patient.uhid ? cardRef : null}
+                        key={patient.uhid}
+                        style={{ backgroundColor: "rgba(0, 85, 133, 0.1)" }}
+                        className={`w-full rounded-lg flex py-2 px-3 ${
+                          width < 530
+                            ? "flex-col justify-center items-center"
+                            : "flex-row justify-between items-center"
+                        }
                 ${width < 1000 ? "mb-2" : "mb-6"}`}
-                    >
-                      <div
-                        className={`${
-                          width < 640 && width >= 530
-                            ? "w-3/5"
-                            : width < 530
-                              ? "w-full"
-                              : "w-[60%]"
-                        }`}
                       >
                         <div
-                          className={`flex gap-4 py-0  items-center  ${
-                            width < 710 && width >= 640
-                              ? "px-0 flex-row"
+                          className={`${
+                            width < 640 && width >= 530
+                              ? "w-3/5"
                               : width < 530
-                                ? "flex-col justify-center items-center"
-                                : "px-2 flex-row"
+                                ? "w-full"
+                                : "w-[50%]"
                           }`}
                         >
-                          <Image
-                            className={`rounded-full ${
-                              width < 530
-                                ? "w-11 h-11 flex justify-center items-center"
-                                : "w-10 h-10"
-                            }`}
-                            src={Patientimg}
-                            alt={doc.uhid}
-                          />
-
                           <div
-                            className={`w-full flex items-center ${
-                              width < 710 ? "flex-col" : "flex-row"
+                            className={`flex gap-4 py-0  items-center  ${
+                              width < 710 && width >= 640
+                                ? "px-0 flex-row"
+                                : width < 530
+                                  ? "flex-col justify-center items-center"
+                                  : "px-2 flex-row"
                             }`}
                           >
+                            <Image
+                              className={`rounded-full ${
+                                width < 530
+                                  ? "w-11 h-11 flex justify-center items-center"
+                                  : "w-10 h-10"
+                              }`}
+                              src={Patientimg}
+                              alt={patient.uhid}
+                            />
+
                             <div
-                              className={`flex  flex-col ${
-                                width < 710 ? "w-full" : "w-[50%]"
+                              className={`w-full flex items-center ${
+                                width < 710 ? "flex-col" : "flex-row"
                               }`}
                             >
                               <div
-                                className={`flex items-center justify-between `}
-                              >
-                                <p
-                                  className={`text-[#475467] font-poppins font-medium text-base ${
-                                    width < 530 ? "w-full text-center" : ""
-                                  }`}
-                                >
-                                  Dr. {doc.doctor_name}
-                                </p>
-                              </div>
-                              <p
-                                className={`font-poppins font-medium text-sm text-[#475467] ${
-                                  width < 530 ? "text-center" : "text-start"
+                                className={`flex  flex-col ${
+                                  width < 710 ? "w-full" : "w-[70%]"
                                 }`}
                               >
-                                {doc.age}, {doc.gender}
-                              </p>
-                            </div>
+                                <div
+                                  className={`flex items-center justify-between `}
+                                >
+                                  <p
+                                    className={`text-[#475467] font-poppins font-medium text-base ${
+                                      width < 530 ? "w-full text-center" : ""
+                                    }`}
+                                  >
+                                    {patient.first_name +
+                                      " " +
+                                      patient.last_name}
+                                  </p>
+                                </div>
+                                <p
+                                  className={`font-poppins font-medium text-sm text-[#475467] ${
+                                    width < 530 ? "text-center" : "text-start"
+                                  }`}
+                                >
+                                  {patient.age}, {patient.gender}
+                                </p>
+                              </div>
 
+                              <div
+                                className={`text-sm font-normal font-poppins text-[#475467]   ${
+                                  width < 710 && width >= 530
+                                    ? "w-full text-start"
+                                    : width < 530
+                                      ? "w-full text-center"
+                                      : "w-[30%] text-center"
+                                }`}
+                              >
+                                UHID {patient.uhid}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div
+                          className={`flex ${
+                            width < 640 && width >= 530
+                              ? "w-2/5 flex-col text-start"
+                              : width < 530
+                                ? "w-full flex-col text-start"
+                                : "w-[50%] flex-row"
+                          }`}
+                        >
+                          <div
+                            className={` flex ${
+                              width <= 750 && width >= 530
+                                ? "flex-col items-end"
+                                : width < 530
+                                  ? "flex-col items-center"
+                                  : "flex-row"
+                            } 
+                    ${width < 640 ? "w-full justify-end" : "w-[70%]"}`}
+                          >
                             <div
-                              className={`text-sm font-normal font-poppins text-[#475467]   ${
-                                width < 710 && width >= 530
-                                  ? "w-full text-start"
+                              className={` text-sm font-medium text-[#475467] ${
+                                width <= 750 && width >= 530
+                                  ? "w-3/4 text-start"
                                   : width < 530
                                     ? "w-full text-center"
-                                    : "w-[50%] text-center"
+                                    : "w-[35%] text-end"
                               }`}
                             >
-                              {doc.uhid}
+                              {getCurrentPeriod(patient, selectedLeg)}
+                            </div>
+                            <div
+                              className={`text-sm font-medium text-black ${
+                                width <= 750 && width >= 530
+                                  ? "w-3/4 text-start"
+                                  : width < 530
+                                    ? "w-full text-center"
+                                    : "w-[65%] text-end"
+                              }`}
+                            >
+                              {(
+                                selectedLeg === "left"
+                                  ? patient.questionnaire_assigned_left
+                                      ?.length === 0
+                                  : patient.questionnaire_assigned_right
+                                      ?.length === 0
+                              )
+                                ? "NOT ASSIGNED"
+                                : (
+                                      selectedLeg === "left"
+                                        ? patient.questionnaire_assigned_left?.every(
+                                            (q) => q.completed === 1
+                                          )
+                                        : patient.questionnaire_assigned_right?.every(
+                                            (q) => q.completed === 1
+                                          )
+                                    )
+                                  ? "COMPLETED"
+                                  : "PENDING"}
+                            </div>
+                          </div>
+
+                          <div
+                            className={` flex flex-row justify-end items-center ${
+                              width < 640 ? "w-full" : "w-[30%]"
+                            }`}
+                          >
+                            <div
+                              className={`flex flex-row gap-1 items-center ${
+                                width < 640 && width >= 530
+                                  ? "w-3/4"
+                                  : width < 530
+                                    ? "w-full justify-center"
+                                    : ""
+                              }`}
+                              onClick={() => handleViewReport(patient)}
+                            >
+                              <div className="text-sm font-medium border-b-2 text-[#476367] border-blue-gray-500 cursor-pointer">
+                                Report
+                              </div>
+                              <ArrowUpRightIcon
+                                color="blue"
+                                className="w-4 h-4 cursor-pointer"
+                              />
                             </div>
                           </div>
                         </div>
                       </div>
+                    ))}
+              </div>
+              
+              <div
+                ref={doctorContainerRef}
+                className="grid grid-cols-1 transition-all duration-300"
+              >
+                {selectedBox === "doctors" &&
+                  doctors
+                    .filter((doc) => {
+                      const search = searchDoctorTerm.toLowerCase().trim();
+                      const fullName = `dr. ${doc.doctor_name}`.toLowerCase();
+                      const uhid = doc.uhid?.toLowerCase() || "";
+                      return fullName.includes(search) || uhid.includes(search);
+                    })
+                    .map((doc) => {
+                      const stat = doctorPatientStats.find(
+                        (s) => s.doctorEmail === doc.email
+                      );
+                      const completionRate = stat ? stat.completionRate : 0;
+                      return { ...doc, completionRate };
+                    })
+                    .sort((a, b) => {
+                      return sortDirection === "asc"
+                        ? a.completionRate - b.completionRate
+                        : b.completionRate - a.completionRate;
+                    })
+                    .map((doc) => {
+                      const stat = doctorPatientStats.find(
+                        (s) => s.doctorEmail === doc.email
+                      );
 
-                      <div
-                        className={`flex ${
-                          width < 640 && width >= 530
-                            ? "w-2/5 flex-col text-start"
-                            : width < 530
-                              ? "w-full flex-col text-start"
-                              : "w-[40%] flex-row"
-                        }`}
-                      >
+                      console.log("Status of completion", stat);
+
+                      const completionRate = stat ? stat.completionRate : -1; // Default 0 if not found
+
+                      return (
                         <div
-                          className={` flex ${
-                            width <= 750 && width >= 530
-                              ? "flex-col items-end"
-                              : width < 530
-                                ? "flex-col items-center"
-                                : "flex-row"
-                          } 
-                    ${width < 640 ? "w-full justify-end" : "w-full"}`}
+                          key={doc.uhid}
+                          ref={doc.uhid ? cardRef : null}
+                          style={{ backgroundColor: "rgba(0, 85, 133, 0.1)" }}
+                          className={`w-full rounded-lg flex  my-1 py-2 px-3 ${
+                            width < 530
+                              ? "flex-col justify-center items-center"
+                              : "flex-row justify-between items-center"
+                          }
+                ${width < 1000 ? "mb-2" : "mb-6"}`}
                         >
                           <div
-                            className={` text-sm font-medium text-[#475467] ${
-                              width <= 750 && width >= 530
-                                ? "w-1/3 text-start"
+                            className={`${
+                              width < 640 && width >= 530
+                                ? "w-3/5"
                                 : width < 530
-                                  ? "w-full text-center"
-                                  : "w-[35%] text-end"
+                                  ? "w-full"
+                                  : "w-[60%]"
                             }`}
                           >
-                            SURGEON
-                          </div>
-                          <div
-                            className={`text-sm font-medium text-black flex justify-center items-center ${
-                              width <= 750 && width >= 530
-                                ? "w-2/3 text-start"
-                                : width < 530
-                                  ? "w-full text-center"
-                                  : "w-[65%] text-end"
-                            }`}
-                          >
-                            <div className="w-1/2 flex flex-col items-center justify-center">
-                              <div className={`w-full flex flex-col items-center relative group ${
-    completionRate < 0 ? "pointer-events-none opacity-50 cursor-not-allowed" : ""
-  }`}>
-                                {/* Hover Percentage Text */}
+                            <div
+                              className={`flex gap-4 py-0  items-center  ${
+                                width < 710 && width >= 640
+                                  ? "px-0 flex-row"
+                                  : width < 530
+                                    ? "flex-col justify-center items-center"
+                                    : "px-2 flex-row"
+                              }`}
+                            >
+                              <Image
+                                className={`rounded-full ${
+                                  width < 530
+                                    ? "w-11 h-11 flex justify-center items-center"
+                                    : "w-10 h-10"
+                                }`}
+                                src={Patientimg}
+                                alt={doc.uhid}
+                              />
+
+                              <div
+                                className={`w-full flex items-center ${
+                                  width < 710 ? "flex-col" : "flex-row"
+                                }`}
+                              >
                                 <div
-                                  className="absolute -top-7 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out text-sm font-semibold text-black
-    group-hover:border-2 group-hover:border-black group-hover:px-3 group-hover:rounded-lg"
+                                  className={`flex  flex-col ${
+                                    width < 710 ? "w-full" : "w-[50%]"
+                                  }`}
                                 >
-                                  {completionRate}%
+                                  <div
+                                    className={`flex items-center justify-between `}
+                                  >
+                                    <p
+                                      className={`text-[#475467] font-poppins font-medium text-base ${
+                                        width < 530 ? "w-full text-center" : ""
+                                      }`}
+                                    >
+                                      Dr. {doc.doctor_name}
+                                    </p>
+                                  </div>
+                                  <p
+                                    className={`font-poppins font-medium text-sm text-[#475467] ${
+                                      width < 530 ? "text-center" : "text-start"
+                                    }`}
+                                  >
+                                    {doc.age}, {doc.gender}
+                                  </p>
                                 </div>
 
-                                {/* Progress Bar Container */}
                                 <div
-                                  className="relative w-full h-3 rounded-full overflow-hidden bg-white"
-                                  style={{
-                                    backgroundSize: "20px 20px",
-                                  }}
+                                  className={`text-sm font-normal font-poppins text-[#475467]   ${
+                                    width < 710 && width >= 530
+                                      ? "w-full text-start"
+                                      : width < 530
+                                        ? "w-full text-center"
+                                        : "w-[50%] text-center"
+                                  }`}
                                 >
-                                  {/* Filled Progress */}
-                                  <div
-                                    className={`h-full transition-all duration-500 ${
-                                      completionRate > 80
-                                        ? "bg-green-500"
-                                        : completionRate >= 51
-                                          ? "bg-yellow-400"
-                                          : completionRate >= 21
-                                            ? "bg-orange-400"
-                                            : completionRate > 0
-                                              ? "bg-red-500"
-                                              : "bg-red-500"
-                                    }`}
-                                    style={{
-                                      width: `${completionRate > 0 ? completionRate : 2}%`,
-                                      backgroundImage:
-                                        completionRate > 0
-                                          ? "url('/stripes.svg')"
-                                          : "none",
-                                      backgroundRepeat: "repeat",
-                                      backgroundSize: "20px 20px",
-                                      animation:
-                                        completionRate > 0
-                                          ? "2s linear infinite"
-                                          : "none",
-                                    }}
-                                  ></div>
+                                  {doc.uhid}
                                 </div>
                               </div>
                             </div>
                           </div>
-                        </div>
 
-                        {/* <div
+                          <div
+                            className={`flex ${
+                              width < 640 && width >= 530
+                                ? "w-2/5 flex-col text-start"
+                                : width < 530
+                                  ? "w-full flex-col text-start"
+                                  : "w-[40%] flex-row"
+                            }`}
+                          >
+                            <div
+                              className={` flex ${
+                                width <= 750 && width >= 530
+                                  ? "flex-col items-end"
+                                  : width < 530
+                                    ? "flex-col items-center"
+                                    : "flex-row"
+                              } 
+                    ${width < 640 ? "w-full justify-end" : "w-full"}`}
+                            >
+                              <div
+                                className={` text-sm font-medium text-[#475467] ${
+                                  width <= 750 && width >= 530
+                                    ? "w-1/3 text-start"
+                                    : width < 530
+                                      ? "w-full text-center"
+                                      : "w-[35%] text-end"
+                                }`}
+                              >
+                                SURGEON
+                              </div>
+                              <div
+                                className={`text-sm font-medium text-black flex justify-center items-center ${
+                                  width <= 750 && width >= 530
+                                    ? "w-2/3 text-start"
+                                    : width < 530
+                                      ? "w-full text-center"
+                                      : "w-[65%] text-end"
+                                }`}
+                              >
+                                <div className="w-1/2 flex flex-col items-center justify-center">
+                                  <div
+                                    className={`w-full flex flex-col items-center relative group ${
+                                      completionRate < 0
+                                        ? "pointer-events-none opacity-50 cursor-not-allowed"
+                                        : ""
+                                    }`}
+                                  >
+                                    {/* Hover Percentage Text */}
+                                    <div
+                                      className="absolute -top-7 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out text-sm font-semibold text-black
+    group-hover:border-2 group-hover:border-black group-hover:px-3 group-hover:rounded-lg"
+                                    >
+                                      {completionRate}%
+                                    </div>
+
+                                    {/* Progress Bar Container */}
+                                    <div
+                                      className="relative w-full h-3 rounded-full overflow-hidden bg-white"
+                                      style={{
+                                        backgroundSize: "20px 20px",
+                                      }}
+                                    >
+                                      {/* Filled Progress */}
+                                      <div
+                                        className={`h-full transition-all duration-500 ${
+                                          completionRate > 80
+                                            ? "bg-green-500"
+                                            : completionRate >= 51
+                                              ? "bg-yellow-400"
+                                              : completionRate >= 21
+                                                ? "bg-orange-400"
+                                                : completionRate > 0
+                                                  ? "bg-red-500"
+                                                  : "bg-red-500"
+                                        }`}
+                                        style={{
+                                          width: `${completionRate > 0 ? completionRate : 2}%`,
+                                          backgroundImage:
+                                            completionRate > 0
+                                              ? "url('/stripes.svg')"
+                                              : "none",
+                                          backgroundRepeat: "repeat",
+                                          backgroundSize: "20px 20px",
+                                          animation:
+                                            completionRate > 0
+                                              ? "2s linear infinite"
+                                              : "none",
+                                        }}
+                                      ></div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* <div
                         className={` flex flex-row justify-end items-center ${
                           width < 640 ? "w-full" : "w-[30%]"
                         }`}
@@ -1396,10 +1521,84 @@ const page = ({
                           />
                         </div>
                       </div> */}
-                      </div>
-                    </div>
-                  );
-                })}
+                          </div>
+                        </div>
+                      );
+                    })}
+              </div>
+
+              {totalPages > 1 && selectedBox === "patients" && (
+                <div className="flex justify-center items-center gap-2 my-2">
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                    disabled={currentPage === 1}
+                    className="px-3 py-1 text-black disabled:opacity-50 cursor-pointer"
+                  >
+                    Prev
+                  </button>
+
+                  {Array.from({ length: totalPages }).map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setCurrentPage(i + 1)}
+                      className={`px-3 py-1 border rounded cursor-pointer ${
+                        currentPage === i + 1
+                          ? "bg-blue-500 text-white"
+                          : "bg-white text-blue-500"
+                      }`}
+                    >
+                      {i + 1}
+                    </button>
+                  ))}
+
+                  <button
+                    onClick={() =>
+                      setCurrentPage((p) => Math.min(p + 1, totalPages))
+                    }
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-1 text-black disabled:opacity-50 cursor-pointer"
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
+
+              {totalDoctorPages > 1 && selectedBox === "doctors" && (
+                <div className="flex justify-center items-center gap-2 my-2">
+                  <button
+                    onClick={() => setDoctorPage((p) => Math.max(p - 1, 1))}
+                    disabled={doctorPage === 1}
+                    className="px-3 py-1 text-black disabled:opacity-50 cursor-pointer"
+                  >
+                    Prev
+                  </button>
+
+                  {Array.from({ length: totalDoctorPages }).map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setDoctorPage(i + 1)}
+                      className={`px-3 py-1 border rounded cursor-pointer ${
+                        doctorPage === i + 1
+                          ? "bg-blue-500 text-white"
+                          : "bg-white text-blue-500"
+                      }`}
+                    >
+                      {i + 1}
+                    </button>
+                  ))}
+
+                  <button
+                    onClick={() =>
+                      setDoctorPage((p) => Math.min(p + 1, totalDoctorPages))
+                    }
+                    disabled={doctorPage === totalDoctorPages}
+                    className="px-3 py-1 text-black disabled:opacity-50 cursor-pointer"
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
