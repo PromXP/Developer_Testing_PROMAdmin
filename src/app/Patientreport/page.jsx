@@ -525,9 +525,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
         },
         body: JSON.stringify({
           message:
-            "Hey User\nHope Your doing well !\nQuestionnaire has been assigned"+
-            "\nhttps://promwebformslower.onrender.com/ " +
-            "\nThank you with love,\nXolabsHealth ",
+            "Hey User,\nHope Your doing well !\nQuestionnaire has been assigned :\nhttps://promwebformslower.onrender.com/\nThank you with love,\nXolabsHealth",
           phone_number: "+91" + patient?.phone_number,
         }),
       });
