@@ -1090,15 +1090,27 @@ const page = ({
                     .slice()
                     .sort((a, b) => {
                       const getStatusRank = (patient) => {
-                        if (patient.questionnaire_assigned?.length === 0)
-                          return 1; // NOT ASSIGNED
-                        if (
-                          patient.questionnaire_assigned?.every(
-                            (q) => q.completed === 1
+                        if (selectedLeg === "left") {
+                          if (patient.questionnaire_assigned_left?.length === 0)
+                            return 1; // NOT ASSIGNED
+                          if (
+                            patient.questionnaire_assigned_left?.every(
+                              (q) => q.completed === 1
+                            )
                           )
-                        )
-                          return 3; // COMPLETED
-                        return 2; // PENDING
+                            return 3; // COMPLETED
+                          return 2; // PENDING
+                        } else {
+                          if (patient.questionnaire_assigned_right?.length === 0)
+                            return 1; // NOT ASSIGNED
+                          if (
+                            patient.questionnaire_assigned_right?.every(
+                              (q) => q.completed === 1
+                            )
+                          )
+                            return 3; // COMPLETED
+                          return 2; // PENDING
+                        }
                       };
 
                       const rankA = getStatusRank(a);
@@ -1283,7 +1295,7 @@ const page = ({
                       </div>
                     ))}
               </div>
-              
+
               <div
                 ref={doctorContainerRef}
                 className="grid grid-cols-1 transition-all duration-300"
