@@ -1442,7 +1442,7 @@ const page = ({
                                       : "w-[35%] text-end"
                                 }`}
                               >
-                                SURGEON
+                                {doc.designation}
                               </div>
                               <div
                                 className={`text-sm font-medium text-black flex justify-center items-center ${

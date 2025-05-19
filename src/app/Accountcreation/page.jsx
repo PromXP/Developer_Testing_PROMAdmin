@@ -297,6 +297,10 @@ const page = ({ isOpenacc, onCloseacc, userData }) => {
     }
 
     if (!email.trim()) return showWarning("Email is required.");
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return showWarning("Please enter a valid email address.");
+    }
     if (!heightbmi.trim()) return showWarning("Height is required.");
     if (!weight.trim()) return showWarning("Weight is required.");
 
@@ -318,7 +322,7 @@ const page = ({ isOpenacc, onCloseacc, userData }) => {
       first_name: firstName,
       last_name: lastName,
       password: "patient@123", // change as needed
-      vip:0,
+      vip: 0,
       dob: selectedDate,
       age: age,
       blood_grp: selectedOptiondrop,
@@ -348,7 +352,7 @@ const page = ({ isOpenacc, onCloseacc, userData }) => {
         date_of_surgery: "0001-01-01",
         surgeon: "", // replace accordingly
         surgery_name: "", // if different
-        sub_doctor:"",
+        sub_doctor: "",
         procedure: "", // replace
         implant: "", // replace
         technology: "", // replace
@@ -357,7 +361,7 @@ const page = ({ isOpenacc, onCloseacc, userData }) => {
         date_of_surgery: "0001-01-01",
         surgeon: "", // replace accordingly
         surgery_name: "", // if different
-        sub_doctor:"",
+        sub_doctor: "",
         procedure: "", // replace
         implant: "", // replace
         technology: "", // replace
@@ -365,8 +369,8 @@ const page = ({ isOpenacc, onCloseacc, userData }) => {
       current_status: currentStatus.join(", "),
     };
 
-    console.log("Patient Payload",JSON.stringify(payload, null, 2))
-    
+    console.log("Patient Payload", JSON.stringify(payload, null, 2));
+
     setIsSubmitting(true); // 🔒 Lock submission
 
     try {
@@ -484,7 +488,7 @@ const page = ({ isOpenacc, onCloseacc, userData }) => {
                 >
                   <input
                     type="text"
-                    placeholder="FIRST NAME"
+                    placeholder="FIRST NAME *"
                     className="w-full text-black py-2 px-4 rounded-sm text-base  outline-none"
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
@@ -500,7 +504,7 @@ const page = ({ isOpenacc, onCloseacc, userData }) => {
                 >
                   <input
                     type="text"
-                    placeholder="LAST NAME"
+                    placeholder="LAST NAME  *"
                     className="w-full text-black py-2 px-4 rounded-sm text-base outline-none"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
@@ -523,7 +527,7 @@ const page = ({ isOpenacc, onCloseacc, userData }) => {
                 >
                   <input
                     type="text"
-                    placeholder="UHID"
+                    placeholder="UHID  *"
                     className="w-full text-black py-2 px-4 rounded-sm text-base outline-none"
                     value={uhid}
                     onChange={(e) => setUhid(e.target.value)}
@@ -540,7 +544,7 @@ const page = ({ isOpenacc, onCloseacc, userData }) => {
                 >
                   <input
                     type="text"
-                    placeholder="dd-mm-yyyy"
+                    placeholder="Date of Birth (dd-mm-yyyy) *"
                     className="w-full text-black py-2 px-4 rounded-sm text-base outline-none"
                     value={selectedDate || ""}
                     onChange={handleManualDateChange}
@@ -643,7 +647,7 @@ const page = ({ isOpenacc, onCloseacc, userData }) => {
                   }`}
                 >
                   <p className="w-3/5 font-medium text-[#475467] text-[20px] text-center">
-                    Blood Group
+                    Blood Group *
                   </p>
                   <div className="w-2/5 relative">
                     <div className="w-full flex justify-center">
@@ -695,8 +699,8 @@ const page = ({ isOpenacc, onCloseacc, userData }) => {
                     width < 550 ? "w-full" : "w-1/3"
                   }`}
                 >
-                  <div className="w-full flex justify-between items-center gap-4 px-6">
-                    <label className="flex items-center gap-1 cursor-pointer justify-center">
+                  <div className="w-full flex justify-between items-center gap-4 px-2">
+                    <label className="w-1/2 flex items-center gap-1 cursor-pointer justify-center">
                       <input
                         type="checkbox"
                         checked={leftChecked}
@@ -708,7 +712,7 @@ const page = ({ isOpenacc, onCloseacc, userData }) => {
                       </span>
                     </label>
 
-                    <label className="flex items-center gap-1 cursor-pointer justify-center">
+                    <label className="w-1/2 flex items-center gap-1 cursor-pointer justify-center">
                       <input
                         type="checkbox"
                         checked={rightChecked}
@@ -728,7 +732,7 @@ const page = ({ isOpenacc, onCloseacc, userData }) => {
                 >
                   <input
                     type="tel"
-                    placeholder="PHONE"
+                    placeholder="PHONE  *"
                     className="w-full text-black py-2 px-4 rounded-sm text-base  outline-none"
                     value={phone}
                     maxLength={10}
@@ -746,7 +750,7 @@ const page = ({ isOpenacc, onCloseacc, userData }) => {
                 >
                   <input
                     type="email"
-                    placeholder="EMAIL"
+                    placeholder="EMAIL  *"
                     className="w-full text-black py-2 px-4 rounded-sm text-base outline-none"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -769,7 +773,7 @@ const page = ({ isOpenacc, onCloseacc, userData }) => {
                 >
                   <input
                     type="number"
-                    placeholder="HEIGHT (in cm)"
+                    placeholder="HEIGHT (in cm)  *"
                     value={heightbmi}
                     min="0"
                     onChange={(e) =>
@@ -787,7 +791,7 @@ const page = ({ isOpenacc, onCloseacc, userData }) => {
                 >
                   <input
                     type="number"
-                    placeholder="WEIGHT (in Kg)"
+                    placeholder="WEIGHT (in Kg)  *"
                     value={weight}
                     min="0"
                     onChange={(e) =>

@@ -283,6 +283,10 @@ const page = ({ isOpenaccdoc, onCloseaccdoc, userData }) => {
       return showWarning("Phone number must be exactly 10 digits.");
     }
     if (!email.trim()) return showWarning("Email is required.");
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return showWarning("Please enter a valid email address.");
+    }
 
     const payload = {
       doctor_name: firstName.trim() + " " + lastName.trim(),
@@ -403,7 +407,7 @@ const page = ({ isOpenaccdoc, onCloseaccdoc, userData }) => {
                 >
                   <input
                     type="text"
-                    placeholder="FIRST NAME"
+                    placeholder="FIRST NAME *"
                     className="w-full text-black py-2 px-4 rounded-sm text-base  outline-none"
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
@@ -419,7 +423,7 @@ const page = ({ isOpenaccdoc, onCloseaccdoc, userData }) => {
                 >
                   <input
                     type="text"
-                    placeholder="LAST NAME"
+                    placeholder="LAST NAME *"
                     className="w-full text-black py-2 px-4 rounded-sm text-base outline-none"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
@@ -442,7 +446,7 @@ const page = ({ isOpenaccdoc, onCloseaccdoc, userData }) => {
                 >
                   <input
                     type="text"
-                    placeholder="UHID"
+                    placeholder="UHID *"
                     className="w-full text-black py-2 px-4 rounded-sm text-base outline-none"
                     value={uhid}
                     onChange={(e) => setUhid(e.target.value)}
@@ -458,7 +462,7 @@ const page = ({ isOpenaccdoc, onCloseaccdoc, userData }) => {
                 >
                   <input
                     type="text"
-                    placeholder="dd-mm-yyyy"
+                    placeholder="Date of Birth (dd-mm-yyyy) *"
                     className="w-full text-black py-2 px-4 rounded-sm text-base outline-none"
                     value={selectedDate || ""}
                     onChange={handleManualDateChange}
@@ -561,7 +565,7 @@ const page = ({ isOpenaccdoc, onCloseaccdoc, userData }) => {
                   }`}
                 >
                   <p className="w-3/5 font-medium text-[#475467] text-[20px] text-center">
-                    Blood Group
+                    Blood Group *
                   </p>
                   <div className="w-2/5 relative">
                     <div className="w-full flex justify-center">
@@ -615,7 +619,7 @@ const page = ({ isOpenaccdoc, onCloseaccdoc, userData }) => {
                 >
                   <input
                     type="text"
-                    placeholder="DESIGNATION"
+                    placeholder="DESIGNATION *"
                     className="w-full text-black py-2 px-4 rounded-sm text-base  outline-none"
                     value={designation}
                     onChange={(e) => setDesignation(e.target.value)}
@@ -632,7 +636,7 @@ const page = ({ isOpenaccdoc, onCloseaccdoc, userData }) => {
                 >
                   <input
                     type="tel"
-                    placeholder="PHONE"
+                    placeholder="PHONE *"
                     className="w-full text-black py-2 px-4 rounded-sm text-base  outline-none"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
@@ -649,7 +653,7 @@ const page = ({ isOpenaccdoc, onCloseaccdoc, userData }) => {
                 >
                   <input
                     type="email"
-                    placeholder="EMAIL"
+                    placeholder="EMAIL *"
                     className="w-full text-black py-2 px-4 rounded-sm text-base outline-none"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}

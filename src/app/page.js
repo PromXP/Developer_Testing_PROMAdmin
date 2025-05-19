@@ -72,12 +72,21 @@ export default function Home() {
 
         router.push("/Landing");
       } catch (error) {
-        alert("Login failed. Please check your credentials.");
+        showWarning("Login failed. Please check your credentials.");
+        // alert("Login failed. Please check your credentials.");
       } finally {
         setLoading(false);
       }
     }
   };
+
+   const [showAlert, setShowAlert] = useState(false);
+    const [alertMessage, setAlertMessage] = useState("");
+    const showWarning = (message) => {
+      setAlertMessage(message);
+      setShowAlert(true);
+      setTimeout(() => setShowAlert(false), 4000);
+    };
 
   const [showForgotModal, setShowForgotModal] = useState(false);
   const [resetUhid, setResetUhid] = useState("");
@@ -85,7 +94,8 @@ export default function Home() {
 
   const handleResetPassword = async () => {
     if (!resetUhid || !resetEmail) {
-      alert("Please enter both UHID and Email.");
+      showWarning("Please enter both UHID and Email.");
+      // alert("Please enter both UHID and Email.");
       return;
     }
 
@@ -96,14 +106,18 @@ export default function Home() {
         )}&email=${encodeURIComponent(resetEmail)}`
       );
 
-      alert("Password reset link sent to your email!");
+      showWarning("Password reset link sent to your email!");
+      // alert("Password reset link sent to your email!");
       setShowForgotModal(false);
       setResetUhid("");
       setResetEmail("");
     } catch (err) {
+      showWarning("User Not found with the provided credentials");
       console.error("Reset password error:", err);
     }
   };
+
+  
 
   return (
     <>
@@ -245,6 +259,13 @@ export default function Home() {
               </div>
             </div>
           )}
+          {showAlert && (
+                <div className="fixed top-8 left-1/2 transform -translate-x-1/2 z-50">
+                  <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-6 py-3 rounded-lg shadow-lg animate-fade-in-out">
+                    {alertMessage}
+                  </div>
+                </div>
+              )}
         </>
       )}
 
@@ -394,6 +415,13 @@ export default function Home() {
               </div>
             </div>
           )}
+          {showAlert && (
+                <div className="fixed top-8 left-1/2 transform -translate-x-1/2 z-50">
+                  <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-6 py-3 rounded-lg shadow-lg animate-fade-in-out">
+                    {alertMessage}
+                  </div>
+                </div>
+              )}
         </>
       )}
     </>

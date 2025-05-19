@@ -98,6 +98,8 @@ const page = () => {
 
   const [doctorListreport, setDoctorListreport] = useState([]); // if needed
 
+ 
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       sessionStorage.setItem("selectedTab", selected);
@@ -151,8 +153,8 @@ const page = () => {
       case 3:
         return (
           <PatientCompliance
-          isOpencomp={isCompopen}
-          patient11={selectedPatient}
+            isOpencomp={isCompopen}
+            patient11={selectedPatient}
           />
         );
       default:

@@ -122,16 +122,26 @@ const page = ({ isOpenrem, onCloserem, patient, selectedLeg }) => {
       console.log("Email API response:", data);
 
       if (res.ok) {
-        alert("Email sent (check console for details)");
+        // alert("Email sent (check console for details)");
+        showWarning("Email sent (check console for details)");
         sendwhatsapp();
         // sendRealTimeMessage();
       } else {
-        alert("Failed to send email. Check logs.");
+        showWarning("Failed to send email. Check logs.");
       }
     } catch (error) {
       console.error("Error sending email:", error);
-      alert("Failed to send email.");
+      showWarning("Failed to send email.");
     }
+  };
+
+  const [alertMessage, setAlertMessage] = useState("");
+  const [showAlert1, setShowAlert1] = useState(false);
+
+  const showWarning = (message) => {
+    setAlertMessage(message);
+    setShowAlert1(true);
+    setTimeout(() => setShowAlert1(false), 4000);
   };
 
   const socket = useWebSocket();

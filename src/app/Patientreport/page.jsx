@@ -379,7 +379,8 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
         const resultLeft = await responseLeft.json();
 
         if (!responseLeft.ok) {
-          console.error("Left API Error:", resultLeft);
+          // console.error("Left API Error:", resultLeft);
+          qsetIsSubmitting(false);
           setWarning("Something went wrong with Left leg. Please try again.");
           return;
         }
@@ -389,6 +390,8 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
           resultLeft.message === "No changes made"
         ) {
           setWarning(resultLeft.message);
+          qsetIsSubmitting(false);
+
           return;
         }
 
@@ -418,8 +421,10 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
         const resultRight = await responseRight.json();
 
         if (!responseRight.ok) {
-          console.error("Right API Error:", resultRight);
+          // console.error("Right API Error:", resultRight);
           setWarning("Something went wrong with Right leg. Please try again.");
+          qsetIsSubmitting(false);
+
           return;
         }
 
@@ -428,6 +433,8 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
           resultRight.message === "No changes made"
         ) {
           setWarning(resultRight.message);
+          qsetIsSubmitting(false);
+
           return;
         }
 
@@ -444,6 +451,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
     } catch (err) {
       console.error("Network error:", err);
       setWarning("Network error. Please try again.");
+      qsetIsSubmitting(false);
     }
   };
 
@@ -451,7 +459,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
 
   const handleSendremainder = async () => {
     if (!patient?.email) {
-      alert("Patient email is missing.");
+      setWarning("Patient email is missing.");
       return;
     }
 
@@ -479,18 +487,23 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
       // console.log("Email send response:", data);
 
       if (!res.ok) {
-        alert("Failed to send email.");
+        setWarning("Failed to send email.");
+        // alert("Failed to send email.");
+        qsetIsSubmitting(false);
+
         return;
       }
 
-      alert("✅ Email sent (check console for details)");
+      // alert("✅ Email sent (check console for details)");
+      setWarning("✅ Email sent Successfull");
       // sendRealTimeMessage();
       sendwhatsapp();
     } catch (error) {
       console.error("❌ Error sending email:", error);
       alert("Failed to send email.");
     } finally {
-      qsetIsSubmitting(true);
+      qsetIsSubmitting(false);
+      window.location.reload();
     }
   };
 
@@ -518,26 +531,27 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
   };
 
   const sendwhatsapp = async () => {
-      const res = await fetch(API_URL + "send-whatsapp/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          message:
-            "Hey User,\nHope Your doing well !\nQuestionnaire has been assigned :\nhttps://promwebformslower.onrender.com/\nThank you with love,\nXolabsHealth",
-          phone_number: "+91" + patient?.phone_number,
-        }),
-      });
-  
-      let data;
-      const text = await res.text();
-      try {
-        data = JSON.parse(text);
-      } catch {
-        data = { error: "Invalid JSON response", raw: text };
-      }
-    };
+    const res = await fetch(API_URL + "send-whatsapp/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        message:
+          "Hey User,\nHope Your doing well !\nQuestionnaire has been assigned :\nhttps://promwebformslower.onrender.com/\nThank you with love,\nXolabsHealth",
+        phone_number: "+91" + patient?.phone_number,
+      }),
+    });
+
+    let data;
+    const text = await res.text();
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = { error: "Invalid JSON response", raw: text };
+    }
+    qsetIsSubmitting(false);
+  };
 
   const [userData, setUserData] = useState(null);
 
@@ -610,14 +624,14 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
       window.location.reload();
 
       // Show an alert box indicating that the UI will update soon
-      alert("Doctor assigned. The changes will reflect soon.");
+      setWarning("Doctor assigned. The changes will reflect soon.");
 
       // Optionally refresh the data or trigger a UI update
     } catch (error) {
-      console.error("Error assigning doctor:", error);
-      alert("Error assigning doctor, please try again.");
+      // console.error("Error assigning doctor:", error);
+      setWarning("Error assigning doctor, please try again.");
     } finally {
-      isSubmitting(true);
+      isSubmitting(false);
     }
   };
 
@@ -761,7 +775,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
         ssetIsSubmitting(true);
       }
 
-       window.location.reload();
+      window.location.reload();
     }
   };
 
@@ -1014,6 +1028,24 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
 
     // Close popup after action
     setPopupOpen(false);
+  };
+
+  const getCompletionPercentage = (leg) => {
+    const data =
+      leg === "left"
+        ? patient1?.questionnaire_assigned_left
+        : patient1?.questionnaire_assigned_right;
+    if (!data || data.length === 0) return 0;
+
+    const total = data.length;
+    const completed = data.filter((q) => q.completed === 1).length;
+    return Math.round((completed / total) * 100);
+  };
+
+  const getComplianceColor = (percentage) => {
+    if (percentage >= 80) return "text-green-600";
+    if (percentage >= 50) return "text-yellow-500";
+    return "text-red-500";
   };
 
   if (!isOpen) return null;
@@ -1719,12 +1751,23 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                   width < 970 ? "w-full" : "w-full"
                 }`}
               >
-                <div className="w-full flex flex-row justify-between">
-                  <p className="w-full font-bold text-[#005585] tracking-[6px]">
+                <div
+                  className={`w-full flex justify-between items-center ${width < 950 ? " flex-col gap-4" : " flex-row"}`}
+                >
+                  <p
+                    className={`font-bold text-[#005585] tracking-[6px] ${width < 950 ? "w-full text-center" : "w-1/3 "}`}
+                  >
                     PATIENT REPORTED OUTCOMES
                   </p>
+                  <p
+                    className={`text-center text-lg font-semibold ${getComplianceColor(
+                      getCompletionPercentage(selectedLeg)
+                    )} ${width < 950 ? "w-full" : "w-1/3 "}`}
+                  >
+                    COMPLIANCE: {getCompletionPercentage(selectedLeg)}%
+                  </p>
 
-                  <div className="flex justify-end gap-2 mb-4">
+                  <div className={`flex  gap-2 items-center ${width < 950 ? "w-full justify-center" : "w-1/3 justify-end"}`}>
                     <button
                       onClick={() => setSelectedLeg("left")}
                       disabled={!leftlegdata || leftlegdata.length === 0}
