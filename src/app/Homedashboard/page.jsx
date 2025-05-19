@@ -13,6 +13,11 @@ import Image from "next/image";
 import { Poppins } from "next/font/google";
 
 import ProfileImage from "@/app/assets/profile.png";
+import Manavatar from "@/app/assets/man.png";
+import Womanavatar from "@/app/assets/woman.png";
+import Mandocavatar from "@/app/assets/maledoc.png";
+import Womandocavatar from "@/app/assets/femaledoc.png";
+
 import { UserIcon } from "@heroicons/react/24/outline";
 import {
   ChevronRightIcon,
@@ -1155,7 +1160,7 @@ const page = ({
                                   ? "w-11 h-11 flex justify-center items-center"
                                   : "w-10 h-10"
                               }`}
-                              src={Patientimg}
+                              src={patient.gender === "male"?Manavatar:Womanavatar}
                               alt={patient.uhid}
                             />
 
@@ -1365,7 +1370,7 @@ const page = ({
                                     ? "w-11 h-11 flex justify-center items-center"
                                     : "w-10 h-10"
                                 }`}
-                                src={Patientimg}
+                                src={doc.gender === "male"?Mandocavatar:Womandocavatar}
                                 alt={doc.uhid}
                               />
 
