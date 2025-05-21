@@ -27,6 +27,10 @@ import Patacc from "@/app/assets/patacc.png";
 import Docacc from "@/app/assets/docacc.png";
 import Ascending from "@/app/assets/ascending.png";
 import Descending from "@/app/assets/descending.png";
+import Manavatar from "@/app/assets/man.png";
+import Womanavatar from "@/app/assets/woman.png";
+import Adminprofile from "@/app/assets/admin.png";
+
 
 import "@/app/globals.css";
 
@@ -666,9 +670,9 @@ const page = ({
 
   return (
     <>
-      <div className="flex flex-col md:flex-row w-[95%] mx-auto mt-4 items-center justify-between">
+      <div className="flex flex-col lg:flex-row w-[95%] gap-4 mx-auto mt-4 items-center justify-between">
         {/* Greeting Section */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 w-full">
+        <div className="flex flex-col lg:flex-row md:items-center md:justify-between gap-4 w-full">
           {/* Welcome Section */}
           <div className="flex flex-col md:flex-row items-center md:items-end gap-1 md:gap-4">
             <h4 className="font-medium text-black text-xl md:text-[26px]">Welcome</h4>
@@ -706,7 +710,7 @@ const page = ({
         {/* Right Side: Icons + Profile */}
         <div className="flex items-center mt-3 md:mt-0 gap-3 md:gap-6">
           {/* Notification Bell Icon */}
-          <button className="focus:outline-none w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center">
+          <button className="hidden focus:outline-none w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center">
             <svg
               width="27"
               height="27"
@@ -723,7 +727,7 @@ const page = ({
           </button>
 
           {/* Message Icon */}
-          <button className="focus:outline-none w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center">
+          <button className="hidden focus:outline-none w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center">
             <svg
               width="26"
               height="27"
@@ -744,7 +748,7 @@ const page = ({
           <div className="h-12 w-36 md:w-40 bg-white border-[#D9D9D9] border-[1.5px] rounded-2xl px-3">
             <div className="h-full flex flex-row gap-3 items-center justify-center">
               <Image
-                src={ProfileImage}
+                src={Adminprofile}
                 alt="Profile"
                 className="w-8 h-8 rounded-full object-cover"
               />
@@ -1069,7 +1073,7 @@ const page = ({
                                 ? "w-11 h-11 flex justify-center items-center"
                                 : "w-10 h-10"
                                 }`}
-                              src={Patientimg}
+                              src={patient.gender === "male"?Manavatar:Womanavatar}
                               alt={patient.uhid}
                             />
 

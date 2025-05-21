@@ -29,11 +29,17 @@ import Patacc from "@/app/assets/patacc.png";
 import Docacc from "@/app/assets/docacc.png";
 import Ascending from "@/app/assets/ascending.png";
 import Descending from "@/app/assets/descending.png";
+import Adminprofile from "@/app/assets/admin.png";
+import Manavatar from "@/app/assets/man.png";
+import Womanavatar from "@/app/assets/woman.png";
+
 
 import "@/app/globals.css";
 
 import Patientremainder from "@/app/Patientremainder/page";
 import { setId } from "@material-tailwind/react/components/Tabs/TabsContext";
+
+
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -481,9 +487,9 @@ const page = ({ isOpencomp, patient11 }) => {
 
   return (
     <>
-      <div className="flex flex-col md:flex-row w-[95%] mx-auto mt-4 items-center justify-between">
+      <div className="flex flex-col lg:flex-row w-[95%] gap-4 mx-auto mt-4 items-center justify-between">
         {/* Greeting Section */}
-        <div className="flex flex-col md:flex-row items-center md:items-end gap-1 md:gap-4">
+        <div className="flex flex-col lg:flex-row items-center md:items-end gap-1 md:gap-4">
           <h4 className="font-medium text-black text-xl md:text-[26px]">
             Welcome
           </h4>
@@ -497,7 +503,7 @@ const page = ({ isOpencomp, patient11 }) => {
         {/* Right Side: Icons + Profile */}
         <div className="flex items-center mt-3 md:mt-0 gap-3 md:gap-6">
           {/* Notification Bell Icon */}
-          <button className="focus:outline-none w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center">
+          <button className="hidden focus:outline-none w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center">
             <svg
               width="27"
               height="27"
@@ -514,7 +520,7 @@ const page = ({ isOpencomp, patient11 }) => {
           </button>
 
           {/* Message Icon */}
-          <button className="focus:outline-none w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center">
+          <button className="hidden focus:outline-none w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center">
             <svg
               width="26"
               height="27"
@@ -535,7 +541,7 @@ const page = ({ isOpencomp, patient11 }) => {
           <div className="h-12 w-36 md:w-40 bg-white border-[#D9D9D9] border-[1.5px] rounded-2xl px-3">
             <div className="h-full flex flex-row gap-3 items-center justify-center">
               <Image
-                src={ProfileImage}
+                src={Adminprofile}
                 alt="Profile"
                 className="w-8 h-8 rounded-full object-cover"
               />

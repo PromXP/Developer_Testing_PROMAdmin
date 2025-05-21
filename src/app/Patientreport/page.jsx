@@ -29,6 +29,8 @@ import Search from "@/app/assets/search.png";
 import Calendar from "@/app/assets/calendar.png";
 import Bigcalendar from "@/app/assets/bigcalender.png";
 import Clock from "@/app/assets/clock.png";
+import Manavatar from "@/app/assets/man.png";
+import Womanavatar from "@/app/assets/woman.png";
 
 import "@/app/globals.css";
 
@@ -1102,7 +1104,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                     >
                       <Image
                         className={`rounded-full w-14 h-14`}
-                        src={Patientimg}
+                        src={patient.gender === "male"?Manavatar:Womanavatar}
                         alt="alex hales"
                       />
 
