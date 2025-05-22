@@ -106,7 +106,7 @@ const page = ({ isOpenacc, onCloseacc, userData }) => {
 
       if (selected >= today) {
         console.warn("Invalid birth date selected.");
-        alert("Birth date cannot be today or a future date.");
+        showWarning("Birth date cannot be today or a future date.");
         setSelectedDate(null);
         return;
       }
@@ -156,7 +156,7 @@ const page = ({ isOpenacc, onCloseacc, userData }) => {
         month > 12 ||
         year >= currentYear
       ) {
-        alert("Please enter a valid date of birth.");
+        showWarning("Please enter a valid date of birth.");
         setSelectedDate("");
         return;
       }
@@ -168,7 +168,7 @@ const page = ({ isOpenacc, onCloseacc, userData }) => {
         manualDate.getMonth() + 1 !== month ||
         manualDate.getFullYear() !== year
       ) {
-        alert("Invalid date combination. Please enter a correct date.");
+        showWarning("Invalid date combination. Please enter a correct date.");
         setSelectedDate("");
         return;
       }
@@ -178,7 +178,7 @@ const page = ({ isOpenacc, onCloseacc, userData }) => {
       manualDate.setHours(0, 0, 0, 0);
 
       if (manualDate >= today) {
-        alert("Birth date cannot be today or a future date.");
+        showWarning("Birth date cannot be today or a future date.");
         setSelectedDate("");
         return;
       }
@@ -554,7 +554,7 @@ const page = ({ isOpenacc, onCloseacc, userData }) => {
                     }}
                   />
 
-                  <div
+                  {/* <div
                     className="relative cursor-pointer"
                     onClick={openDatePicker}
                   >
@@ -569,7 +569,7 @@ const page = ({ isOpenacc, onCloseacc, userData }) => {
                       className="w-7 h-5 "
                       alt="date of birth"
                     />
-                  </div>
+                  </div> */}
                 </div>
               </div>
 

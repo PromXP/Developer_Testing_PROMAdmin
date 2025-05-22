@@ -961,7 +961,13 @@ const page = ({
                       : "items-end"
                 }`}
               >
-                <div className="w-full flex flex-row justify-between items-center gap-4">
+                <div className={`w-full flex  justify-between items-center gap-4 ${
+                  width < 650 && width >= 530
+                    ? "flex-col"
+                    : width < 530
+                      ? "flex-col"
+                      : "flex-row"
+                }`}>
                   <div className="flex justify-end gap-2">
                     <button
                       onClick={() => {
@@ -1107,7 +1113,9 @@ const page = ({
                             return 3; // COMPLETED
                           return 2; // PENDING
                         } else {
-                          if (patient.questionnaire_assigned_right?.length === 0)
+                          if (
+                            patient.questionnaire_assigned_right?.length === 0
+                          )
                             return 1; // NOT ASSIGNED
                           if (
                             patient.questionnaire_assigned_right?.every(
@@ -1161,7 +1169,11 @@ const page = ({
                                   ? "w-11 h-11 flex justify-center items-center"
                                   : "w-10 h-10"
                               }`}
-                              src={patient.gender === "male"?Manavatar:Womanavatar}
+                              src={
+                                patient.gender === "male"
+                                  ? Manavatar
+                                  : Womanavatar
+                              }
                               alt={patient.uhid}
                             />
 
@@ -1371,7 +1383,11 @@ const page = ({
                                     ? "w-11 h-11 flex justify-center items-center"
                                     : "w-10 h-10"
                                 }`}
-                                src={doc.gender === "male"?Mandocavatar:Womandocavatar}
+                                src={
+                                  doc.gender === "male"
+                                    ? Mandocavatar
+                                    : Womandocavatar
+                                }
                                 alt={doc.uhid}
                               />
 
@@ -1544,79 +1560,80 @@ const page = ({
                       );
                     })}
               </div>
-
-              {totalPages > 1 && selectedBox === "patients" && (
-                <div className="flex justify-center items-center gap-2 my-2">
-                  <button
-                    onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-                    disabled={currentPage === 1}
-                    className="px-3 py-1 text-black disabled:opacity-50 cursor-pointer"
-                  >
-                    Prev
-                  </button>
-
-                  {Array.from({ length: totalPages }).map((_, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setCurrentPage(i + 1)}
-                      className={`px-3 py-1 border rounded cursor-pointer ${
-                        currentPage === i + 1
-                          ? "bg-blue-500 text-white"
-                          : "bg-white text-blue-500"
-                      }`}
-                    >
-                      {i + 1}
-                    </button>
-                  ))}
-
-                  <button
-                    onClick={() =>
-                      setCurrentPage((p) => Math.min(p + 1, totalPages))
-                    }
-                    disabled={currentPage === totalPages}
-                    className="px-3 py-1 text-black disabled:opacity-50 cursor-pointer"
-                  >
-                    Next
-                  </button>
-                </div>
-              )}
-
-              {totalDoctorPages > 1 && selectedBox === "doctors" && (
-                <div className="flex justify-center items-center gap-2 my-2">
-                  <button
-                    onClick={() => setDoctorPage((p) => Math.max(p - 1, 1))}
-                    disabled={doctorPage === 1}
-                    className="px-3 py-1 text-black disabled:opacity-50 cursor-pointer"
-                  >
-                    Prev
-                  </button>
-
-                  {Array.from({ length: totalDoctorPages }).map((_, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setDoctorPage(i + 1)}
-                      className={`px-3 py-1 border rounded cursor-pointer ${
-                        doctorPage === i + 1
-                          ? "bg-blue-500 text-white"
-                          : "bg-white text-blue-500"
-                      }`}
-                    >
-                      {i + 1}
-                    </button>
-                  ))}
-
-                  <button
-                    onClick={() =>
-                      setDoctorPage((p) => Math.min(p + 1, totalDoctorPages))
-                    }
-                    disabled={doctorPage === totalDoctorPages}
-                    className="px-3 py-1 text-black disabled:opacity-50 cursor-pointer"
-                  >
-                    Next
-                  </button>
-                </div>
-              )}
             </div>
+          </div>
+          <div className=" py-2">
+            {totalPages > 1 && selectedBox === "patients" && (
+              <div className="flex justify-center items-center gap-2">
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1 text-black disabled:opacity-50 cursor-pointer"
+                >
+                  Prev
+                </button>
+
+                {Array.from({ length: totalPages }).map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setCurrentPage(i + 1)}
+                    className={`px-3 py-1 border rounded cursor-pointer ${
+                      currentPage === i + 1
+                        ? "bg-blue-500 text-white"
+                        : "bg-white text-blue-500"
+                    }`}
+                  >
+                    {i + 1}
+                  </button>
+                ))}
+
+                <button
+                  onClick={() =>
+                    setCurrentPage((p) => Math.min(p + 1, totalPages))
+                  }
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1 text-black disabled:opacity-50 cursor-pointer"
+                >
+                  Next
+                </button>
+              </div>
+            )}
+
+            {totalDoctorPages > 1 && selectedBox === "doctors" && (
+              <div className="flex justify-center items-center gap-2 my-2">
+                <button
+                  onClick={() => setDoctorPage((p) => Math.max(p - 1, 1))}
+                  disabled={doctorPage === 1}
+                  className="px-3 py-1 text-black disabled:opacity-50 cursor-pointer"
+                >
+                  Prev
+                </button>
+
+                {Array.from({ length: totalDoctorPages }).map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setDoctorPage(i + 1)}
+                    className={`px-3 py-1 border rounded cursor-pointer ${
+                      doctorPage === i + 1
+                        ? "bg-blue-500 text-white"
+                        : "bg-white text-blue-500"
+                    }`}
+                  >
+                    {i + 1}
+                  </button>
+                ))}
+
+                <button
+                  onClick={() =>
+                    setDoctorPage((p) => Math.min(p + 1, totalDoctorPages))
+                  }
+                  disabled={doctorPage === totalDoctorPages}
+                  className="px-3 py-1 text-black disabled:opacity-50 cursor-pointer"
+                >
+                  Next
+                </button>
+              </div>
+            )}
           </div>
         </div>
 

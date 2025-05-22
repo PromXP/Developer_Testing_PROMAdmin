@@ -107,7 +107,8 @@ const page = ({ isOpenrem, onCloserem, patient, selectedLeg }) => {
         body: JSON.stringify({
           email: patient.email,
           subject: "Questionnaire Pending Reminder",
-          message,
+         message: message + "<br>Thank you with love,<br>XolabsHealth",
+
         }),
       });
 
@@ -123,7 +124,7 @@ const page = ({ isOpenrem, onCloserem, patient, selectedLeg }) => {
 
       if (res.ok) {
         // alert("Email sent (check console for details)");
-        showWarning("Email sent (check console for details)");
+        // showWarning("Email sent Successfully");
         sendwhatsapp();
         // sendRealTimeMessage();
       } else {
@@ -174,7 +175,6 @@ const page = ({ isOpenrem, onCloserem, patient, selectedLeg }) => {
         message:
           "Hey User\nHope Your doing well !\n" +
           message +
-          "\nhttps://promwebformslower.onrender.com/ " +
           "\nThank you with love,\nXolabsHealth ",
         phone_number: "+91" + patient.phone_number,
       }),
@@ -187,6 +187,9 @@ const page = ({ isOpenrem, onCloserem, patient, selectedLeg }) => {
     } catch {
       data = { error: "Invalid JSON response", raw: text };
     }
+
+    showWarning("Reminder Sent Successfully");
+    window.location.reload();
   };
 
   if (!isOpenrem) return null;

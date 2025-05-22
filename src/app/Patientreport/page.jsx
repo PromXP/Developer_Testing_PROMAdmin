@@ -198,7 +198,11 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
 
   const handleClearAll = () => {
     setSelectedItems([]);
-    setSelectedDate("");
+    setSelectedDate(() => {
+      const today = new Date();
+      today.setDate(today.getDate() + 3);
+      return today.toISOString().split("T")[0];
+    });
     setSelectedOptiondrop("Period"); // or whatever the default option is
   };
 
@@ -333,7 +337,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
     now.setHours(0, 0, 0, 0);
 
     if (selected < now) {
-      setWarning("Deadline cannot be a past date.");
+      showWarning("Deadline cannot be a past date.");
       setTimeout(() => {
         setWarning(""); // Clear warning after 2.5 seconds
       }, 2500);
@@ -341,12 +345,12 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
     }
 
     if (!getNextPeriod() || getNextPeriod() === "Period") {
-      setWarning("Please select a Time Period");
+      showWarning("Please select a Time Period");
       return;
     }
 
     if (selectedItems.length === 0) {
-      setWarning("Please select at least one questionnaire.");
+      showWarning("Please select at least one questionnaire.");
       return;
     }
 
@@ -383,7 +387,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
         if (!responseLeft.ok) {
           // console.error("Left API Error:", resultLeft);
           qsetIsSubmitting(false);
-          setWarning("Something went wrong with Left leg. Please try again.");
+          showWarning("Something went wrong with Left leg. Please try again.");
           return;
         }
 
@@ -391,7 +395,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
           resultLeft.message === "No new questionnaire(s) to add" ||
           resultLeft.message === "No changes made"
         ) {
-          setWarning(resultLeft.message);
+          showWarning(resultLeft.message);
           qsetIsSubmitting(false);
 
           return;
@@ -424,7 +428,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
 
         if (!responseRight.ok) {
           // console.error("Right API Error:", resultRight);
-          setWarning("Something went wrong with Right leg. Please try again.");
+          showWarning("Something went wrong with Right leg. Please try again.");
           qsetIsSubmitting(false);
 
           return;
@@ -434,7 +438,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
           resultRight.message === "No new questionnaire(s) to add" ||
           resultRight.message === "No changes made"
         ) {
-          setWarning(resultRight.message);
+          showWarning(resultRight.message);
           qsetIsSubmitting(false);
 
           return;
@@ -448,11 +452,11 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
       setSelectedItems([]);
       setSelectedOptiondrop("Period");
       setSelectedDate("");
-      setWarning("Questionnaires successfully assigned!");
+      showWarning("Questionnaires successfully assigned!");
       setTimeout(() => setWarning(""), 3000);
     } catch (err) {
       console.error("Network error:", err);
-      setWarning("Network error. Please try again.");
+      showWarning("Network error. Please try again.");
       qsetIsSubmitting(false);
     }
   };
@@ -461,7 +465,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
 
   const handleSendremainder = async () => {
     if (!patient?.email) {
-      setWarning("Patient email is missing.");
+      showWarning("Patient email is missing.");
       return;
     }
 
@@ -489,7 +493,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
       // console.log("Email send response:", data);
 
       if (!res.ok) {
-        setWarning("Failed to send email.");
+        showWarning("Failed to send email.");
         // alert("Failed to send email.");
         qsetIsSubmitting(false);
 
@@ -497,12 +501,12 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
       }
 
       // alert("✅ Email sent (check console for details)");
-      setWarning("✅ Email sent Successfull");
+      showWarning("✅ Email sent Successfull");
       // sendRealTimeMessage();
       sendwhatsapp();
     } catch (error) {
       console.error("❌ Error sending email:", error);
-      alert("Failed to send email.");
+      showWarning("Failed to send email.");
     } finally {
       qsetIsSubmitting(false);
       window.location.reload();
@@ -569,6 +573,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
   const [searchTermdoc, setSearchTermdoc] = useState("");
   const [selectedDoctor, setSelectedDoctor] = useState("");
   const [showAlert, setShowAlert] = useState(false);
+  const [alertMessage, setAlertMessage] = useState("");
 
   const handleCheckboxChangedoc = (item) => {
     setSelectedDoctor(item);
@@ -576,6 +581,12 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
 
   const handleClearAlldoc = () => {
     setSelectedDoctor("");
+  };
+
+  const showWarning = (message) => {
+    setAlertMessage(message);
+    setShowAlert(true);
+    setTimeout(() => setShowAlert(false), 4000);
   };
 
   const handleAssigndoc = async () => {
@@ -626,12 +637,12 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
       window.location.reload();
 
       // Show an alert box indicating that the UI will update soon
-      setWarning("Doctor assigned. The changes will reflect soon.");
+      showWarning("Doctor assigned. The changes will reflect soon.");
 
       // Optionally refresh the data or trigger a UI update
     } catch (error) {
       // console.error("Error assigning doctor:", error);
-      setWarning("Error assigning doctor, please try again.");
+      showWarning("Error assigning doctor, please try again.");
     } finally {
       isSubmitting(false);
     }
@@ -665,7 +676,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
     selected.setHours(0, 0, 0, 0);
 
     if (selected < today) {
-      alert("Please select a valid future or current date.");
+      showWarning("Please select a valid future or current date.");
       return;
     }
 
@@ -688,7 +699,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
     }
 
     if (!selectedDatesurgery || !selectedTime) {
-      setWarning("Please select both date and time.");
+      showWarning("Please select both date and time.");
       return;
     }
 
@@ -696,7 +707,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
     const now = new Date();
 
     if (selectedDateTime < now) {
-      setWarning("Selected date and time cannot be in the past.");
+      showWarning("Selected date and time cannot be in the past.");
       return;
     }
 
@@ -731,7 +742,8 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
 
         const result = await response.json();
         // console.log("Surgery scheduled successfully:", result);
-        // window.location.reload();
+        showWarning("Surgery scheduled successfully");
+        window.location.reload();
         // Optionally reset form or show success feedback
       } catch (error) {
         console.error("Error scheduling surgery:", error);
@@ -798,59 +810,117 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
   let leftlegdata = [];
   let rightlegdata = [];
 
-  if (patient?.questionnaire_scores_left) {
+  if (
+    patient?.questionnaire_scores_left ||
+    patient?.questionnaire_assigned_left
+  ) {
     const scoreMap = {};
 
-    patient?.questionnaire_scores_left.forEach((scoreEntry) => {
-      const scoreName = scoreEntry.name;
-      const period = periodMap[scoreEntry.period] || scoreEntry.period; // normalizing periods
-      const score = scoreEntry.score[0]; // score is an array, taking first element
+    // STEP 1: Add scores
+    patient?.questionnaire_scores_left?.forEach((entry) => {
+      const name = entry.name;
+      const period = periodMap[entry.period] || entry.period;
+      const score = entry.score[0];
+      const others = entry.others || [];
 
-      if (!scoreMap[scoreName]) {
-        scoreMap[scoreName] = {};
-      }
-
-      scoreMap[scoreName][period] = score;
+      if (!scoreMap[name]) scoreMap[name] = {};
+      scoreMap[name][period] = { score, others };
     });
-    console.log("Left Leg data", scoreMap);
 
+    // STEP 2: Add assigned if not already scored
+    patient?.questionnaire_assigned_left?.forEach((entry) => {
+      const name = entry.name;
+      const period = periodMap[entry.period] || entry.period;
+      const isCompleted = entry.completed === 1;
+
+      if (!scoreMap[name]) scoreMap[name] = {};
+      if (scoreMap[name][period] === undefined) {
+        scoreMap[name][period] = {
+          score: isCompleted ? "" : "N/A",
+          others: [],
+        };
+      }
+    });
+
+    // STEP 3: Format data
     leftlegdata = Object.entries(scoreMap).map(([name, valuesObj]) => {
       const values = columns.slice(1).map((period) => {
         const key = period === "Pre Op" ? "Preop" : period;
-        return valuesObj[key] ?? "";
+        const entry = valuesObj[key];
+        return entry?.score ?? "";
       });
-      return { label: name, values };
+
+      const othersMap = {};
+      columns.slice(1).forEach((period) => {
+        const key = period === "Pre Op" ? "Preop" : period;
+        const entry = valuesObj[key];
+        if (entry?.others?.length) {
+          othersMap[key] = entry.others;
+        }
+      });
+
+      return { label: name, values, others: othersMap };
     });
 
-    // console.log("Left Leg data", leftlegdata);
+    console.log("Left Leg Combined Data", leftlegdata);
   }
 
-  if (patient?.questionnaire_scores_right) {
+  if (
+    patient?.questionnaire_scores_right ||
+    patient?.questionnaire_assigned_right
+  ) {
     const scoreMap = {};
 
-    patient?.questionnaire_scores_right.forEach((scoreEntry) => {
-      const scoreName = scoreEntry.name;
-      const period = periodMap[scoreEntry.period] || scoreEntry.period;
-      const score = scoreEntry.score[0];
+    // STEP 1: Map scores with others
+    patient?.questionnaire_scores_right?.forEach((entry) => {
+      const name = entry.name;
+      const period = periodMap[entry.period] || entry.period;
+      const score = entry.score[0];
+      const others = entry.others || [];
 
-      if (!scoreMap[scoreName]) {
-        scoreMap[scoreName] = {};
-      }
-
-      scoreMap[scoreName][period] = score;
+      if (!scoreMap[name]) scoreMap[name] = {};
+      scoreMap[name][period] = { score, others };
     });
 
+    // STEP 2: Map assigned but not completed
+    patient?.questionnaire_assigned_right?.forEach((entry) => {
+      const name = entry.name;
+      const period = periodMap[entry.period] || entry.period;
+      const isCompleted = entry.completed === 1;
+
+      if (!scoreMap[name]) scoreMap[name] = {};
+      if (scoreMap[name][period] === undefined) {
+        scoreMap[name][period] = {
+          score: isCompleted ? "" : "N/A",
+          others: [],
+        };
+      }
+    });
+
+    // STEP 3: Format for table rows
     rightlegdata = Object.entries(scoreMap).map(([name, valuesObj]) => {
       const values = columns.slice(1).map((period) => {
         const key = period === "Pre Op" ? "Preop" : period;
-        return valuesObj[key] ?? "";
+        const entry = valuesObj[key];
+        return entry?.score ?? "";
       });
-      return { label: name, values };
+
+      const othersMap = {};
+      columns.slice(1).forEach((period) => {
+        const key = period === "Pre Op" ? "Preop" : period;
+        const entry = valuesObj[key];
+        if (entry?.others?.length) {
+          othersMap[key] = entry.others;
+        }
+      });
+
+      return { label: name, values, others: othersMap };
     });
+
+    console.log("Right Leg Combined Data", rightlegdata);
   }
 
   const getColor = (val, minVal = 0, maxVal = 100) => {
-    if (val === "") return "#B0C4C7"; // Default light gray-blue
     const number = parseFloat(val);
     if (isNaN(number)) return "#B0C4C7";
 
@@ -859,15 +929,13 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
       1
     );
 
-    // Define color stops with Dark Green at end
     const colorStops = [
-      { stop: 0, color: [255, 0, 0] }, // Red
-      { stop: 0.33, color: [255, 165, 0] }, // Orange
-      { stop: 0.66, color: [255, 255, 0] }, // Yellow
-      { stop: 1, color: [0, 128, 0] }, // Dark Green (NOT light green)
+      { stop: 0, color: [255, 70, 70] }, // Red
+      { stop: 0.33, color: [255, 170, 50] }, // Orange
+      { stop: 0.66, color: [255, 255, 80] }, // Yellow
+      { stop: 1, color: [30, 150, 30] }, // Dark Green
     ];
 
-    // Find which two colors we are between
     let lower = colorStops[0];
     let upper = colorStops[colorStops.length - 1];
 
@@ -882,20 +950,24 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
       }
     }
 
-    const range = upper.stop - lower.stop;
-    const rangeProgress = (normalized - lower.stop) / range;
-
+    const progress = (normalized - lower.stop) / (upper.stop - lower.stop);
     const r = Math.round(
-      lower.color[0] + (upper.color[0] - lower.color[0]) * rangeProgress
+      lower.color[0] + (upper.color[0] - lower.color[0]) * progress
     );
     const g = Math.round(
-      lower.color[1] + (upper.color[1] - lower.color[1]) * rangeProgress
+      lower.color[1] + (upper.color[1] - lower.color[1]) * progress
     );
     const b = Math.round(
-      lower.color[2] + (upper.color[2] - lower.color[2]) * rangeProgress
+      lower.color[2] + (upper.color[2] - lower.color[2]) * progress
     );
 
     return `rgb(${r},${g},${b})`;
+  };
+
+  const getTextColor = (rgbString) => {
+    const [r, g, b] = rgbString.match(/\d+/g).map(Number);
+    const brightness = 0.299 * r + 0.587 * g + 0.114 * b;
+    return brightness > 160 ? "#222" : "#fff";
   };
 
   useEffect(() => {
@@ -967,14 +1039,14 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
         window.location.reload();
 
         // Show an alert box indicating that the UI will update soon
-        alert(
+        showWarning(
           "Left Leg questionnaire Reset successfully. The changes will reflect soon."
         );
 
         // Optionally refresh the data or trigger a UI update
       } catch (error) {
         console.error("Error reseting Left leg questionnaire:", error);
-        alert("Error reseting Left leg questionnaire, please try again.");
+        showWarning("Error reseting Left leg questionnaire, please try again.");
       } finally {
       }
     }
@@ -1013,14 +1085,16 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
         window.location.reload();
 
         // Show an alert box indicating that the UI will update soon
-        alert(
+        showWarning(
           "Right Leg questionnaire Reset successfully. The changes will reflect soon."
         );
 
         // Optionally refresh the data or trigger a UI update
       } catch (error) {
         // console.error("Error reseting Right leg questionnaire:", error);
-        alert("Error reseting Right leg questionnaire, please try again.");
+        showWarning(
+          "Error reseting Right leg questionnaire, please try again."
+        );
       } finally {
       }
     }
@@ -1035,8 +1109,8 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
   const getCompletionPercentage = (leg) => {
     const data =
       leg === "left"
-        ? patient1?.questionnaire_assigned_left
-        : patient1?.questionnaire_assigned_right;
+        ? patient?.questionnaire_assigned_left
+        : patient?.questionnaire_assigned_right;
     if (!data || data.length === 0) return 0;
 
     const total = data.length;
@@ -1049,6 +1123,8 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
     if (percentage >= 50) return "text-yellow-500";
     return "text-red-500";
   };
+
+  const [hoveredNotes, setHoveredNotes] = React.useState(null); // null or array of strings
 
   if (!isOpen) return null;
 
@@ -1104,7 +1180,9 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                     >
                       <Image
                         className={`rounded-full w-14 h-14`}
-                        src={patient.gender === "male"?Manavatar:Womanavatar}
+                        src={
+                          patient.gender === "male" ? Manavatar : Womanavatar
+                        }
                         alt="alex hales"
                       />
 
@@ -1667,7 +1745,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                           style={{ backgroundColor: "rgba(0, 85, 133, 0.9)" }}
                           onClick={() => {
                             if (!patient?.doctor_name) {
-                              alert("Please assign a doctor first");
+                              showWarning("Please assign a doctor first");
                               return;
                             }
                             if (!sisSubmitting) {
@@ -1769,7 +1847,9 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                     COMPLIANCE: {getCompletionPercentage(selectedLeg)}%
                   </p>
 
-                  <div className={`flex  gap-2 items-center ${width < 950 ? "w-full justify-center" : "w-1/3 justify-end"}`}>
+                  <div
+                    className={`flex  gap-2 items-center ${width < 950 ? "w-full justify-center" : "w-1/3 justify-end"}`}
+                  >
                     <button
                       onClick={() => setSelectedLeg("left")}
                       disabled={!leftlegdata || leftlegdata.length === 0}
@@ -1802,12 +1882,20 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
 
                 <div className="w-full overflow-x-auto">
                   <table className="min-w-full table-fixed border-separate border-spacing-y-2">
-                    <thead className="bg-[#D9D9D9] text-[#475467] text-[16px] font-medium text-center">
+                    <thead className=" text-[#475467] text-[16px] font-medium text-center">
+                      <tr>
+                        <th
+                          colSpan={columns.length}
+                          className="text-left text-sm text-black font-semibold pb-2 pr-2"
+                        >
+                          *N/A – Questionnaire Not Answered
+                        </th>
+                      </tr>
                       <tr>
                         {columns.map((col, idx) => (
                           <th
                             key={idx}
-                            className={`px-4 py-3 text-center whitespace-nowrap ${idx === 0 ? "w-3/5" : ""}`}
+                            className={`px-4 py-3 bg-[#D9D9D9] text-center whitespace-nowrap ${idx === 0 ? "w-3/5" : ""}`}
                           >
                             {idx === 0 ? (
                               col
@@ -1840,6 +1928,8 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                             (val) => typeof val === "number" && val < 50
                           );
 
+                          console.log("Score Map left", row.others);
+
                           return (
                             <tr key={idx}>
                               <td
@@ -1847,15 +1937,94 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                               >
                                 {row.label}
                               </td>
-                              {row.values.map((val, vIdx) => (
-                                <td
-                                  key={vIdx}
-                                  className={`px-4 py-3 text-center`}
-                                  style={{ color: getColor(val) }}
-                                >
-                                  {val}
-                                </td>
-                              ))}
+                              {row.values.map((val, vIdx) => {
+                                const isEmpty =
+                                  val === "" ||
+                                  val === null ||
+                                  val === undefined;
+                                const isNA = val === "N/A";
+                                const isNumeric = !isEmpty && !isNA;
+
+                                const bgColor = isNumeric
+                                  ? getColor(val)
+                                  : "transparent";
+                                const textColor = isNumeric
+                                  ? getTextColor(bgColor)
+                                  : "#000";
+
+                                const periodKey =
+                                  columns[vIdx] === "Pre Op"
+                                    ? "Preop"
+                                    : columns[vIdx];
+                                const otherNotes =
+                                  row.others?.[periodKey] || [];
+
+                                console.log("📝 Period:", periodKey);
+                                console.log(
+                                  "📦 Others for cell:",
+                                  otherNotes.length
+                                );
+
+                                return (
+                                  <td
+                                    key={vIdx}
+                                    className=" px-4 py-3 text-center align-middle"
+                                  >
+                                    <div className=" relative group  min-w-[36px] min-h-[36px]">
+                                      {isEmpty ? (
+                                        <span className="text-sm text-black font-medium"></span>
+                                      ) : isNA ? (
+                                        <span className="text-sm text-black font-medium">
+                                          N/A
+                                        </span>
+                                      ) : (
+                                        <div
+                                          className="relative inline-flex cursor-pointer items-center justify-center rounded-full shadow-sm"
+                                          style={{
+                                            backgroundColor: bgColor,
+                                            color: textColor,
+                                            width: "36px",
+                                            height: "36px",
+                                            fontWeight: "600",
+                                            fontSize: "0.875rem",
+                                            margin: "auto",
+                                          }}
+                                          onMouseEnter={() => {
+                                            if (
+                                              otherNotes &&
+                                              otherNotes.length > 0
+                                            )
+                                              setHoveredNotes(otherNotes);
+                                          }}
+                                          onMouseLeave={() =>
+                                            setHoveredNotes(null)
+                                          }
+                                        >
+                                          {val}
+                                        </div>
+                                      )}
+
+                                      {otherNotes && otherNotes.length > 0 && (
+                                        <div
+                                          className="absolute -top-[40px] -left-[70px] transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out
+    text-sm font-semibold text-black pz-2 py-2.5 rounded-lg bg-white whitespace-pre-wrap z-50"
+                                          style={{
+                                            minWidth: "200px",
+                                            boxShadow:
+                                              "0 4px 8px rgba(0, 0, 0, 0.1)",
+                                          }}
+                                        >
+                                          {otherNotes.map((line, i) => (
+                                            <p key={i} className="w-full">
+                                              {line}
+                                            </p>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </td>
+                                );
+                              })}
                             </tr>
                           );
                         })
@@ -2409,7 +2578,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                     style={{ backgroundColor: "rgba(0, 85, 133, 0.9)" }}
                     onClick={() => {
                       if (!patient?.doctor_name) {
-                        alert("Please assign a doctor first");
+                        showWarning("Please assign a doctor first");
                         return;
                       }
                       if (!sisSubmitting) {
@@ -2424,6 +2593,13 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+      {showAlert && (
+        <div className="fixed top-8 left-1/2 transform -translate-x-1/2 z-50">
+          <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-6 py-3 rounded-lg shadow-lg animate-fade-in-out">
+            {alertMessage}
           </div>
         </div>
       )}

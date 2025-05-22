@@ -33,13 +33,10 @@ import Adminprofile from "@/app/assets/admin.png";
 import Manavatar from "@/app/assets/man.png";
 import Womanavatar from "@/app/assets/woman.png";
 
-
 import "@/app/globals.css";
 
 import Patientremainder from "@/app/Patientremainder/page";
 import { setId } from "@material-tailwind/react/components/Tabs/TabsContext";
-
-
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -190,7 +187,6 @@ const page = ({ isOpencomp, patient11 }) => {
   let pendingPatientsCount = 0;
   let notAssignedPatientsCount = 0;
 
-
   const [selectedLeg, setSelectedLeg] = useState("left");
 
   const [sortAsc, setSortAsc] = useState(true);
@@ -293,6 +289,8 @@ const page = ({ isOpencomp, patient11 }) => {
     const deadlineA = new Date(a.deadline);
     const deadlineB = new Date(b.deadline);
 
+    console.log("Deadline Comparison",deadlineA+" / "+deadlineB);
+
     // Sort by deadline in ascending or descending order
     return sortAsc ? deadlineA - deadlineB : deadlineB - deadlineA;
   });
@@ -304,7 +302,6 @@ const page = ({ isOpencomp, patient11 }) => {
       alert("Kindly select the date");
       return;
     }
-
 
     console.log("PatientUHID reschedule", patientUhid);
 
@@ -328,17 +325,17 @@ const page = ({ isOpencomp, patient11 }) => {
       console.log(
         "API URL",
         API_URL +
-        "patients/" +
-        patientUhid +
-        "/update-assigned-and-remove-score-left"
+          "patients/" +
+          patientUhid +
+          "/update-assigned-and-remove-score-left"
       );
 
       try {
         const response = await fetch(
           API_URL +
-          "patients/" +
-          patientUhid +
-          "/update-assigned-and-remove-score-left",
+            "patients/" +
+            patientUhid +
+            "/update-assigned-and-remove-score-left",
           {
             method: "PUT", // or "PUT" depending on your backend
             headers: {
@@ -384,17 +381,17 @@ const page = ({ isOpencomp, patient11 }) => {
       console.log(
         "API URL",
         API_URL +
-        "patients/" +
-        patientUhid +
-        "/update-assigned-and-remove-score-right"
+          "patients/" +
+          patientUhid +
+          "/update-assigned-and-remove-score-right"
       );
 
       try {
         const response = await fetch(
           API_URL +
-          "patients/" +
-          patientUhid +
-          "/update-assigned-and-remove-score-right",
+            "patients/" +
+            patientUhid +
+            "/update-assigned-and-remove-score-right",
           {
             method: "PUT", // or "PUT" depending on your backend
             headers: {
@@ -432,7 +429,6 @@ const page = ({ isOpencomp, patient11 }) => {
 
   useEffect(() => {
     const fetchPatients = async () => {
-
       if (!patient1?.uhid || !patient1?.password) return;
 
       try {
@@ -556,25 +552,28 @@ const page = ({ isOpencomp, patient11 }) => {
       </div>
 
       <div
-        className={` h-[85%] mx-auto flex  mt-5 ${width >= 1000 && width / height > 1
-          ? "w-[95%] flex-row"
-          : "w-full flex-col"
-          }`}
+        className={` h-[85%] mx-auto flex  mt-5 ${
+          width >= 1000 && width / height > 1
+            ? "w-[95%] flex-row"
+            : "w-full flex-col"
+        }`}
       >
         <div
-          className={` h-full rounded-xl pt-4 px-4 ${width >= 1000 && width / height > 1 ? "w-full" : "w-full"
-            }`}
+          className={` h-full rounded-xl pt-4 px-4 ${
+            width >= 1000 && width / height > 1 ? "w-full" : "w-full"
+          }`}
           style={{
             boxShadow: "0 0px 10px rgba(0, 0, 0, 0.15)",
           }}
         >
           <div
-            className={`flex  ${width < 650 && width >= 530
-              ? "flex-col justify-center items-start gap-3"
-              : width < 530
-                ? "flex-col justify-center items-center gap-3"
-                : "flex-row justify-between items-start"
-              }`}
+            className={`flex  ${
+              width < 650 && width >= 530
+                ? "flex-col justify-center items-start gap-3"
+                : width < 530
+                  ? "flex-col justify-center items-center gap-3"
+                  : "flex-row justify-between items-start"
+            }`}
           >
             <div className="flex flex-col justify-between">
               <p className="text-black text-2xl font-poppins font-semibold">
@@ -587,7 +586,6 @@ const page = ({ isOpencomp, patient11 }) => {
                     onClick={() => {
                       setSortAsc((prev) => !prev); // Only toggle sort order
                     }}
-
                   >
                     <Image
                       src={sortAsc ? Ascending : Descending}
@@ -602,30 +600,41 @@ const page = ({ isOpencomp, patient11 }) => {
 
             {selectedBox === "patients" && (
               <div
-                className={`gap-1  cursor-pointer flex flex-col ${width < 650 && width >= 530
-                  ? "items-start"
-                  : width < 530
-                    ? "items-center"
-                    : "items-end"
-                  }`}
+                className={`gap-1  cursor-pointer flex flex-col ${
+                  width < 650 && width >= 530
+                    ? "items-start"
+                    : width < 530
+                      ? "items-center"
+                      : "items-end"
+                }`}
               >
-                <div className="w-full flex flex-row justify-between items-center gap-4">
+                <div
+                  className={`w-full flex  justify-between items-center gap-4 ${
+                    width < 650 && width >= 530
+                      ? "flex-col"
+                      : width < 530
+                        ? "flex-col"
+                        : "flex-row"
+                  }`}
+                >
                   <div className="flex justify-end gap-2">
                     <button
                       onClick={() => setSelectedLeg("left")}
-                      className={`px-4 py-0.5 rounded-full font-semibold ${selectedLeg === "left"
-                        ? "bg-[#005585] text-white"
-                        : "bg-gray-300 text-black"
-                        }`}
+                      className={`px-4 py-0.5 rounded-full font-semibold ${
+                        selectedLeg === "left"
+                          ? "bg-[#005585] text-white"
+                          : "bg-gray-300 text-black"
+                      }`}
                     >
                       Left
                     </button>
                     <button
                       onClick={() => setSelectedLeg("right")}
-                      className={`px-4 py-0.5 rounded-full font-semibold ${selectedLeg === "right"
-                        ? "bg-[#005585] text-white"
-                        : "bg-gray-300 text-black"
-                        }`}
+                      className={`px-4 py-0.5 rounded-full font-semibold ${
+                        selectedLeg === "right"
+                          ? "bg-[#005585] text-white"
+                          : "bg-gray-300 text-black"
+                      }`}
                     >
                       Right
                     </button>
@@ -640,10 +649,11 @@ const page = ({ isOpencomp, patient11 }) => {
                           setSortByStatus(true);
                         }}
                         className={` cursor-pointer  font-semibold transition-all duration-200 rounded-full text-center
-                ${patfilter === option
-                            ? "bg-gradient-to-b from-[#484E56] to-[#3B4048] text-white shadow-md"
-                            : "text-gray-300"
-                          }
+                ${
+                  patfilter === option
+                    ? "bg-gradient-to-b from-[#484E56] to-[#3B4048] text-white shadow-md"
+                    : "text-gray-300"
+                }
                 ${width < 530 ? "text-[8px] px-2 py-1" : "text-xs px-3 py-1"}
               `}
                       >
@@ -655,8 +665,9 @@ const page = ({ isOpencomp, patient11 }) => {
 
                 {patfilter.toLowerCase() == "post op" && (
                   <div
-                    className={` bg-[#F5F5F5] rounded-lg py-0.5 px-[3px] w-fit border-2 border-[#191A1D] gap-2 mt-2 ${width < 450 ? "grid grid-cols-3" : "flex"
-                      }`}
+                    className={` bg-[#F5F5F5] rounded-lg py-0.5 px-[3px] w-fit border-2 border-[#191A1D] gap-2 mt-2 ${
+                      width < 450 ? "grid grid-cols-3" : "flex"
+                    }`}
                   >
                     {postopoptions.map((option) => (
                       <div
@@ -666,10 +677,11 @@ const page = ({ isOpencomp, patient11 }) => {
                           setSortByStatus(true);
                         }}
                         className={`px-2 py-1 cursor-pointer text-xs font-semibold transition-all duration-200 rounded-lg
-                ${postopfilter === option
-                            ? "bg-gradient-to-b from-[#484E56] to-[#3B4048] text-white shadow-md"
-                            : "text-gray-500"
-                          }
+                ${
+                  postopfilter === option
+                    ? "bg-gradient-to-b from-[#484E56] to-[#3B4048] text-white shadow-md"
+                    : "text-gray-500"
+                }
               `}
                       >
                         {option}
@@ -682,68 +694,80 @@ const page = ({ isOpencomp, patient11 }) => {
           </div>
 
           <div
-            className={`pr-2 mt-4 ${width < 650 && width >= 450
-              ? patfilter.toLowerCase() === "post op"
-                ? "h-[67%]"
-                : "h-[75%]"
-              : width < 450 && width / height >= 0.5
+            className={`pr-2 mt-4 ${
+              width < 650 && width >= 450
                 ? patfilter.toLowerCase() === "post op"
-                  ? "h-[50%]"
-                  : "h-[65%]"
-                : width < 450 && width / height < 0.5
+                  ? "h-[67%]"
+                  : "h-[75%]"
+                : width < 450 && width / height >= 0.5
                   ? patfilter.toLowerCase() === "post op"
-                    ? "h-[61%]"
-                    : "h-[72%]"
-                  : width >= 1000 && width < 1272 && width / height > 1
+                    ? "h-[50%]"
+                    : "h-[65%]"
+                  : width < 450 && width / height < 0.5
                     ? patfilter.toLowerCase() === "post op"
-                      ? "h-[75%]"
-                      : "h-[77%]"
-                    : patfilter.toLowerCase() === "post op"
-                      ? "h-[82.8%]"
-                      : "h-[84%]"
-              }`}
+                      ? "h-[61%]"
+                      : "h-[72%]"
+                    : width >= 1000 && width < 1272 && width / height > 1
+                      ? patfilter.toLowerCase() === "post op"
+                        ? "h-[75%]"
+                        : "h-[77%]"
+                      : patfilter.toLowerCase() === "post op"
+                        ? "h-[82.8%]"
+                        : "h-[84%]"
+            }`}
           >
             <div className="overflow-hidden flex-1">
-              <div ref={containerRef} className="grid grid-cols-1 transition-all duration-300">
+              <div
+                ref={containerRef}
+                className="grid grid-cols-1 transition-all duration-300"
+              >
                 {selectedBox === "patients" &&
                   paginatedPatients.map((ques, index) => (
                     <div
                       key={index}
                       style={{ backgroundColor: "rgba(0, 85, 133, 0.1)" }}
-                      className={`w-full rounded-lg flex  my-1 py-2 px-3 ${width < 530
-                        ? "flex-col justify-center items-center"
-                        : "flex-row justify-between items-center"
-                        }
+                      className={`w-full rounded-lg flex  my-1 py-2 px-3 ${
+                        width < 530
+                          ? "flex-col justify-center items-center"
+                          : "flex-row justify-between items-center"
+                      }
                     ${width < 1000 ? "mb-2" : "mb-6"}`}
                     >
                       <div
-                        className={`${width < 640 && width >= 530
-                          ? "w-3/5"
-                          : width < 530
-                            ? "w-full"
-                            : "w-[50%]"
-                          }`}
+                        className={`${
+                          width < 640 && width >= 530
+                            ? "w-3/5"
+                            : width < 530
+                              ? "w-full"
+                              : "w-[50%]"
+                        }`}
                       >
                         <div
-                          className={`flex gap-4 py-0  items-center  ${width < 710 && width >= 640
-                            ? "px-0 flex-row"
-                            : width < 530
-                              ? "flex-col justify-center items-center"
-                              : "px-2 flex-row"
-                            }`}
+                          className={`flex gap-4 py-0  items-center  ${
+                            width < 710 && width >= 640
+                              ? "px-0 flex-row"
+                              : width < 530
+                                ? "flex-col justify-center items-center"
+                                : "px-2 flex-row"
+                          }`}
                         >
                           <div
-                            className={`w-full flex items-center ${width < 710 ? "flex-col" : "flex-row"
-                              }`}
+                            className={`w-full flex items-center ${
+                              width < 710 ? "flex-col" : "flex-row"
+                            }`}
                           >
                             <div
-                              className={`flex  flex-col ${width < 710 ? "w-full" : "w-[70%]"
-                                }`}
+                              className={`flex  flex-col ${
+                                width < 710 ? "w-full" : "w-[70%]"
+                              }`}
                             >
-                              <div className={`flex items-center justify-between `}>
+                              <div
+                                className={`flex items-center justify-between `}
+                              >
                                 <p
-                                  className={`text-black font-poppins font-medium text-base ${width < 530 ? "w-full text-center" : ""
-                                    }`}
+                                  className={`text-black font-poppins font-medium text-base ${
+                                    width < 530 ? "w-full text-center" : ""
+                                  }`}
                                 >
                                   {ques.name}
                                 </p>
@@ -751,12 +775,13 @@ const page = ({ isOpencomp, patient11 }) => {
                             </div>
 
                             <div
-                              className={`text-sm font-normal font-poppins text-[#475467]   ${width < 710 && width >= 530
-                                ? "w-full text-start"
-                                : width < 530
-                                  ? "w-full text-center"
-                                  : "w-[30%] text-center"
-                                }`}
+                              className={`text-sm font-normal font-poppins text-[#475467]   ${
+                                width < 710 && width >= 530
+                                  ? "w-full text-start"
+                                  : width < 530
+                                    ? "w-full text-center"
+                                    : "w-[30%] text-center"
+                              }`}
                             >
                               {ques.period}
                             </div>
@@ -765,44 +790,50 @@ const page = ({ isOpencomp, patient11 }) => {
                       </div>
 
                       <div
-                        className={`flex ${width < 640 && width >= 530
-                          ? "w-2/5 flex-col text-start"
-                          : width < 530
-                            ? "w-full flex-col text-start"
-                            : "w-[50%] flex-row"
-                          }`}
+                        className={`flex ${
+                          width < 640 && width >= 530
+                            ? "w-2/5 flex-col text-start"
+                            : width < 530
+                              ? "w-full flex-col text-start"
+                              : "w-[50%] flex-row"
+                        }`}
                       >
                         <div
-                          className={` flex ${width <= 750 && width >= 530
-                            ? "flex-col items-center justify-center gap-2"
-                            : width < 530
-                              ? "flex-col items-center gap-2"
-                              : "flex-row items-center"
-                            } 
+                          className={` flex ${
+                            width <= 750 && width >= 530
+                              ? "flex-col items-center justify-center gap-2"
+                              : width < 530
+                                ? "flex-col items-center gap-2"
+                                : "flex-row items-center"
+                          } 
                         ${width < 640 ? "w-full justify-end" : "w-[80%]"}`}
                         >
                           <div
-                            className={` text-sm font-medium text-black ${width <= 750 && width >= 530
-                              ? "w-3/4 text-center"
-                              : width < 530
-                                ? "w-full text-center"
-                                : "w-1/3 text-center"
-                              }`}
+                            className={` text-sm font-medium text-black ${
+                              width <= 750 && width >= 530
+                                ? "w-3/4 text-center"
+                                : width < 530
+                                  ? "w-full text-center"
+                                  : "w-1/3 text-center"
+                            }`}
                           >
                             {ques.completed === 1 ? "Completed" : "Pending"}
                           </div>
 
                           <div
-                            className={`text-sm font-medium text-black flex items-center justify-center ${width <= 750 && width >= 530
-                              ? "w-3/4 text-center"
-                              : width < 530
-                                ? "w-full text-center"
-                                : "w-2/3 text-center"
-                              }`}
+                            className={`text-sm font-medium text-black flex items-center justify-center ${
+                              width <= 750 && width >= 530
+                                ? "w-3/4 text-center"
+                                : width < 530
+                                  ? "w-full text-center"
+                                  : "w-2/3 text-center"
+                            }`}
                           >
                             <div className="w-1/2 flex flex-row items-center gap-6 justify-center relative">
                               <div className="flex flex-col items-start">
-                                <p className="font-medium text-black">DEADLINE</p>
+                                <p className="font-medium text-black">
+                                  DEADLINE
+                                </p>
                                 <p className="font-medium text-[#476367]">
                                   {selectedDates[index]
                                     ? formatDateForDisplay(selectedDates[index]) // Format the ISO string for display
@@ -812,7 +843,9 @@ const page = ({ isOpencomp, patient11 }) => {
 
                               <input
                                 type="date"
-                                ref={(el) => (dateInputRefs.current[index] = el)}
+                                ref={(el) =>
+                                  (dateInputRefs.current[index] = el)
+                                }
                                 onChange={(e) => handleDateChange(e, index)}
                                 className="absolute opacity-0 pointer-events-none"
                               />
@@ -847,16 +880,18 @@ const page = ({ isOpencomp, patient11 }) => {
                         </div>
 
                         <div
-                          className={` flex flex-row justify-center items-center ${width < 640 ? "w-full" : "w-[20%]"
-                            }`}
+                          className={` flex flex-row justify-center items-center ${
+                            width < 640 ? "w-full" : "w-[20%]"
+                          }`}
                         >
                           <div
-                            className={`flex flex-row gap-1 items-center ${width < 640 && width >= 530
-                              ? "w-3/4 justify-center"
-                              : width < 530
-                                ? "w-full justify-center"
-                                : ""
-                              }`}
+                            className={`flex flex-row gap-1 items-center ${
+                              width < 640 && width >= 530
+                                ? "w-3/4 justify-center"
+                                : width < 530
+                                  ? "w-full justify-center"
+                                  : ""
+                            }`}
                             onClick={() => handleReschedule(ques, index)}
                           >
                             <div className="text-sm font-medium border-b-2 text-[#476367] border-blue-gray-500 cursor-pointer">
@@ -872,41 +907,44 @@ const page = ({ isOpencomp, patient11 }) => {
                     </div>
                   ))}
               </div>
-              {totalPages > 1 && selectedBox === "patients" && (
-                <div className="flex justify-center items-center gap-2 my-2">
-                  <button
-                    onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-                    disabled={currentPage === 1}
-                    className="px-3 py-1 text-black disabled:opacity-50 cursor-pointer"
-                  >
-                    Prev
-                  </button>
+            </div>
+          </div>
+          <div className="w-full py-4">
+            {totalPages > 1 && selectedBox === "patients" && (
+              <div className="flex justify-center items-center gap-2 my-2">
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1 text-black disabled:opacity-50 cursor-pointer"
+                >
+                  Prev
+                </button>
 
-                  {Array.from({ length: totalPages }).map((_, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setCurrentPage(i + 1)}
-                      className={`px-3 py-1 border rounded cursor-pointer ${currentPage === i + 1
+                {Array.from({ length: totalPages }).map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setCurrentPage(i + 1)}
+                    className={`px-3 py-1 border rounded cursor-pointer ${
+                      currentPage === i + 1
                         ? "bg-blue-500 text-white"
                         : "bg-white text-blue-500"
-                        }`}
-                    >
-                      {i + 1}
-                    </button>
-                  ))}
-
-                  <button
-                    onClick={() =>
-                      setCurrentPage((p) => Math.min(p + 1, totalPages))
-                    }
-                    disabled={currentPage === totalPages}
-                    className="px-3 py-1 text-black disabled:opacity-50 cursor-pointer"
+                    }`}
                   >
-                    Next
+                    {i + 1}
                   </button>
-                </div>
-              )}
-            </div>
+                ))}
+
+                <button
+                  onClick={() =>
+                    setCurrentPage((p) => Math.min(p + 1, totalPages))
+                  }
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1 text-black disabled:opacity-50 cursor-pointer"
+                >
+                  Next
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
