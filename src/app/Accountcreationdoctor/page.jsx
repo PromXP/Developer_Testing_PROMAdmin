@@ -472,7 +472,7 @@ const page = ({ isOpenaccdoc, onCloseaccdoc, userData }) => {
                     }}
                   />
 
-                  <div
+                  {/* <div
                     className="relative cursor-pointer"
                     onClick={openDatePicker}
                   >
@@ -487,7 +487,7 @@ const page = ({ isOpenaccdoc, onCloseaccdoc, userData }) => {
                       className="w-7 h-5 "
                       alt="date of birth"
                     />
-                  </div>
+                  </div> */}
                 </div>
               </div>
 
