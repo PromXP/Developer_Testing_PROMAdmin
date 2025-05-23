@@ -502,8 +502,8 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
 
       // alert("✅ Email sent (check console for details)");
       showWarning("✅ Email sent Successfull");
-      // sendRealTimeMessage();
-      sendwhatsapp();
+      sendRealTimeMessage();
+      // sendwhatsapp();
     } catch (error) {
       console.error("❌ Error sending email:", error);
       showWarning("Failed to send email.");
@@ -529,7 +529,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
 
     socket.send(JSON.stringify(payload));
     window.location.reload();
-    // console.log("📤 Sent via WebSocket:", payload);
+    console.log("📤 Sent via WebSocket:", payload);
 
     qsetIsSubmitting(true);
 
@@ -648,8 +648,93 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
     }
   };
 
-  const [selectedDatesurgery, setSelectedDatesurgery] = useState("");
+  const [selectedDatesurgery, setSelectedDateSurgery] = useState("");
   const [selectedTime, setSelectedTime] = useState("");
+
+  const handleManualDateChange = (e) => {
+    let value = e.target.value.replace(/\D/g, ""); // Remove non-digits
+
+    // Format as dd-mm-yyyy
+    if (value.length >= 3 && value.length <= 4) {
+      value = value.slice(0, 2) + "-" + value.slice(2);
+    } else if (value.length > 4 && value.length <= 8) {
+      value =
+        value.slice(0, 2) + "-" + value.slice(2, 4) + "-" + value.slice(4);
+    } else if (value.length > 8) {
+      value = value.slice(0, 8);
+      value =
+        value.slice(0, 2) + "-" + value.slice(2, 4) + "-" + value.slice(4);
+    }
+
+    setSelectedDateSurgery(value); // your state for date
+
+    if (value.length === 10) {
+      const [dayStr, monthStr, yearStr] = value.split("-");
+      const day = parseInt(dayStr, 10);
+      const month = parseInt(monthStr, 10);
+      const year = parseInt(yearStr, 10);
+
+      if (
+        isNaN(day) ||
+        isNaN(month) ||
+        isNaN(year) ||
+        day < 1 ||
+        day > 31 ||
+        month < 1 ||
+        month > 12
+      ) {
+        showWarning("Invalid date format.");
+        setSelectedDateSurgery("");
+        return;
+      }
+
+      const dateObj = new Date(`${year}-${month}-${day}`);
+      if (
+        dateObj.getDate() !== day ||
+        dateObj.getMonth() + 1 !== month ||
+        dateObj.getFullYear() !== year
+      ) {
+        showWarning("Invalid date. Please enter a real date.");
+        setSelectedDateSurgery("");
+        return;
+      }
+
+      // Optional: format it consistently if you want (or keep raw)
+      const formattedDate = `${yearStr}-${monthStr.padStart(2, "0")}-${dayStr.padStart(2, "0")}`;
+      setSelectedDateSurgery(formattedDate);
+    }
+  };
+
+  const handleManualTimeChange = (e) => {
+    let value = e.target.value.replace(/[^\d]/g, ""); // Only digits
+
+    if (value.length >= 3 && value.length <= 4) {
+      value = value.slice(0, 2) + ":" + value.slice(2);
+    } else if (value.length > 4) {
+      value = value.slice(0, 4);
+      value = value.slice(0, 2) + ":" + value.slice(2);
+    }
+
+    setSelectedTime(value);
+
+    if (value.length === 5) {
+      const [hourStr, minuteStr] = value.split(":");
+      const hour = parseInt(hourStr, 10);
+      const minute = parseInt(minuteStr, 10);
+
+      if (
+        isNaN(hour) ||
+        isNaN(minute) ||
+        hour < 0 ||
+        hour > 23 ||
+        minute < 0 ||
+        minute > 59
+      ) {
+        showWarning("Please enter a valid 24-hour time (HH:MM).");
+        setSelectedTime("");
+      }
+    }
+  };
 
   // Refs for hidden inputs
   const dateInputRefsurgery = useRef(null);
@@ -680,7 +765,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
       return;
     }
 
-    setSelectedDatesurgery(selectedDate);
+    setSelectedDateSurgery(selectedDate);
   };
 
   const handleTimeChange = (e) => {
@@ -688,7 +773,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
   };
 
   const handleClearAllsurgery = () => {
-    setSelectedDatesurgery("");
+    setSelectedDateSurgery("");
     setSelectedTime("");
   };
 
@@ -1640,14 +1725,14 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                           <p className="font-medium text-sm text-[#475467]">
                             DATE
                           </p>
-                          <p className="font-semibold text-sm italic text-[#475467]">
-                            {selectedDatesurgery
-                              ? selectedDatesurgery
-                                  .split("-")
-                                  .reverse()
-                                  .join("/")
-                              : "dd/mm/yyyy"}
-                          </p>
+                          <input
+                            type="text"
+                            placeholder="dd-mm-yyyy"
+                            value={selectedDatesurgery}
+                            onChange={handleManualDateChange}
+                            maxLength={10}
+                            className="text-sm italic font-semibold text-[#475467] border border-gray-300 rounded px-2 py-1 w-full "
+                          />
                         </div>
                         <div
                           className={`flex flex-col  relative gap-4 ${
@@ -1656,17 +1741,11 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                               : "w-1/3 justify-center items-center"
                           }`}
                         >
-                          <input
-                            type="date"
-                            ref={dateInputRefsurgery}
-                            className="absolute opacity-0 pointer-events-none"
-                            onChange={handleDateChangesurgery}
-                          />
                           <Image
                             src={Bigcalendar}
                             alt="clock"
-                            className="w-8 h-8 cursor-pointer"
-                            onClick={handleCalendarClick}
+                            className="w-8 h-8 pointer-events-none"
+                            // onClick={handleCalendarClick}
                           />
                         </div>
                       </div>
@@ -1683,9 +1762,14 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                           <p className="font-medium text-sm text-[#475467]">
                             TIME
                           </p>
-                          <p className="font-semibold text-sm italic text-[#475467]">
-                            {selectedTime ? selectedTime : "HH:MM"}
-                          </p>
+                          <input
+                            type="text"
+                            placeholder="HH:MM (24 hrs)"
+                            value={selectedTime}
+                            onChange={handleManualTimeChange}
+                            className="text-sm italic font-semibold text-[#475467] border border-gray-300 rounded px-2 py-1 w-full"
+                            maxLength={5}
+                          />
                         </div>
                         <div
                           className={`flex flex-col relative gap-4 ${
@@ -1694,18 +1778,11 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                               : "w-1/3 justify-center items-center"
                           }`}
                         >
-                          <input
-                            type="time"
-                            ref={timeInputRef}
-                            className="absolute opacity-0 pointer-events-none"
-                            onChange={handleTimeChange}
-                          />
-
                           <Image
                             src={Clock}
                             alt="clock"
-                            className="w-8 h-8 cursor-pointer"
-                            onClick={handleClockClick}
+                            className="w-8 h-8 pointer-events-none"
+                            // onClick={handleClockClick}
                           />
                         </div>
                       </div>
@@ -2478,11 +2555,14 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                     }`}
                   >
                     <p className="font-medium text-sm text-[#475467]">DATE</p>
-                    <p className="font-semibold text-sm italic text-[#475467]">
-                      {selectedDatesurgery
-                        ? selectedDatesurgery.split("-").reverse().join("/")
-                        : "dd/mm/yyyy"}
-                    </p>
+                    <input
+                      type="text"
+                      placeholder="dd-mm-yyyy"
+                      value={selectedDatesurgery}
+                      onChange={handleManualDateChange}
+                      maxLength={10}
+                      className="text-sm italic font-semibold text-[#475467] border border-gray-300 rounded px-2 py-1 w-full "
+                    />
                   </div>
                   <div
                     className={`flex flex-col  relative gap-4 ${
@@ -2491,17 +2571,17 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                         : "w-1/3 justify-center items-center"
                     }`}
                   >
-                    <input
+                    {/* <input
                       type="date"
                       ref={dateInputRefsurgery}
                       className="absolute opacity-0 pointer-events-none"
                       onChange={handleDateChangesurgery}
-                    />
+                    /> */}
                     <Image
                       src={Bigcalendar}
                       alt="clock"
-                      className="w-8 h-8 cursor-pointer"
-                      onClick={handleCalendarClick}
+                      className="w-8 h-8 pointer-events-none"
+                      // onClick={handleCalendarClick}
                     />
                   </div>
                 </div>
@@ -2516,9 +2596,14 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                     }`}
                   >
                     <p className="font-medium text-sm text-[#475467]">TIME</p>
-                    <p className="font-semibold text-sm italic text-[#475467]">
-                      {selectedTime ? selectedTime : "HH:MM"}
-                    </p>
+                    <input
+                      type="text"
+                      placeholder="HH:MM (24 hrs)"
+                      value={selectedTime}
+                      onChange={handleManualTimeChange}
+                      className="text-sm italic font-semibold text-[#475467] border border-gray-300 rounded px-2 py-1 w-full"
+                      maxLength={5}
+                    />
                   </div>
                   <div
                     className={`flex flex-col relative gap-4 ${
@@ -2527,18 +2612,18 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                         : "w-1/3 justify-center items-center"
                     }`}
                   >
-                    <input
+                    {/* <input
                       type="time"
                       ref={timeInputRef}
                       className="absolute opacity-0 pointer-events-none"
                       onChange={handleTimeChange}
-                    />
+                    /> */}
 
                     <Image
                       src={Clock}
                       alt="clock"
-                      className="w-8 h-8 cursor-pointer"
-                      onClick={handleClockClick}
+                      className="w-8 h-8 pointer-events-none"
+                      // onClick={handleClockClick}
                     />
                   </div>
                 </div>
