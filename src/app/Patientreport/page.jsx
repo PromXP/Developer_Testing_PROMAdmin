@@ -2035,6 +2035,26 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                                     : columns[vIdx];
                                 const otherNotes =
                                   row.others?.[periodKey] || [];
+                                const filteredNotes = [];
+                                for (let i = 0; i < otherNotes.length; i++) {
+                                  const currentLine = otherNotes[i];
+
+                                  // If current line contains 'self' (case-insensitive), skip the next line
+                                  if (/self/i.test(currentLine)) {
+                                    filteredNotes.push(currentLine);
+                                    i++; // Skip next line
+                                    continue;
+                                  }
+
+                                  // If current line contains 'no' (case-insensitive), skip the next line
+                                  if (/no/i.test(currentLine)) {
+                                    filteredNotes.push(currentLine);
+                                    i++; // Skip next line
+                                    continue;
+                                  }
+
+                                  filteredNotes.push(currentLine);
+                                }
 
                                 console.log("📝 Period:", periodKey);
                                 console.log(
@@ -2068,10 +2088,10 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                                           }}
                                           onMouseEnter={() => {
                                             if (
-                                              otherNotes &&
-                                              otherNotes.length > 0
+                                              filteredNotes &&
+                                              filteredNotes.length > 0
                                             )
-                                              setHoveredNotes(otherNotes);
+                                              setHoveredNotes(filteredNotes);
                                           }}
                                           onMouseLeave={() =>
                                             setHoveredNotes(null)
@@ -2081,17 +2101,18 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                                         </div>
                                       )}
 
-                                      {otherNotes && otherNotes.length > 0 && (
+                                      {filteredNotes && filteredNotes.length > 0 && (
                                         <div
                                           className="absolute -top-[40px] -left-[70px] transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out
     text-sm font-semibold text-black pz-2 py-2.5 rounded-lg bg-white whitespace-pre-wrap z-50"
                                           style={{
-                                            minWidth: "200px",
+                                            maxWidth: "300px",
+                                            minWidth: "120px",
                                             boxShadow:
                                               "0 4px 8px rgba(0, 0, 0, 0.1)",
                                           }}
                                         >
-                                          {otherNotes.map((line, i) => (
+                                          {filteredNotes.map((line, i) => (
                                             <p key={i} className="w-full">
                                               {line}
                                             </p>
@@ -2111,7 +2132,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                             colSpan={columns.length}
                             className="px-4 py-4 text-center text-[#9CA3AF]"
                           >
-                            No questionnaires answered
+                            No questionnaires assigned
                           </td>
                         </tr>
                       )}
