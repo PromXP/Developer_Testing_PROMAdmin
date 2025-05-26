@@ -19,12 +19,11 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
   MinusCircleIcon,
-  TrashIcon
+  TrashIcon,
 } from "@heroicons/react/16/solid";
 
 import Minus from "@/app/assets/minus.png";
 import Delete from "@/app/assets/delete.png";
-
 
 import Patientimg from "@/app/assets/patimg.png";
 import Closeicon from "@/app/assets/closeicon.png";
@@ -1011,14 +1010,23 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
     console.log("Right Leg Combined Data", rightlegdata);
   }
 
-  const getColor = (val, minVal = 0, maxVal = 100) => {
+  const scoreRanges = {
+    "Oxford Knee Score": [0, 48, false],
+    "SHORT FORM 12": [0, 100, false],
+    "KOOS, JR.": [0, 28, true], // reverse: 0 good, 28 poor (flip colors)
+    "Knee Society Score": [0, 100, false],
+    "Forgotten Joint Score": [0, 48, false],
+  };
+
+  const getColor = (val, minVal = 0, maxVal = 100, reverse = false) => {
     const number = parseFloat(val);
     if (isNaN(number)) return "#B0C4C7";
 
-    const normalized = Math.min(
+    let normalized = Math.min(
       Math.max((number - minVal) / (maxVal - minVal), 0),
       1
     );
+    if (reverse) normalized = 1 - normalized; // flip for reverse scale
 
     const colorStops = [
       { stop: 0, color: [255, 70, 70] }, // Red
@@ -1074,13 +1082,13 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
 
   const [popupOpen, setPopupOpen] = useState(false);
   const [selectedLabel, setSelectedLabel] = useState("");
-   const [deletepopupOpen, setdeletePopupOpen] = useState(false);
+  const [deletepopupOpen, setdeletePopupOpen] = useState(false);
 
   const handleMinusClick = (label) => {
     setSelectedLabel(label);
     setPopupOpen(true);
   };
-   const handleDeleteClick = (label) => {
+  const handleDeleteClick = (label) => {
     setSelectedLabel(label);
     setdeletePopupOpen(true);
   };
@@ -2143,12 +2151,18 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                                 const isNA = val === "N/A";
                                 const isNumeric = !isEmpty && !isNA;
 
+                                // Determine the questionnaire name for this column (example: from columns array)
+                                const questionnaireName = columns[vIdx];
+
+                                // Get range info or default
+                                const [minVal, maxVal, reverse] = scoreRanges[
+                                  questionnaireName
+                                ] || [0, 100, false];
+
+                                // Get background color based on value and questionnaire range
                                 const bgColor = isNumeric
-                                  ? getColor(val)
+                                  ? getColor(val, minVal, maxVal, reverse)
                                   : "transparent";
-                                const textColor = isNumeric
-                                  ? getTextColor(bgColor)
-                                  : "#000";
 
                                 const periodKey =
                                   columns[vIdx] === "Pre Op"
@@ -2156,6 +2170,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                                     : columns[vIdx];
                                 const otherNotes =
                                   row.others?.[periodKey] || [];
+
                                 const filteredNotes = [];
                                 for (let i = 0; i < otherNotes.length; i++) {
                                   const currentLine = otherNotes[i];
@@ -2200,7 +2215,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                                           className="relative inline-flex cursor-pointer items-center justify-center rounded-full shadow-sm"
                                           style={{
                                             backgroundColor: bgColor,
-                                            color: textColor,
+                                            color: "#000",
                                             width: "36px",
                                             height: "36px",
                                             fontWeight: "600",
@@ -2308,7 +2323,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                     </div>
                   )}
 
-                   {deletepopupOpen && (
+                  {deletepopupOpen && (
                     <div
                       className="fixed inset-0 flex items-center justify-center z-50"
                       style={{
