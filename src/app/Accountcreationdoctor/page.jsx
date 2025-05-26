@@ -68,6 +68,7 @@ const page = ({ isOpenaccdoc, onCloseaccdoc, userData }) => {
   const [showAlert, setShowAlert] = useState(false);
 
   const [selectedDate, setSelectedDate] = useState("");
+  const [posdate, setposdate]=useState("");
   const dateInputRef = useRef(null);
 
   const openDatePicker = () => {
@@ -102,6 +103,7 @@ const page = ({ isOpenaccdoc, onCloseaccdoc, userData }) => {
 
     // Until full date entered, show raw value
     setSelectedDate(value);
+    setposdate(value);
 
     if (value.length === 10) {
       const [dayStr, monthStr, yearStr] = value.split("-");
@@ -241,6 +243,7 @@ const page = ({ isOpenaccdoc, onCloseaccdoc, userData }) => {
     setBmi("");
     setMessage("");
     setDesignation("");
+    setposdate("");
   };
 
   const [alertMessage, setAlertMessage] = useState("");
@@ -291,6 +294,7 @@ const page = ({ isOpenaccdoc, onCloseaccdoc, userData }) => {
     const payload = {
       doctor_name: firstName.trim() + " " + lastName.trim(),
       gender: selectedGender.trim(),
+      dob: posdate,
       age: age,
       designation: designation,
       email: email.trim(),
