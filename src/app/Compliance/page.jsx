@@ -16,6 +16,7 @@ import ProfileImage from "@/app/assets/profile.png";
 import { UserIcon } from "@heroicons/react/24/outline";
 import {
   ChevronRightIcon,
+  ChevronLeftIcon,
   ArrowUpRightIcon,
   ArrowsUpDownIcon,
   CalendarDaysIcon,
@@ -662,9 +663,95 @@ const page = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [cardsPerPage, setCardsPerPage] = useState(6);
 
+  const sortedPatients = filteredPatientsByDate.sort((a, b) => {
+    const FAR_FUTURE = new Date(9999, 11, 31);
+    const now = new Date();
+
+    const getNearestDeadline = (patient) => {
+      const assigned =
+        selectedLeg === "left"
+          ? patient.questionnaire_assigned_left
+          : patient.questionnaire_assigned_right;
+
+      const pending = assigned
+        .filter((q) => q.completed === 0)
+        .map((q) => new Date(q.deadline))
+        .sort((a, b) => a - b);
+
+      return pending.length > 0 ? pending[0] : FAR_FUTURE;
+    };
+
+    const getCompletionPercent = (patient) => {
+      const assigned =
+        selectedLeg === "left"
+          ? patient.questionnaire_assigned_left
+          : patient.questionnaire_assigned_right;
+
+      const total = assigned.length;
+      const completed = assigned.filter((q) => q.completed === 1).length;
+
+      return total > 0 ? (completed / total) * 100 : 0;
+    };
+
+    const getPatientStatus = (patient) => {
+      const assigned =
+        selectedLeg === "left"
+          ? patient.questionnaire_assigned_left
+          : patient.questionnaire_assigned_right;
+
+      if (!assigned || assigned.length === 0) return "not_assigned";
+
+      const completedCount = assigned.filter((q) => q.completed === 1).length;
+      const total = assigned.length;
+
+      if (completedCount === total) return "completed";
+      return "pending";
+    };
+
+    const getStatusRank = (patient) => {
+      const status = getPatientStatus(patient);
+
+      if (status === "completed") return 1;
+      if (status === "pending") return 2;
+      return 3; // not_assigned
+    };
+
+    const deadlineA = getNearestDeadline(a);
+    const deadlineB = getNearestDeadline(b);
+    const isNAA = deadlineA.getTime() === FAR_FUTURE.getTime();
+    const isNAB = deadlineB.getTime() === FAR_FUTURE.getTime();
+    const isPastA = deadlineA < now;
+    const isPastB = deadlineB < now;
+
+    if (sortAsc) {
+      // Ascending: Past < Soon < N/A
+      if (isNAA && !isNAB) return -1;
+      if (!isNAA && isNAB) return 1;
+
+      if (isPastA && !isPastB) return 1;
+      if (!isPastA && isPastB) return -1;
+    } else {
+      // Descending: N/A < Soon < Past
+      if (isNAA && !isNAB) return 1;
+      if (!isNAA && isNAB) return -1;
+
+      if (isPastA && !isPastB) return -1;
+      if (!isPastA && isPastB) return 1;
+    }
+
+    // If both are same group, sort by date
+    if (deadlineA < deadlineB) return sortAsc ? 1 : -1;
+    if (deadlineA > deadlineB) return sortAsc ? -1 : 1;
+
+    // Then by completion %
+    const compA = getCompletionPercent(a);
+    const compB = getCompletionPercent(b);
+    if (compA !== compB) return !sortAsc ? compA - compB : compB - compA;
+  });
+
   // Calculate total pages and current visible patients
-  const totalPages = Math.ceil(filteredPatientsByDate.length / cardsPerPage);
-  const paginatedPatients = filteredPatientsByDate.slice(
+  const totalPages = Math.ceil(sortedPatients.length / cardsPerPage);
+  const paginatedPatients = sortedPatients.slice(
     (currentPage - 1) * cardsPerPage,
     currentPage * cardsPerPage
   );
@@ -685,6 +772,12 @@ const page = ({
     window.addEventListener("resize", updateCardsPerPage);
     return () => window.removeEventListener("resize", updateCardsPerPage);
   }, []);
+
+  const scrollRef = useRef(null);
+
+  const scrollByAmount = (amount) => {
+    scrollRef.current?.scrollBy({ left: amount, behavior: "smooth" });
+  };
 
   return (
     <>
@@ -792,7 +885,7 @@ const page = ({
         }`}
       >
         <div
-          className={` h-full rounded-xl pt-4 px-4 ${
+          className={` h-fit rounded-xl pt-4 px-4 flex flex-col gap-4 ${
             width >= 1000 && width / height > 1 ? "w-full" : "w-full"
           }`}
           style={{
@@ -974,8 +1067,45 @@ const page = ({
             )}
           </div>
 
+          <div className="w-full flex justify-center items-center mt-4">
+            {totalPages > 1 && selectedBox === "patients" && (
+              <div className="flex items-center gap-2 max-w-full">
+                {/* Left Arrow */}
+          
+              <ChevronLeftIcon className="w-8 h-8 text-red-600 cursor-pointer"  onClick={() => scrollByAmount(-150)}/>
+
+                {/* Scrollable Page Buttons */}
+                <div
+                  ref={scrollRef}
+                  className="flex gap-2 overflow-x-auto scrollbar-hide scroll-smooth px-1"
+                  style={{ maxWidth: "70vw" }}
+                >
+                  {Array.from({ length: totalPages }).map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setCurrentPage(i + 1)}
+                      className={`px-3 py-1 border rounded cursor-pointer shrink-0 transition-all ${
+                        currentPage === i + 1
+                          ? "bg-blue-500 text-white"
+                          : "bg-white text-blue-500"
+                      }`}
+                    >
+                      {i + 1}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Right Arrow */}
+             
+                  <ChevronRightIcon className="w-8 h-8 text-red-600 cursor-pointer" onClick={() => scrollByAmount(150)}/>
+            
+              </div>
+            )}
+          </div>
+
           <div
-            className={`pr-2 mt-4 ${
+            ref={containerRef}
+            className={` mt-4 ${
               width < 650 && width >= 450
                 ? patfilter.toLowerCase() === "post operative"
                   ? "h-[67%]"
@@ -997,11 +1127,8 @@ const page = ({
                         : "h-[84%]"
             }`}
           >
-            <div className="overflow-hidden flex-1">
-              <div
-                ref={containerRef}
-                className="grid grid-cols-1 transition-all duration-300"
-              >
+            <div className="overflow-y-auto flex-1">
+              <div className="grid grid-cols-1 transition-all duration-300">
                 {selectedBox === "patients" &&
                   paginatedPatients
                     .map((patient) => {
@@ -1127,7 +1254,6 @@ const page = ({
                       const compB = getCompletionPercent(b);
                       if (compA !== compB)
                         return !sortAsc ? compA - compB : compB - compA;
-
                     })
 
                     .map((patient) => (
@@ -1450,44 +1576,6 @@ const page = ({
                     ))}
               </div>
             </div>
-          </div>
-
-          <div className="w-full py-4 mt-2">
-            {totalPages > 1 && selectedBox === "patients" && (
-              <div className="flex justify-center items-center gap-2">
-                <button
-                  onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-                  disabled={currentPage === 1}
-                  className="px-3 py-1 text-black disabled:opacity-50 cursor-pointer"
-                >
-                  Prev
-                </button>
-
-                {Array.from({ length: totalPages }).map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setCurrentPage(i + 1)}
-                    className={`px-3 py-1 border rounded cursor-pointer ${
-                      currentPage === i + 1
-                        ? "bg-blue-500 text-white"
-                        : "bg-white text-blue-500"
-                    }`}
-                  >
-                    {i + 1}
-                  </button>
-                ))}
-
-                <button
-                  onClick={() =>
-                    setCurrentPage((p) => Math.min(p + 1, totalPages))
-                  }
-                  disabled={currentPage === totalPages}
-                  className="px-3 py-1 text-black disabled:opacity-50 cursor-pointer"
-                >
-                  Next
-                </button>
-              </div>
-            )}
           </div>
         </div>
       </div>

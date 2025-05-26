@@ -19,9 +19,12 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
   MinusCircleIcon,
+  TrashIcon
 } from "@heroicons/react/16/solid";
 
 import Minus from "@/app/assets/minus.png";
+import Delete from "@/app/assets/delete.png";
+
 
 import Patientimg from "@/app/assets/patimg.png";
 import Closeicon from "@/app/assets/closeicon.png";
@@ -323,6 +326,9 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
       showWarning("Please wait, assigning is in progress...");
       return;
     }
+
+    // Block any further submission attempts now
+    qsetIsSubmitting(true);
 
     if (!leftChecked && !rightChecked) {
       showWarning("Select Leg");
@@ -700,7 +706,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
       }
 
       // Optional: format it consistently if you want (or keep raw)
-      const formattedDate = `${yearStr}-${monthStr.padStart(2, "0")}-${dayStr.padStart(2, "0")}`;
+      const formattedDate = `${dayStr.padStart(2, "0")}-${monthStr.padStart(2, "0")}-${yearStr}`;
       setSelectedDateSurgery(formattedDate);
     }
   };
@@ -1068,10 +1074,15 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
 
   const [popupOpen, setPopupOpen] = useState(false);
   const [selectedLabel, setSelectedLabel] = useState("");
+   const [deletepopupOpen, setdeletePopupOpen] = useState(false);
 
   const handleMinusClick = (label) => {
     setSelectedLabel(label);
     setPopupOpen(true);
+  };
+   const handleDeleteClick = (label) => {
+    setSelectedLabel(label);
+    setdeletePopupOpen(true);
   };
 
   const handleYesClick = async () => {
@@ -1189,6 +1200,108 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
 
     // Close popup after action
     setPopupOpen(false);
+  };
+
+  const handleYesDeleteClick = async () => {
+    const patientUhid = patient?.uhid; // Selected patient value
+
+    if (!patientUhid) {
+      showWarning("Patient ID Not found. Kindly Reload");
+      return;
+    }
+
+    // const quest_period = questionnaire_assigned_left
+
+    if (selectedLeg === "left") {
+      const filteredQuestionnairesleft = questionnaire_assigned_left.filter(
+        (item) => item.period === selectedLabel
+      );
+      const payloadLeft = {
+        period: selectedLabel,
+        questionnaires: filteredQuestionnairesleft.map((item) => item.name),
+      };
+      console.log("Left leg reset " + JSON.stringify(payloadLeft, null, 2));
+      try {
+        const response = await fetch(
+          API_URL +
+            "patients/" +
+            patientUhid +
+            "/delete-questionnaires-by-period-left",
+          {
+            method: "DELETE",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payloadLeft), // DELETE with a body is allowed, but some servers may reject it
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        const result = await response.json();
+
+        window.location.reload();
+
+        showWarning(
+          "Left Leg questionnaires deleted successfully. The changes will reflect soon."
+        );
+      } catch (error) {
+        console.error("Error deleting Left leg questionnaires:", error);
+        showWarning(
+          "Error deleting Left leg questionnaires, please try again."
+        );
+      }
+    }
+
+    if (selectedLeg === "right") {
+      const filteredQuestionnairesright = questionnaire_assigned_right.filter(
+        (item) => item.period === selectedLabel
+      );
+
+      // console.log(filteredQuestionnairesleft);
+
+      // console.log("Reset",questionnaire_assigned_left);
+
+      const payloadRight = {
+        period: selectedLabel,
+        questionnaires: filteredQuestionnairesright.map((item) => item.name),
+      };
+      console.log("Right leg reset " + JSON.stringify(payloadRight, null, 2));
+      try {
+        const response = await fetch(
+          API_URL +
+            "patients/" +
+            patientUhid +
+            "/delete-questionnaires-by-period-right",
+          {
+            method: "DELETE",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payloadRight), // DELETE with a body is allowed, but some servers may reject it
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        const result = await response.json();
+
+        window.location.reload();
+
+        showWarning(
+          "Right Leg questionnaires deleted successfully. The changes will reflect soon."
+        );
+      } catch (error) {
+        console.error("Error deleting Right leg questionnaires:", error);
+        showWarning(
+          "Error deleting Right leg questionnaires, please try again."
+        );
+      }
+    }
   };
 
   const getCompletionPercentage = (leg) => {
@@ -1978,6 +2091,14 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                               col
                             ) : (
                               <div className="flex items-center justify-center gap-2">
+                                <span className="text-[#475467]">
+                                  <Image
+                                    src={Delete}
+                                    alt="reset"
+                                    className="w-5 h-5 min-w-[20px] min-h-[20px] font-bold cursor-pointer"
+                                    onClick={() => handleDeleteClick(col)}
+                                  />
+                                </span>{" "}
                                 <span>{col}</span>
                                 <span className="text-[#475467]">
                                   <Image
@@ -2101,24 +2222,25 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                                         </div>
                                       )}
 
-                                      {filteredNotes && filteredNotes.length > 0 && (
-                                        <div
-                                          className="absolute -top-[40px] -left-[70px] transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out
+                                      {filteredNotes &&
+                                        filteredNotes.length > 0 && (
+                                          <div
+                                            className="absolute -top-[40px] -left-[70px] transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out
     text-sm font-semibold text-black pz-2 py-2.5 rounded-lg bg-white whitespace-pre-wrap z-50"
-                                          style={{
-                                            maxWidth: "300px",
-                                            minWidth: "120px",
-                                            boxShadow:
-                                              "0 4px 8px rgba(0, 0, 0, 0.1)",
-                                          }}
-                                        >
-                                          {filteredNotes.map((line, i) => (
-                                            <p key={i} className="w-full">
-                                              {line}
-                                            </p>
-                                          ))}
-                                        </div>
-                                      )}
+                                            style={{
+                                              maxWidth: "300px",
+                                              minWidth: "120px",
+                                              boxShadow:
+                                                "0 4px 8px rgba(0, 0, 0, 0.1)",
+                                            }}
+                                          >
+                                            {filteredNotes.map((line, i) => (
+                                              <p key={i} className="w-full">
+                                                {line}
+                                              </p>
+                                            ))}
+                                          </div>
+                                        )}
                                     </div>
                                   </td>
                                 );
@@ -2177,6 +2299,53 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                           </button>
                           <button
                             onClick={() => setPopupOpen(false)}
+                            className="bg-gray-300 hover:bg-gray-400 text-black font-semibold py-2 px-6 rounded cursor-pointer"
+                          >
+                            No
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                   {deletepopupOpen && (
+                    <div
+                      className="fixed inset-0 flex items-center justify-center z-50"
+                      style={{
+                        backgroundColor: "rgba(0, 0, 0, 0.7)", // white with 50% opacity
+                      }}
+                    >
+                      <div className="bg-white rounded-lg p-6 w-[90%] max-w-md relative">
+                        {/* Close Icon */}
+                        <button
+                          onClick={() => setdeletePopupOpen(false)}
+                          className="absolute top-3 right-3 text-gray-500 hover:text-black cursor-pointer"
+                        >
+                          ❌
+                        </button>
+
+                        {/* Popup Content */}
+                        <h2 className="text-xl text-black font-bold mb-4 text-center">
+                          CONFIRMATION
+                        </h2>
+                        <p className="text-gray-700 text-center mb-6">
+                          Are you sure you want to delete the questionnaires of{" "}
+                          <span className="font-bold text-black">
+                            {selectedLabel}
+                          </span>{" "}
+                          period?
+                        </p>
+
+                        {/* Buttons */}
+                        <div className="flex justify-center gap-4">
+                          <button
+                            onClick={handleYesDeleteClick}
+                            className="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-6 rounded cursor-pointer"
+                          >
+                            Yes
+                          </button>
+                          <button
+                            onClick={() => setdeletePopupOpen(false)}
                             className="bg-gray-300 hover:bg-gray-400 text-black font-semibold py-2 px-6 rounded cursor-pointer"
                           >
                             No

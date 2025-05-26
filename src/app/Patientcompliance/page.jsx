@@ -16,6 +16,7 @@ import ProfileImage from "@/app/assets/profile.png";
 import { UserIcon } from "@heroicons/react/24/outline";
 import {
   ChevronRightIcon,
+  ChevronLeftIcon,
   ArrowUpRightIcon,
   ArrowsUpDownIcon,
   CalendarDaysIcon,
@@ -479,6 +480,12 @@ const page = ({ isOpencomp, patient11 }) => {
     return () => window.removeEventListener("resize", updateCardsPerPage);
   }, []);
 
+  const scrollRef = useRef(null);
+  
+    const scrollByAmount = (amount) => {
+      scrollRef.current?.scrollBy({ left: amount, behavior: "smooth" });
+    };
+
   if (!isOpencomp) return null;
 
   return (
@@ -559,7 +566,7 @@ const page = ({ isOpencomp, patient11 }) => {
         }`}
       >
         <div
-          className={` h-full rounded-xl pt-4 px-4 ${
+          className={`h-fit rounded-xl pt-4 px-4 ${
             width >= 1000 && width / height > 1 ? "w-full" : "w-full"
           }`}
           style={{
@@ -693,7 +700,44 @@ const page = ({ isOpencomp, patient11 }) => {
             )}
           </div>
 
+            <div className="w-full flex justify-center items-center mt-4">
+            {totalPages > 1 && selectedBox === "patients" && (
+              <div className="flex items-center gap-2 max-w-full">
+                {/* Left Arrow */}
+          
+              <ChevronLeftIcon className="w-8 h-8 text-red-600 cursor-pointer"  onClick={() => scrollByAmount(-150)}/>
+
+                {/* Scrollable Page Buttons */}
+                <div
+                  ref={scrollRef}
+                  className="flex gap-2 overflow-x-auto scrollbar-hide scroll-smooth px-1"
+                  style={{ maxWidth: "70vw" }}
+                >
+                  {Array.from({ length: totalPages }).map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setCurrentPage(i + 1)}
+                      className={`px-3 py-1 border rounded cursor-pointer shrink-0 transition-all ${
+                        currentPage === i + 1
+                          ? "bg-blue-500 text-white"
+                          : "bg-white text-blue-500"
+                      }`}
+                    >
+                      {i + 1}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Right Arrow */}
+             
+                  <ChevronRightIcon className="w-8 h-8 text-red-600 cursor-pointer" onClick={() => scrollByAmount(150)}/>
+            
+              </div>
+            )}
+          </div>
+
           <div
+           ref={containerRef}
             className={`pr-2 mt-4 ${
               width < 650 && width >= 450
                 ? patfilter.toLowerCase() === "post op"
@@ -716,9 +760,9 @@ const page = ({ isOpencomp, patient11 }) => {
                         : "h-[84%]"
             }`}
           >
-            <div className="overflow-hidden flex-1">
+            <div className="overflow-y-auto flex-1">
               <div
-                ref={containerRef}
+               
                 className="grid grid-cols-1 transition-all duration-300"
               >
                 {selectedBox === "patients" &&
@@ -909,43 +953,7 @@ const page = ({ isOpencomp, patient11 }) => {
               </div>
             </div>
           </div>
-          <div className="w-full py-4">
-            {totalPages > 1 && selectedBox === "patients" && (
-              <div className="flex justify-center items-center gap-2 my-2">
-                <button
-                  onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-                  disabled={currentPage === 1}
-                  className="px-3 py-1 text-black disabled:opacity-50 cursor-pointer"
-                >
-                  Prev
-                </button>
-
-                {Array.from({ length: totalPages }).map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setCurrentPage(i + 1)}
-                    className={`px-3 py-1 border rounded cursor-pointer ${
-                      currentPage === i + 1
-                        ? "bg-blue-500 text-white"
-                        : "bg-white text-blue-500"
-                    }`}
-                  >
-                    {i + 1}
-                  </button>
-                ))}
-
-                <button
-                  onClick={() =>
-                    setCurrentPage((p) => Math.min(p + 1, totalPages))
-                  }
-                  disabled={currentPage === totalPages}
-                  className="px-3 py-1 text-black disabled:opacity-50 cursor-pointer"
-                >
-                  Next
-                </button>
-              </div>
-            )}
-          </div>
+         
         </div>
       </div>
 
