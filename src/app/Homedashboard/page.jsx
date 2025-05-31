@@ -20,7 +20,7 @@ import Womandocavatar from "@/app/assets/femaledoc.png";
 
 import { UserIcon } from "@heroicons/react/24/outline";
 import {
-   ChevronRightIcon,
+  ChevronRightIcon,
   ChevronLeftIcon,
   ArrowUpRightIcon,
   ArrowsUpDownIcon,
@@ -869,10 +869,51 @@ const page = ({
   }, []);
 
   const scrollRef = useRef(null);
-  
-    const scrollByAmount = (amount) => {
-      scrollRef.current?.scrollBy({ left: amount, behavior: "smooth" });
-    };
+
+  const scrollByAmount = (amount) => {
+    scrollRef.current?.scrollBy({ left: amount, behavior: "smooth" });
+  };
+
+  const getAge = (dobString) => {
+    if (!dobString) return "";
+
+    const dob = new Date(dobString); // may return Invalid Date if format is "05 May 2002"
+
+    // Parse manually if needed
+    if (isNaN(dob)) {
+      const [day, monthStr, year] = dobString.split(" ");
+      const monthMap = {
+        Jan: 0,
+        Feb: 1,
+        Mar: 2,
+        Apr: 3,
+        May: 4,
+        Jun: 5,
+        Jul: 6,
+        Aug: 7,
+        Sep: 8,
+        Oct: 9,
+        Nov: 10,
+        Dec: 11,
+      };
+      const month = monthMap[monthStr.slice(0, 3)];
+      if (month === undefined) return "";
+
+      dob.setFullYear(parseInt(year));
+      dob.setMonth(month);
+      dob.setDate(parseInt(day));
+    }
+
+    const today = new Date();
+    let age = today.getFullYear() - dob.getFullYear();
+    const m = today.getMonth() - dob.getMonth();
+
+    if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+      age--;
+    }
+
+    return age;
+  };
 
   return (
     <>
@@ -1150,40 +1191,45 @@ const page = ({
             </div>
 
             <div className="w-full flex justify-center items-center mt-4">
-            {totalPages > 1 && selectedBox === "patients" && (
-              <div className="flex items-center gap-2 max-w-full">
-                {/* Left Arrow */}
-          
-              <ChevronLeftIcon className="w-8 h-8 text-red-600 cursor-pointer"  onClick={() => scrollByAmount(-150)}/>
+              {totalPages > 1 && selectedBox === "patients" && (
+                <div className="flex items-center gap-2 max-w-full">
+                  {/* Left Arrow */}
 
-                {/* Scrollable Page Buttons */}
-                <div
-                  ref={scrollRef}
-                  className="flex gap-2 overflow-x-auto scrollbar-hide scroll-smooth px-1"
-                  style={{ maxWidth: "70vw" }}
-                >
-                  {Array.from({ length: totalPages }).map((_, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setCurrentPage(i + 1)}
-                      className={`px-3 py-1 border rounded cursor-pointer shrink-0 transition-all ${
-                        currentPage === i + 1
-                          ? "bg-blue-500 text-white"
-                          : "bg-white text-blue-500"
-                      }`}
-                    >
-                      {i + 1}
-                    </button>
-                  ))}
+                  <ChevronLeftIcon
+                    className="w-8 h-8 text-red-600 cursor-pointer"
+                    onClick={() => scrollByAmount(-150)}
+                  />
+
+                  {/* Scrollable Page Buttons */}
+                  <div
+                    ref={scrollRef}
+                    className="flex gap-2 overflow-x-auto scrollbar-hide scroll-smooth px-1"
+                    style={{ maxWidth: "70vw" }}
+                  >
+                    {Array.from({ length: totalPages }).map((_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setCurrentPage(i + 1)}
+                        className={`px-3 py-1 border rounded cursor-pointer shrink-0 transition-all ${
+                          currentPage === i + 1
+                            ? "bg-blue-500 text-white"
+                            : "bg-white text-blue-500"
+                        }`}
+                      >
+                        {i + 1}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Right Arrow */}
+
+                  <ChevronRightIcon
+                    className="w-8 h-8 text-red-600 cursor-pointer"
+                    onClick={() => scrollByAmount(150)}
+                  />
                 </div>
-
-                {/* Right Arrow */}
-             
-                  <ChevronRightIcon className="w-8 h-8 text-red-600 cursor-pointer" onClick={() => scrollByAmount(150)}/>
-            
-              </div>
-            )}
-          </div>
+              )}
+            </div>
 
             <div
               ref={containerRef}
@@ -1284,7 +1330,7 @@ const page = ({
                                     width < 530 ? "text-center" : "text-start"
                                   }`}
                                 >
-                                  {patient.age}, {patient.gender}
+                                  {getAge(patient.dob)}, {patient.gender}
                                 </p>
                               </div>
 
@@ -1502,7 +1548,7 @@ const page = ({
                                           : "text-start"
                                       }`}
                                     >
-                                      {doc.age}, {doc.gender}
+                                      {getAge(doc.dob)}, {doc.gender}
                                     </p>
                                   </div>
 
@@ -1736,7 +1782,7 @@ const page = ({
                     width < 1060 && width >= 1000 ? "text-3xl" : "text-4xl"
                   }`}
                 >
-                  {doctorCount}
+                  {doctors.length ?? "Loading..."}
                 </p>
               </div>
               <p

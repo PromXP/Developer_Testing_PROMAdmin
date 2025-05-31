@@ -97,7 +97,7 @@ const page = ({ isOpenrem, onCloserem, patient, selectedLeg }) => {
       setTimeout(() => setShowAlert(false), 2500);
       return;
     }
-
+ // sendRealTimeMessage();
     try {
       const res = await fetch(API_URL + "send/", {
         method: "POST",
@@ -125,8 +125,8 @@ const page = ({ isOpenrem, onCloserem, patient, selectedLeg }) => {
       if (res.ok) {
         // alert("Email sent (check console for details)");
         // showWarning("Email sent Successfully");
-        sendwhatsapp();
-        // sendRealTimeMessage();
+        // sendwhatsapp();
+        sendRealTimeMessage();
       } else {
         showWarning("Failed to send email. Check logs.");
       }
@@ -316,7 +316,7 @@ const page = ({ isOpenrem, onCloserem, patient, selectedLeg }) => {
 
               <div className="w-full flex flex-col gap-2">
                 <p className="font-medium text-black text-base">
-                  REMAINDER MESSAGE
+                  REMINDER MESSAGE
                 </p>
                 <textarea
                   placeholder="Enter your message..."

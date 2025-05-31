@@ -779,6 +779,47 @@ const page = ({
     scrollRef.current?.scrollBy({ left: amount, behavior: "smooth" });
   };
 
+    const getAge = (dobString) => {
+    if (!dobString) return "";
+
+    const dob = new Date(dobString); // may return Invalid Date if format is "05 May 2002"
+
+    // Parse manually if needed
+    if (isNaN(dob)) {
+      const [day, monthStr, year] = dobString.split(" ");
+      const monthMap = {
+        Jan: 0,
+        Feb: 1,
+        Mar: 2,
+        Apr: 3,
+        May: 4,
+        Jun: 5,
+        Jul: 6,
+        Aug: 7,
+        Sep: 8,
+        Oct: 9,
+        Nov: 10,
+        Dec: 11,
+      };
+      const month = monthMap[monthStr.slice(0, 3)];
+      if (month === undefined) return "";
+
+      dob.setFullYear(parseInt(year));
+      dob.setMonth(month);
+      dob.setDate(parseInt(day));
+    }
+
+    const today = new Date();
+    let age = today.getFullYear() - dob.getFullYear();
+    const m = today.getMonth() - dob.getMonth();
+
+    if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+      age--;
+    }
+
+    return age;
+  };
+
   return (
     <>
       <div className="flex flex-col lg:flex-row w-[95%] gap-4 mx-auto mt-4 items-center justify-between">
@@ -1328,7 +1369,7 @@ const page = ({
                                     width < 530 ? "text-center" : "text-start"
                                   }`}
                                 >
-                                  {patient.age}, {patient.gender}
+                                  {getAge(patient.dob)}, {patient.gender}
                                 </p>
                               </div>
 
@@ -1427,7 +1468,7 @@ const page = ({
                                     className="absolute -top-7 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out text-sm font-semibold text-black
     group-hover:border-2 group-hover:border-black group-hover:px-3 group-hover:rounded-lg"
                                   >
-                                    {(patient.completed / patient.total) * 100}%
+                                    {Math.round((patient.completed / patient.total) * 100)}%
                                   </div>
 
                                   {/* Progress Bar Container */}

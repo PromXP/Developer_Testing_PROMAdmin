@@ -198,7 +198,10 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
     setSelectedItems(allItems);
   };
 
+  const [selectedOption, setSelectedOption] = useState("");
+
   const handleClearAll = () => {
+    setSelectedOption("");
     setSelectedItems([]);
     setSelectedDate(() => {
       const today = new Date();
@@ -326,9 +329,6 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
       return;
     }
 
-    // Block any further submission attempts now
-    qsetIsSubmitting(true);
-
     if (!leftChecked && !rightChecked) {
       showWarning("Select Leg");
       return;
@@ -363,7 +363,8 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
       setWarning("Please select a deadline.");
       return;
     }
-
+    // Block any further submission attempts now
+    qsetIsSubmitting(true);
     setWarning(""); // Clear any existing warning
 
     try {
@@ -372,7 +373,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
           uhid: patient?.uhid,
           questionnaire_assigned_left: selectedItems.map((item) => ({
             name: item,
-            period: getNextPeriod("left"),
+            period: selectedOption,
             assigned_date: new Date().toISOString(),
             deadline: new Date(selectedDate).toISOString(),
             completed: 0,
@@ -414,7 +415,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
           uhid: patient?.uhid,
           questionnaire_assigned_right: selectedItems.map((item) => ({
             name: item,
-            period: getNextPeriod("right"),
+            period: selectedOption,
             assigned_date: new Date().toISOString(),
             deadline: new Date(selectedDate).toISOString(),
             completed: 0,
@@ -453,7 +454,8 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
       }
 
       // After both succeed
-      handleSendremainder();
+      // handleSendremainder();
+      // sendwhatsapp();
       setSelectedItems([]);
       setSelectedOptiondrop("Period");
       setSelectedDate("");
@@ -507,7 +509,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
 
       // alert("✅ Email sent (check console for details)");
       showWarning("✅ Email sent Successfull");
-      sendRealTimeMessage();
+      // sendRealTimeMessage();
       // sendwhatsapp();
     } catch (error) {
       console.error("❌ Error sending email:", error);
@@ -535,21 +537,30 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
     socket.send(JSON.stringify(payload));
     window.location.reload();
     console.log("📤 Sent via WebSocket:", payload);
+    // sendwhatsapp();
 
     qsetIsSubmitting(true);
-
     window.location.reload();
   };
 
   const sendwhatsapp = async () => {
+    console.log(
+      "Whatsapp contact",
+      JSON.stringify({
+        user_name: patient?.first_name + " " + patient?.last_name,
+        phone_number: "+91" + patient?.phone_number,
+      })
+    );
+
+    // return;
+
     const res = await fetch(API_URL + "send-whatsapp/", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        message:
-          "Hey User,\nHope Your doing well !\nQuestionnaire has been assigned :\nhttps://promwebformslower.onrender.com/\nThank you with love,\nXolabsHealth",
+        user_name: patient?.first_name + " " + patient?.last_name,
         phone_number: "+91" + patient?.phone_number,
       }),
     });
@@ -558,10 +569,12 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
     const text = await res.text();
     try {
       data = JSON.parse(text);
+      qsetIsSubmitting(true);
     } catch {
       data = { error: "Invalid JSON response", raw: text };
     }
     qsetIsSubmitting(false);
+    window.location.reload();
   };
 
   const [userData, setUserData] = useState(null);
@@ -601,9 +614,9 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
     }
 
     if (!selectedDoctor) {
-      setShowAlert(true);
-      setAlertMessage("Please select a doctor.");
-      setTimeout(() => setShowAlert(false), 2500);
+      // setShowAlert(true);
+      showWarning("Please select a doctor.");
+      // setTimeout(() => setShowAlert(false), 2500);
       return;
     }
 
@@ -1332,6 +1345,47 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
 
   const [hoveredNotes, setHoveredNotes] = React.useState(null); // null or array of strings
 
+    const getAge = (dobString) => {
+    if (!dobString) return "";
+
+    const dob = new Date(dobString); // may return Invalid Date if format is "05 May 2002"
+
+    // Parse manually if needed
+    if (isNaN(dob)) {
+      const [day, monthStr, year] = dobString.split(" ");
+      const monthMap = {
+        Jan: 0,
+        Feb: 1,
+        Mar: 2,
+        Apr: 3,
+        May: 4,
+        Jun: 5,
+        Jul: 6,
+        Aug: 7,
+        Sep: 8,
+        Oct: 9,
+        Nov: 10,
+        Dec: 11,
+      };
+      const month = monthMap[monthStr.slice(0, 3)];
+      if (month === undefined) return "";
+
+      dob.setFullYear(parseInt(year));
+      dob.setMonth(month);
+      dob.setDate(parseInt(day));
+    }
+
+    const today = new Date();
+    let age = today.getFullYear() - dob.getFullYear();
+    const m = today.getMonth() - dob.getMonth();
+
+    if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+      age--;
+    }
+
+    return age;
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -1437,7 +1491,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                               }
                           w-1/2`}
                             >
-                              {patient?.age}, {patient?.gender}
+                              {getAge(patient?.dob)}, {patient?.gender}
                             </p>
                             <div
                               className={`text-sm font-normal font-poppins text-[#475467] w-1/2 ${
@@ -1551,7 +1605,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                       }`}
                     >
                       <div
-                        className={`w-[75%] flex flex-row  ${
+                        className={`w-[65%] flex flex-row  ${
                           width < 470 ? "justify-between" : "gap-4"
                         }`}
                       >
@@ -1570,7 +1624,32 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                           />
                         </div>
 
-                        <div className="w-[50%] flex justify-center items-center text-center md:w-1/4  gap-1">
+                        {/* Dropdown */}
+                        <select
+                          value={selectedOption}
+                          onChange={(e) => setSelectedOption(e.target.value)}
+                          className="text-sm border border-gray-300 rounded px-2 py-1 text-[#475467] bg-white"
+                        >
+                          <option value="" disabled>
+                            Select Period
+                          </option>
+                          <option value="Pre Op">Pre Op</option>
+                          <option value="6W">6 W</option>
+                          <option value="3M">3 M</option>
+                          <option value="6M">6 M</option>
+                          <option value="1Y">1 Y</option>
+                          <option value="2Y">2 Y</option>
+                        </select>
+                      </div>
+
+                      <div
+                        className={`flex flex-row items-center gap-2 cursor-pointer ${
+                          width < 470
+                            ? "w-full justify-center"
+                            : "w-[35%] justify-between"
+                        }`}
+                      >
+                        <div className="w-[50%] flex justify-center items-center text-center md:w-1/2  gap-1">
                           <p className="font-medium text-sm text-[#475467]">
                             Selected
                           </p>
@@ -1578,41 +1657,38 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                             {selectedItems.length}
                           </p>
                         </div>
-                      </div>
 
-                      <div
-                        className={`flex flex-row  items-center  cursor-pointer ${
-                          width < 470
-                            ? "w-full gap-4 justify-center"
-                            : "w-[25%] justify-between"
-                        }`}
-                        onClick={openDatePicker}
-                      >
-                        <p className="font-medium italic text-[#475467] text-sm">
-                          {selectedDate
-                            ? new Date(
-                                selectedDate + "T00:00:00"
-                              ).toLocaleDateString("en-GB", {
-                                day: "2-digit",
-                                month: "2-digit",
-                                year: "numeric",
-                              })
-                            : "DEADLINE"}
-                        </p>
-                        <div className="relative">
-                          <input
-                            type="date"
-                            ref={dateInputRef}
-                            value={selectedDate} // <-- controlled input
-                            min={new Date().toISOString().split("T")[0]} // disable past dates
-                            onChange={handleDateChange}
-                            className="absolute opacity-0 pointer-events-none"
-                          />
-                          <Image
-                            src={Calendar}
-                            className="w-3 h-3 "
-                            alt="Calendar"
-                          />
+                        {/* Date Picker */}
+                        <div
+                          onClick={openDatePicker}
+                          className="flex items-center gap-2 w-[50%]"
+                        >
+                          <p className="font-medium italic text-[#475467] text-sm">
+                            {selectedDate
+                              ? new Date(
+                                  selectedDate + "T00:00:00"
+                                ).toLocaleDateString("en-GB", {
+                                  day: "2-digit",
+                                  month: "2-digit",
+                                  year: "numeric",
+                                })
+                              : "DEADLINE"}
+                          </p>
+                          <div className="relative">
+                            <input
+                              type="date"
+                              ref={dateInputRef}
+                              value={selectedDate}
+                              min={new Date().toISOString().split("T")[0]}
+                              onChange={handleDateChange}
+                              className="absolute opacity-0 pointer-events-none"
+                            />
+                            <Image
+                              src={Calendar}
+                              className="w-3 h-3"
+                              alt="Calendar"
+                            />
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -2433,8 +2509,8 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                 }`}
               >
                 <div
-                  className={`w-[75%] flex flex-row  ${
-                    width < 470 ? "justify-between" : "gap-4"
+                  className={`w-[65%] flex flex-row  ${
+                    width < 470 ? "justify-between" : "gap-6"
                   }`}
                 >
                   <div className="w-[50%] flex flex-row justify-between items-center">
@@ -2448,6 +2524,32 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                     <Image src={Search} alt="search" className="w-3 h-3 " />
                   </div>
 
+                  {/* Dropdown */}
+                  <select
+                    value={selectedOption}
+                    onChange={(e) => setSelectedOption(e.target.value)}
+                    className="text-sm border border-gray-300 rounded px-2 py-1 text-[#475467] bg-white w-[50%]"
+                  >
+                    <option value="" disabled>
+                      Select Period
+                    </option>
+                    <option value="Pre Op">Pre Op</option>
+                    <option value="6W">6 W</option>
+                    <option value="3M">3 M</option>
+                    <option value="6M">6 M</option>
+                    <option value="1Y">1 Y</option>
+                    <option value="2Y">2 Y</option>
+                  </select>
+                </div>
+
+                <div
+                  className={`flex flex-row  items-center  cursor-pointer ${
+                    width < 470
+                      ? "w-full gap-4 justify-center"
+                      : "w-[35%] justify-center gap-4"
+                  }`}
+                  onClick={openDatePicker}
+                >
                   <div className="w-[50%] flex justify-center items-center text-center md:w-full  gap-1">
                     <p className="font-medium text-sm text-[#475467]">
                       Selected
@@ -2456,38 +2558,37 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                       {selectedItems.length}
                     </p>
                   </div>
-                </div>
 
-                <div
-                  className={`flex flex-row  items-center  cursor-pointer ${
-                    width < 470
-                      ? "w-full gap-4 justify-center"
-                      : "w-[25%] justify-center gap-4"
-                  }`}
-                  onClick={openDatePicker}
-                >
-                  <p className="font-medium italic text-[#475467] text-sm">
-                    {selectedDate
-                      ? new Date(selectedDate + "T00:00:00").toLocaleDateString(
-                          "en-GB",
-                          {
+                  <div
+                    onClick={openDatePicker}
+                    className="flex items-center gap-2"
+                  >
+                    <p className="font-medium italic text-[#475467] text-sm">
+                      {selectedDate
+                        ? new Date(
+                            selectedDate + "T00:00:00"
+                          ).toLocaleDateString("en-GB", {
                             day: "2-digit",
                             month: "2-digit",
                             year: "numeric",
-                          }
-                        )
-                      : "DEADLINE"}
-                  </p>
-                  <div className="relative">
-                    <input
-                      type="date"
-                      ref={dateInputRef}
-                      value={selectedDate} // <-- controlled input
-                      min={new Date().toISOString().split("T")[0]} // disable past dates
-                      onChange={handleDateChange}
-                      className="absolute opacity-0 pointer-events-none"
-                    />
-                    <Image src={Calendar} className="w-3 h-3 " alt="Calendar" />
+                          })
+                        : "DEADLINE"}
+                    </p>
+                    <div className="relative">
+                      <input
+                        type="date"
+                        ref={dateInputRef}
+                        value={selectedDate}
+                        min={new Date().toISOString().split("T")[0]}
+                        onChange={handleDateChange}
+                        className="absolute opacity-0 pointer-events-none"
+                      />
+                      <Image
+                        src={Calendar}
+                        className="w-3 h-3"
+                        alt="Calendar"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
