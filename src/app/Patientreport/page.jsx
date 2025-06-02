@@ -454,7 +454,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
       }
 
       // After both succeed
-      // handleSendremainder();
+      handleSendremainder();
       // sendwhatsapp();
       setSelectedItems([]);
       setSelectedOptiondrop("Period");
@@ -498,6 +498,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
       }
 
       // console.log("Email send response:", data);
+      sendwhatsapp();
 
       if (!res.ok) {
         showWarning("Failed to send email.");
@@ -510,7 +511,6 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
       // alert("✅ Email sent (check console for details)");
       showWarning("✅ Email sent Successfull");
       // sendRealTimeMessage();
-      // sendwhatsapp();
     } catch (error) {
       console.error("❌ Error sending email:", error);
       showWarning("Failed to send email.");
@@ -549,6 +549,8 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
       JSON.stringify({
         user_name: patient?.first_name + " " + patient?.last_name,
         phone_number: "+91" + patient?.phone_number,
+        message: "",
+        flag: 1
       })
     );
 
@@ -562,6 +564,8 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
       body: JSON.stringify({
         user_name: patient?.first_name + " " + patient?.last_name,
         phone_number: "+91" + patient?.phone_number,
+        message: "",
+        flag: 1
       }),
     });
 

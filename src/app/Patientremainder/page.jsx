@@ -97,7 +97,24 @@ const page = ({ isOpenrem, onCloserem, patient, selectedLeg }) => {
       setTimeout(() => setShowAlert(false), 2500);
       return;
     }
- // sendRealTimeMessage();
+
+    console.log(
+      "Reminder data",
+      JSON.stringify({
+        // message:
+        //   "Hey User\nHope Your doing well !\n" +
+        //   message +
+        //   "\nThank you with love,\nXolabsHealth ",
+        user_name: patient?.first_name + " " + patient?.last_name,
+        message: message,
+        phone_number: "+91" + patient.phone_number,
+      })
+    );
+    // return;
+
+
+
+    // sendRealTimeMessage();
     try {
       const res = await fetch(API_URL + "send/", {
         method: "POST",
@@ -107,8 +124,7 @@ const page = ({ isOpenrem, onCloserem, patient, selectedLeg }) => {
         body: JSON.stringify({
           email: patient.email,
           subject: "Questionnaire Pending Reminder",
-         message: message + "<br>Thank you with love,<br>XolabsHealth",
-
+          message: message + "<br>Thank you with love,<br>XolabsHealth",
         }),
       });
 
@@ -125,8 +141,8 @@ const page = ({ isOpenrem, onCloserem, patient, selectedLeg }) => {
       if (res.ok) {
         // alert("Email sent (check console for details)");
         // showWarning("Email sent Successfully");
-        // sendwhatsapp();
-        sendRealTimeMessage();
+        sendwhatsapp();
+        // sendRealTimeMessage();
       } else {
         showWarning("Failed to send email. Check logs.");
       }
@@ -172,11 +188,14 @@ const page = ({ isOpenrem, onCloserem, patient, selectedLeg }) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        message:
-          "Hey User\nHope Your doing well !\n" +
-          message +
-          "\nThank you with love,\nXolabsHealth ",
+        // message:
+        //   "Hey User\nHope Your doing well !\n" +
+        //   message +
+        //   "\nThank you with love,\nXolabsHealth ",
+        user_name: patient?.first_name + " " + patient?.last_name,
         phone_number: "+91" + patient.phone_number,
+        message: message,
+        flag: 0
       }),
     });
 
