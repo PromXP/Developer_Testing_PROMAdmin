@@ -401,7 +401,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
           resultLeft.message === "No new questionnaire(s) to add" ||
           resultLeft.message === "No changes made"
         ) {
-          showWarning(resultLeft.message);
+          showWarning("Left Leg questionnaires are already added for selected Period");
           qsetIsSubmitting(false);
 
           return;
@@ -444,7 +444,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
           resultRight.message === "No new questionnaire(s) to add" ||
           resultRight.message === "No changes made"
         ) {
-          showWarning(resultRight.message);
+          showWarning("Right Leg questionnaires are already added for selected Period");
           qsetIsSubmitting(false);
 
           return;

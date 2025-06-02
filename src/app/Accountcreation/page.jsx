@@ -708,7 +708,7 @@ const page = ({ isOpenacc, onCloseacc, userData }) => {
                         className="h-4 w-4"
                       />
                       <span className="text-sm font-medium text-[#475467]">
-                        Left Leg
+                        Left Knee
                       </span>
                     </label>
 
@@ -720,7 +720,7 @@ const page = ({ isOpenacc, onCloseacc, userData }) => {
                         className="h-4 w-4"
                       />
                       <span className="text-sm font-medium text-[#475467]">
-                        Right Leg
+                        Right Knee
                       </span>
                     </label>
                   </div>

@@ -450,7 +450,7 @@ const page = ({ isOpenaccdoc, onCloseaccdoc, userData }) => {
                 >
                   <input
                     type="text"
-                    placeholder="UHID *"
+                    placeholder="UEID *"
                     className="w-full text-black py-2 px-4 rounded-sm text-base outline-none"
                     value={uhid}
                     onChange={(e) => setUhid(e.target.value)}
