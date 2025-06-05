@@ -80,7 +80,7 @@ const page = ({ isOpenacc, onCloseacc, userData }) => {
   const [adminAssigned, setAdminAssigned] = useState("");
   const [password, setPassword] = useState("");
   const [age, setAge] = useState(0);
-  const [selectedOptiondrop, setSelectedOptiondrop] = useState("Select");
+  const [selectedOptiondrop, setSelectedOptiondrop] = useState("NN");
   const [selectedDate, setSelectedDate] = useState("");
 
   const dateInputRef = useRef(null);
@@ -242,7 +242,7 @@ const page = ({ isOpenacc, onCloseacc, userData }) => {
     setUhid("");
     setSelectedDate("");
     setSelectedGender("");
-    setSelectedOptiondrop("Select");
+    setSelectedOptiondrop("NN");
     setPhone("");
     setEmail("");
     setHeightbmi("");
@@ -290,8 +290,8 @@ const page = ({ isOpenacc, onCloseacc, userData }) => {
     if (age <= 0) return showWarning("Select Date of Birth Correctly");
     if (!selectedGender.trim()) return showWarning("Gender is required.");
     if (!leftChecked && !rightChecked) return showWarning("Select Leg");
-    if (selectedOptiondrop === "Select")
-      return showWarning("Blood group must be selected.");
+    // if (selectedOptiondrop === "Select")
+    //   return showWarning("Blood group must be selected.");
     if (!/^\d{10}$/.test(phone.trim())) {
       return showWarning("Phone number must be exactly 10 digits.");
     }
@@ -642,61 +642,8 @@ const page = ({ isOpenacc, onCloseacc, userData }) => {
                 </div>
 
                 <div
-                  className={`flex flex-row justify-center items-center gap-4 ${
-                    width < 550 ? "w-full" : "w-1/2"
-                  }`}
-                >
-                  <p className="w-3/5 font-medium text-[#475467] text-[20px] text-center">
-                    Blood Group *
-                  </p>
-                  <div className="w-2/5 relative">
-                    <div className="w-full flex justify-center">
-                      <button
-                        onClick={() => setOpendrop(!opendrop)}
-                        className="w-full px-4 flex flex-row gap-2 items-center justify-center py-1 text-sm font-medium italic text-[#475467] rounded-md hover:bg-gray-100"
-                      >
-                        {selectedOptiondrop}
-                        {opendrop ? (
-                          <ChevronUpIcon className="w-4 h-4 text-[#475467]" />
-                        ) : (
-                          <ChevronDownIcon className="w-4 h-4 text-[#475467]" />
-                        )}
-                      </button>
-                    </div>
-
-                    {/* ⬇️ Absolute positioned dropdown that won't push content down */}
-                    {opendrop && (
-                      <div className="z-50 absolute top-full left-0 mt-1 w-full bg-white border rounded-md shadow-lg max-h-40 overflow-auto">
-                        <ul className="py-1 text-sm text-gray-700">
-                          {optionsdrop.map((option, index) => (
-                            <li key={index}>
-                              <button
-                                onClick={() => handleSelectdrop(option)}
-                                className={`block w-full text-left px-4 py-2 hover:bg-gray-100 ${
-                                  selectedOptiondrop === option
-                                    ? "bg-gray-100 font-semibold"
-                                    : ""
-                                }`}
-                              >
-                                {option}
-                              </button>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div
-                className={`w-full flex  gap-4 ${
-                  width < 550 ? "flex-col" : "flex-row"
-                }`}
-              >
-                <div
                   className={`flex flex-col justify-center items-center gap-2 ${
-                    width < 550 ? "w-full" : "w-1/3"
+                    width < 550 ? "w-full" : "w-1/2"
                   }`}
                 >
                   <div className="w-full flex justify-between items-center gap-4 px-2">
@@ -725,9 +672,17 @@ const page = ({ isOpenacc, onCloseacc, userData }) => {
                     </label>
                   </div>
                 </div>
+              </div>
+
+              <div
+                className={`w-full flex  gap-4 ${
+                  width < 550 ? "flex-col" : "flex-row"
+                }`}
+              >
+                
                 <div
                   className={`flex flex-col justify-start items-center gap-2 ${
-                    width < 550 ? "w-full" : "w-1/3"
+                    width < 550 ? "w-full" : "w-1/2"
                   }`}
                 >
                   <input
@@ -743,9 +698,10 @@ const page = ({ isOpenacc, onCloseacc, userData }) => {
                     }}
                   />
                 </div>
+
                 <div
                   className={`flex flex-col justify-center items-end gap-2 ${
-                    width < 550 ? "w-full" : "w-1/3"
+                    width < 550 ? "w-full" : "w-1/2"
                   }`}
                 >
                   <input

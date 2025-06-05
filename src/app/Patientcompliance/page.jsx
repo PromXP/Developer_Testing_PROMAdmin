@@ -890,7 +890,7 @@ const page = ({ isOpencomp, patient11 }) => {
                                 ref={(el) =>
                                   (dateInputRefs.current[index] = el)
                                 }
-                                min={new Date().toISOString().split("T")[0]} // 👈 disables past dates
+                                // min={new Date().toISOString().split("T")[0]} // 👈 disables past dates
                                 onChange={(e) => handleDateChange(e, index)}
                                 className="absolute opacity-0 pointer-events-none"
                               />

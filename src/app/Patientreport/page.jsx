@@ -198,17 +198,17 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
     setSelectedItems(allItems);
   };
 
-  const [selectedOption, setSelectedOption] = useState("");
+  const [selectedOption, setSelectedOption] = useState("Select Period");
 
   const handleClearAll = () => {
-    setSelectedOption("");
+    setSelectedOption("Select Period");
     setSelectedItems([]);
     setSelectedDate(() => {
       const today = new Date();
       today.setDate(today.getDate() + 3);
       return today.toISOString().split("T")[0];
     });
-    setSelectedOptiondrop("Period"); // or whatever the default option is
+    // setSelectedOptiondrop("Selected Period"); // or whatever the default option is
   };
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -334,6 +334,9 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
       return;
     }
 
+    // showWarning(selectedOption);
+
+
     const selected = new Date(selectedDate);
     const now = new Date();
 
@@ -341,15 +344,15 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
     selected.setHours(0, 0, 0, 0);
     now.setHours(0, 0, 0, 0);
 
-    if (selected < now) {
-      showWarning("Deadline cannot be a past date.");
-      setTimeout(() => {
-        setWarning(""); // Clear warning after 2.5 seconds
-      }, 2500);
-      return; // prevent submission
-    }
+    // if (selected < now) {
+    //   showWarning("Deadline cannot be a past date.");
+    //   setTimeout(() => {
+    //     setWarning(""); // Clear warning after 2.5 seconds
+    //   }, 2500);
+    //   return; // prevent submission
+    // }
 
-    if (!getNextPeriod() || getNextPeriod() === "Period") {
+    if ( selectedOption === "Select Period") {
       showWarning("Please select a Time Period");
       return;
     }
@@ -457,7 +460,8 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
       handleSendremainder();
       // sendwhatsapp();
       setSelectedItems([]);
-      setSelectedOptiondrop("Period");
+      setSelectedOptiondrop("Selected Period");
+      setSelectedOption("Select Period");
       setSelectedDate("");
       showWarning("Questionnaires successfully assigned!");
       setTimeout(() => setWarning(""), 3000);
@@ -1634,7 +1638,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                           onChange={(e) => setSelectedOption(e.target.value)}
                           className="text-sm border border-gray-300 rounded px-2 py-1 text-[#475467] bg-white"
                         >
-                          <option value="" disabled>
+                          <option value="Select Period">
                             Select Period
                           </option>
                           <option value="Pre Op">Pre Op</option>
@@ -1683,7 +1687,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                               type="date"
                               ref={dateInputRef}
                               value={selectedDate}
-                              min={new Date().toISOString().split("T")[0]}
+                              // min={new Date().toISOString().split("T")[0]}
                               onChange={handleDateChange}
                               className="absolute opacity-0 pointer-events-none"
                             />
@@ -2534,7 +2538,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                     onChange={(e) => setSelectedOption(e.target.value)}
                     className="text-sm border border-gray-300 rounded px-2 py-1 text-[#475467] bg-white w-[50%]"
                   >
-                    <option value="" disabled>
+                    <option value="Select Period">
                       Select Period
                     </option>
                     <option value="Pre Op">Pre Op</option>
@@ -2583,7 +2587,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                         type="date"
                         ref={dateInputRef}
                         value={selectedDate}
-                        min={new Date().toISOString().split("T")[0]}
+                        // min={new Date().toISOString().split("T")[0]}
                         onChange={handleDateChange}
                         className="absolute opacity-0 pointer-events-none"
                       />
