@@ -794,7 +794,7 @@ const page = ({
         const totalPerCard = cardHeight + gap;
         const fit = Math.floor(containerHeight / totalPerCard);
 
-        setCardsPerPage(Math.max(fit, 1));
+        setCardsPerPage(50);
         console.log(
           "Container:",
           containerHeight,
@@ -1021,13 +1021,217 @@ const page = ({
       <div
         className={` h-[85%] mx-auto flex  mt-5 ${
           width >= 1000 && width / height > 1
-            ? "w-[95%] flex-row"
-            : "w-full flex-col gap-"
+            ? "w-[95%] flex-col gap-4"
+            : "w-full flex-col gap-4"
         }`}
       >
         <div
+          className={`h-fit  flex 
+
+            ${
+              width >= 1272
+                ? "pl-15 gap-5 flex-row "
+                : width >= 1000 && width < 1272 && width / height > 1
+                  ? "pl-6 gap-2 flex-row "
+                  : width < 1000 && width>=750
+                    ? "pl-0 mt-6 gap-4 flex-row"
+                  :width<750 
+                    ?"pl-0 mt-6 flex-col gap-4"
+                    :"pl-0 mt-6 flex-col"
+            }
+          `}
+        >
+          <div
+            className={`w-full  flex flex-row justify-between ${
+              width < 1170 && width >= 1000
+                ? "gap-4"
+                : width < 1000
+                  ? "h-fit"
+                  : "h-fit gap-12"
+            }`}
+          >
+            <div
+              className={`h-full bg-white shadow-md rounded-xl flex flex-col gap-3 items-center justify-center p-4 cursor-pointer ${
+                width < 420 ? "w-1/2" : "w-36"
+              } `}
+              style={{
+                boxShadow:
+                  selectedBox === "patients"
+                    ? "5px 5px 5px 0px rgba(0, 85, 153, 2)"
+                    : "",
+              }}
+              onClick={() => handleBoxClick("patients")}
+            >
+              <div className="w-full flex flex-row justify-between items-center">
+                <Image
+                  src={Patcount}
+                  alt="Profile"
+                  className={` rounded-lg ${
+                    width < 1060 && width >= 1000 ? "w-9 h-9" : "w-10 h-10"
+                  }`}
+                />
+                <p
+                  className={`text-black font-medium ${
+                    width < 1060 && width >= 1000 ? "text-3xl" : "text-4xl"
+                  }`}
+                >
+                  {userData?.user?.patients_created?.length ?? "Loading..."}
+                </p>
+              </div>
+              <p
+                className={`text-black  font-semibold ${
+                  width < 1060 && width >= 1000 ? "text-base" : "text-lg"
+                }`}
+              >
+                PATIENTS
+              </p>
+            </div>
+
+            <div
+              className={`h-full bg-white shadow-md rounded-xl flex flex-col gap-4 items-center justify-center p-4 cursor-pointer ${
+                width < 420 ? "w-1/2" : "w-36"
+              } `}
+              style={{
+                boxShadow:
+                  selectedBox === "doctors"
+                    ? "5px 5px 5px 0px rgba(0, 85, 153, 2)"
+                    : "",
+              }}
+              onClick={() => {
+                handleBoxClick("doctors");
+                handleGetDoctorsPatientStatus();
+              }}
+            >
+              <div className="w-full flex flex-row justify-between items-center">
+                <Image
+                  src={Doccount}
+                  alt="Profile"
+                  className={`rounded-lg ${
+                    width < 1060 && width >= 1000 ? "w-9 h-9" : "w-10 h-10"
+                  }`}
+                />
+                <p
+                  className={`text-black font-medium ${
+                    width < 1060 && width >= 1000 ? "text-3xl" : "text-4xl"
+                  }`}
+                >
+                  {doctors.length ?? "Loading..."}
+                </p>
+              </div>
+              <p
+                className={`text-black font-semibold ${
+                  width < 1060 && width >= 1000 ? "text-base" : "text-lg"
+                }`}
+              >
+                DOCTORS
+              </p>
+            </div>
+          </div>
+
+          {/* <div
+            className={`w-full  justify-start gap-12 ${
+              width < 1000 ? "h-fit" : "h-[55%]"
+            }`}
+          >
+
+            <div className="w-full h-full bg-white shadow-md rounded-xl flex flex-col gap-2 items-center justify-start p-3">
+              <div className="w-full flex flex-row justify-between items-center">
+                <p className="text-black text-lg font-semibold">
+                  Patients Compliance
+                </p>
+              </div>
+              <div style={{ width: "100%", height: "100%" }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      activeIndex={activeIndex}
+                      activeShape={renderActiveShape}
+                      data={data}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={80}
+                      dataKey="value"
+                      onMouseEnter={onPieEnter}
+                      onClick={handleSliceClick}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+          </div> */}
+
+          <div
+            className={`w-full flex flex-col items-center ${
+              width < 1170 && width >= 1000 ? "h-fit gap-1" : "h-fit"
+            }`}
+          >
+            {/* <p
+              className={`text-black  font-semibold ${
+                width < 1030 && width >= 1000 ? "text-base" : "text-lg"
+              }`}
+            >
+              Account Creation
+            </p> */}
+            <div
+              className={`w-full flex flex-row justify-between`}
+            >
+              <div
+                className={`h-full bg-white shadow-md rounded-xl flex flex-col gap-6 p-2 items-center justify-center  cursor-pointer ${
+                  width < 420 ? "w-1/2" : "w-36"
+                }`}
+                onClick={() => setIsOpenacc(true)}
+              >
+                <div className="w-full flex flex-row justify-center items-center">
+                  <Image
+                    src={Patacc}
+                    alt="Profile"
+                    className={` rounded-lg ${
+                      width < 1030 && width >= 1000 ? "w-8 h-8" : "w-12 h-12"
+                    }`}
+                  />
+                </div>
+                <p
+                  className={`text-black  font-semibold ${
+                    width < 1030 && width >= 1000 ? "text-sm" : "text-lg"
+                  }`}
+                >
+                  PATIENT
+                </p>
+              </div>
+
+              <div
+                className={`h-full bg-white shadow-md rounded-xl flex flex-col gap-6 p-2 items-center justify-center cursor-pointer ${
+                  width < 420 ? "w-1/2" : "w-36"
+                }`}
+                onClick={() => setIsOpenaccdoc(true)}
+              >
+                <div className="w-full flex flex-row justify-center items-center">
+                  <Image
+                    src={Docacc}
+                    alt="Profile"
+                    className={` rounded-lg ${
+                      width < 1030 && width >= 1000 ? "w-8 h-8" : "w-12 h-12"
+                    }`}
+                  />
+                </div>
+                <p
+                  className={`text-black  font-semibold ${
+                    width < 1030 && width >= 1000 ? "text-sm" : "text-lg"
+                  }`}
+                >
+                  DOCTOR
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+
+        <div
           className={`w-full flex flex-col gap-3 ${
-            width >= 1000 && width / height > 1 ? "w-2/3" : "w-full"
+            width >= 1000 && width / height > 1 ? "w-full" : "w-full"
           }`}
         >
           <div
@@ -1696,203 +1900,6 @@ const page = ({
           </div>
         </div>
 
-        <div
-          className={`h-full  flex flex-col 
-            ${
-              width >= 1272
-                ? "pl-15 gap-5"
-                : width >= 1000 && width < 1272 && width / height > 1
-                  ? "pl-6 gap-2"
-                  : width < 1000
-                    ? "pl-0 mt-6 gap-4"
-                    : "pl-0 mt-6"
-            }
-            ${width >= 1000 && width / height > 1 ? "w-1/3" : "w-full "}`}
-        >
-          <div
-            className={`w-full  flex flex-row justify-between ${
-              width < 1170 && width >= 1000
-                ? "gap-4"
-                : width < 1000
-                  ? "h-fit"
-                  : "h-[15%] gap-12"
-            }`}
-          >
-            <div
-              className={`h-full bg-white shadow-md rounded-xl flex flex-col gap-2 items-center justify-center p-4 cursor-pointer ${
-                width < 420 ? "w-fit" : "w-36"
-              } `}
-              style={{
-                boxShadow:
-                  selectedBox === "patients"
-                    ? "5px 5px 5px 0px rgba(0, 85, 153, 2)"
-                    : "",
-              }}
-              onClick={() => handleBoxClick("patients")}
-            >
-              <div className="w-full flex flex-row justify-between items-center">
-                <Image
-                  src={Patcount}
-                  alt="Profile"
-                  className={` rounded-lg ${
-                    width < 1060 && width >= 1000 ? "w-9 h-9" : "w-10 h-10"
-                  }`}
-                />
-                <p
-                  className={`text-black font-medium ${
-                    width < 1060 && width >= 1000 ? "text-3xl" : "text-4xl"
-                  }`}
-                >
-                  {userData?.user?.patients_created?.length ?? "Loading..."}
-                </p>
-              </div>
-              <p
-                className={`text-black  font-semibold ${
-                  width < 1060 && width >= 1000 ? "text-base" : "text-lg"
-                }`}
-              >
-                PATIENTS
-              </p>
-            </div>
-            <div
-              className={`h-full bg-white shadow-md rounded-xl flex flex-col gap-2 items-center justify-center p-4 cursor-pointer ${
-                width < 420 ? "w-fit" : "w-36"
-              } `}
-              style={{
-                boxShadow:
-                  selectedBox === "doctors"
-                    ? "5px 5px 5px 0px rgba(0, 85, 153, 2)"
-                    : "",
-              }}
-              onClick={() => {
-                handleBoxClick("doctors");
-                handleGetDoctorsPatientStatus();
-              }}
-            >
-              <div className="w-full flex flex-row justify-between items-center">
-                <Image
-                  src={Doccount}
-                  alt="Profile"
-                  className={`rounded-lg ${
-                    width < 1060 && width >= 1000 ? "w-9 h-9" : "w-10 h-10"
-                  }`}
-                />
-                <p
-                  className={`text-black font-medium ${
-                    width < 1060 && width >= 1000 ? "text-3xl" : "text-4xl"
-                  }`}
-                >
-                  {doctors.length ?? "Loading..."}
-                </p>
-              </div>
-              <p
-                className={`text-black font-semibold ${
-                  width < 1060 && width >= 1000 ? "text-base" : "text-lg"
-                }`}
-              >
-                DOCTORS
-              </p>
-            </div>
-          </div>
-
-          <div
-            className={`w-full  justify-start gap-12 ${
-              width < 1000 ? "h-fit" : "h-[55%]"
-            }`}
-          >
-            <div className="w-full h-full bg-white shadow-md rounded-xl flex flex-col gap-2 items-center justify-start p-3">
-              <div className="w-full flex flex-row justify-between items-center">
-                <p className="text-black text-lg font-semibold">
-                  Patients Compliance
-                </p>
-              </div>
-              <div style={{ width: "100%", height: "100%" }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      activeIndex={activeIndex}
-                      activeShape={renderActiveShape}
-                      data={data}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={80}
-                      dataKey="value"
-                      onMouseEnter={onPieEnter}
-                      onClick={handleSliceClick}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          </div>
-
-          <div
-            className={`w-full flex flex-col items-center ${
-              width < 1170 && width >= 1000 ? "h-[10%] gap-1" : "h-[15%]"
-            }`}
-          >
-            <p
-              className={`text-black  font-semibold ${
-                width < 1030 && width >= 1000 ? "text-base" : "text-lg"
-              }`}
-            >
-              Account Creation
-            </p>
-            <div
-              className={`w-full flex flex-row justify-between ${
-                width < 1030 && width >= 1000 ? "gap-4" : "gap-12"
-              }`}
-            >
-              <div
-                className={`h-full bg-white shadow-md rounded-xl flex flex-col gap-2 items-center justify-center  cursor-pointer ${
-                  width < 1030 && width >= 1000 ? "w-28 p-1" : "w-40 p-4"
-                }`}
-                onClick={() => setIsOpenacc(true)}
-              >
-                <div className="w-full flex flex-row justify-center items-center">
-                  <Image
-                    src={Patacc}
-                    alt="Profile"
-                    className={` rounded-lg ${
-                      width < 1030 && width >= 1000 ? "w-8 h-8" : "w-12 h-12"
-                    }`}
-                  />
-                </div>
-                <p
-                  className={`text-black  font-semibold ${
-                    width < 1030 && width >= 1000 ? "text-sm" : "text-lg"
-                  }`}
-                >
-                  PATIENT
-                </p>
-              </div>
-              <div
-                className={`h-full bg-white shadow-md rounded-xl flex flex-col gap-2 items-center justify-center cursor-pointer ${
-                  width < 1030 && width >= 1000 ? "w-28 p-1" : "w-40 p-4"
-                }`}
-                onClick={() => setIsOpenaccdoc(true)}
-              >
-                <div className="w-full flex flex-row justify-center items-center">
-                  <Image
-                    src={Docacc}
-                    alt="Profile"
-                    className={` rounded-lg ${
-                      width < 1030 && width >= 1000 ? "w-8 h-8" : "w-12 h-12"
-                    }`}
-                  />
-                </div>
-                <p
-                  className={`text-black  font-semibold ${
-                    width < 1030 && width >= 1000 ? "text-sm" : "text-lg"
-                  }`}
-                >
-                  DOCTOR
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* <Patientreport
