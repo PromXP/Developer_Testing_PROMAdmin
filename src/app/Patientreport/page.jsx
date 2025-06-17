@@ -336,7 +336,6 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
 
     // showWarning(selectedOption);
 
-
     const selected = new Date(selectedDate);
     const now = new Date();
 
@@ -352,7 +351,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
     //   return; // prevent submission
     // }
 
-    if ( selectedOption === "Select Period") {
+    if (selectedOption === "Select Period") {
       showWarning("Please select a Time Period");
       return;
     }
@@ -404,7 +403,9 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
           resultLeft.message === "No new questionnaire(s) to add" ||
           resultLeft.message === "No changes made"
         ) {
-          showWarning("Left Leg questionnaires are already added for selected Period");
+          showWarning(
+            "Left Leg questionnaires are already added for selected Period"
+          );
           qsetIsSubmitting(false);
 
           return;
@@ -447,7 +448,9 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
           resultRight.message === "No new questionnaire(s) to add" ||
           resultRight.message === "No changes made"
         ) {
-          showWarning("Right Leg questionnaires are already added for selected Period");
+          showWarning(
+            "Right Leg questionnaires are already added for selected Period"
+          );
           qsetIsSubmitting(false);
 
           return;
@@ -457,7 +460,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
       }
 
       // After both succeed
-      handleSendremainder();
+      // handleSendremainder();
       // sendwhatsapp();
       setSelectedItems([]);
       setSelectedOptiondrop("Selected Period");
@@ -554,7 +557,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
         user_name: patient?.first_name + " " + patient?.last_name,
         phone_number: "+91" + patient?.phone_number,
         message: "",
-        flag: 1
+        flag: 1,
       })
     );
 
@@ -569,7 +572,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
         user_name: patient?.first_name + " " + patient?.last_name,
         phone_number: "+91" + patient?.phone_number,
         message: "",
-        flag: 1
+        flag: 1,
       }),
     });
 
@@ -1353,7 +1356,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
 
   const [hoveredNotes, setHoveredNotes] = React.useState(null); // null or array of strings
 
-    const getAge = (dobString) => {
+  const getAge = (dobString) => {
     if (!dobString) return "";
 
     const dob = new Date(dobString); // may return Invalid Date if format is "05 May 2002"
@@ -1393,6 +1396,28 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
 
     return age;
   };
+
+  const [profileImages, setProfileImages] = useState("");
+
+  useEffect(() => {
+    const fetchPatientImage = async () => {
+      try {
+        const uhid = sessionStorage.getItem("uhid");
+        const res = await fetch(
+          `${API_URL}get-profile-photo/${encodeURIComponent(uhid)}`
+        );
+
+        if (!res.ok) throw new Error("Failed to fetch profile photos");
+        const data = await res.json();
+
+        setProfileImages(data.profile_image_url);
+      } catch (err) {
+        console.error("Error fetching profile images:", err);
+      }
+    };
+
+    fetchPatientImage();
+  }, []); // empty dependency: fetch once on mount
 
   if (!isOpen) return null;
 
@@ -1447,11 +1472,18 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                       }`}
                     >
                       <Image
-                        className={`rounded-full w-14 h-14`}
                         src={
-                          patient.gender === "male" ? Manavatar : Womanavatar
+                          profileImages ||
+                          (patient.gender === "male" ? Manavatar : Womanavatar)
                         }
-                        alt="alex hales"
+                        alt={patient.uhid}
+                        width={40} // or your desired width
+                        height={40} // or your desired height
+                        className={`rounded-full cursor-pointer ${
+                          width < 530
+                            ? "w-11 h-11 flex justify-center items-center"
+                            : "w-10 h-10"
+                        }`}
                       />
 
                       <div
@@ -1638,9 +1670,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                           onChange={(e) => setSelectedOption(e.target.value)}
                           className="text-sm border border-gray-300 rounded px-2 py-1 text-[#475467] bg-white"
                         >
-                          <option value="Select Period">
-                            Select Period
-                          </option>
+                          <option value="Select Period">Select Period</option>
                           <option value="Pre Op">Pre Op</option>
                           <option value="6W">6 W</option>
                           <option value="3M">3 M</option>
@@ -2538,9 +2568,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                     onChange={(e) => setSelectedOption(e.target.value)}
                     className="text-sm border border-gray-300 rounded px-2 py-1 text-[#475467] bg-white w-[50%]"
                   >
-                    <option value="Select Period">
-                      Select Period
-                    </option>
+                    <option value="Select Period">Select Period</option>
                     <option value="Pre Op">Pre Op</option>
                     <option value="6W">6 W</option>
                     <option value="3M">3 M</option>

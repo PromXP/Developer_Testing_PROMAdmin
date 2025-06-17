@@ -18,13 +18,21 @@ import Womanavatar from "@/app/assets/woman.png";
 import Mandocavatar from "@/app/assets/maledoc.png";
 import Womandocavatar from "@/app/assets/femaledoc.png";
 
-import { UserIcon } from "@heroicons/react/24/outline";
 import {
   ChevronRightIcon,
-  ChevronLeftIcon,
   ArrowUpRightIcon,
-  ArrowsUpDownIcon,
+  MagnifyingGlassIcon,
+  CalendarIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+  PencilIcon,
+  CheckCircleIcon,
+  PencilSquareIcon,
+  ChevronLeftIcon,
+  ClipboardDocumentCheckIcon,
+  XMarkIcon,
 } from "@heroicons/react/16/solid";
+
 import Patientimg from "@/app/assets/patimg.png";
 import Patcount from "@/app/assets/patcount.png";
 import Doccount from "@/app/assets/doccount.png";
@@ -40,6 +48,14 @@ import Patientreport from "@/app/Patientreport/page";
 import Patientremainder from "@/app/Patientremainder/page";
 import Accountcreation from "@/app/Accountcreation/page";
 import Accountcreationdoctor from "@/app/Accountcreationdoctor/page";
+
+import Male from "@/app/assets/male.png";
+import Female from "@/app/assets/female.png";
+import Othergender from "@/app/assets/transgender.png";
+import LeftKnee from "@/app/assets/leftknee.png";
+import RightKnee from "@/app/assets/rightknee.png";
+import UploadProfile from "@/app/assets/uploadprofile.png";
+import Closeicon from "@/app/assets/closeicon.png";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -915,6 +931,306 @@ const page = ({
     return age;
   };
 
+  const [profileImages, setProfileImages] = useState({});
+
+  useEffect(() => {
+    const fetchAllImages = async () => {
+      try {
+        const res = await fetch(`${API_URL}get-all-profile-photos`);
+        if (!res.ok) throw new Error("Failed to fetch profile photos");
+        const data = await res.json();
+
+        // Convert array to object { uhid: profile_image_url }
+        const imagesMap = {};
+        data.patients.forEach((p) => {
+          imagesMap[p.uhid] = p.profile_image_url;
+        });
+
+        setProfileImages(imagesMap);
+      } catch (err) {
+        console.error("Error fetching profile images:", err);
+      }
+    };
+
+    fetchAllImages();
+  }, []); // empty dependency: fetch once on mount
+
+  const [showprofile, setshowprofile] = useState(false);
+  const [profpat, setprofpat] = useState([]);
+  const [showdoc, setshowdoc] = useState(false);
+  const [profdoc, setprofdoc] = useState([]);
+
+  // console.log("Screen Width:", width, "Screen Height:", height);
+  const [message, setMessage] = useState("");
+
+  const [showAlert, setShowAlert] = useState(false);
+  const [alertMessage, setAlertMessage] = useState("");
+
+  const showWarning = (message) => {
+    setAlertMessage(message);
+    setShowAlert(true);
+    setTimeout(() => setShowAlert(false), 4000);
+  };
+
+  const [isEditingEmail, setIsEditingEmail] = useState(false);
+  const [emailValue, setEmailValue] = useState(profpat.email || "");
+  const [tempEmail, setTempEmail] = useState(emailValue); // used for cancel action
+
+  const [isEditingMobile, setIsEditingMobile] = useState(false);
+  const [mobileValue, setMobileValue] = useState(profpat.phone_number || "");
+  const [tempMobile, setTempMobile] = useState(mobileValue);
+
+  const [isEditingAltMobile, setIsEditingAltMobile] = useState(false);
+  const [altMobileValue, setAltMobileValue] = useState(
+    profpat.alternatenumber || ""
+  );
+  const [tempAltMobile, setTempAltMobile] = useState(altMobileValue);
+
+  const handleEditClick = () => {
+    setTempEmail(emailValue); // preserve original
+    setIsEditingEmail(true);
+  };
+
+  const handleSaveClick = async () => {
+    setEmailValue(tempEmail);
+    setIsEditingEmail(false);
+    const payload = {
+      uhid: profpat.uhid,
+      email: tempEmail,
+    };
+    // TODO: Call API to save emailValue if needed
+
+    try {
+      const response = await fetch(API_URL + "update-patient-field", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+      console.log("Submission successful:", payload);
+      if (!response.ok) {
+        throw new Error("Failed to send data.");
+      }
+
+      const result = await response.json();
+      console.log("Submission successful:", result);
+      showWarning("Update Successfull");
+      // Optionally, show success message here
+    } catch (error) {
+      console.error("Error submitting data:", error);
+      showWarning("Update failed");
+      showWarning("Update Successfull");
+    }
+  };
+
+  const handleCancelClick = () => {
+    setIsEditingEmail(false);
+  };
+
+  const handleEditMobile = () => {
+    setTempMobile(mobileValue);
+    setIsEditingMobile(true);
+  };
+
+  const handleSaveMobile = async () => {
+    setMobileValue(tempMobile);
+    setIsEditingMobile(false);
+    // TODO: Call API to persist mobileValue
+    const payload = {
+      uhid: profpat.uhid,
+      phone_number: altMobileValue,
+    };
+    try {
+      const response = await fetch(API_URL + "update-patient-field", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+      console.log("Submission successful:", payload);
+      if (!response.ok) {
+        throw new Error("Failed to send data.");
+      }
+
+      const result = await response.json();
+      console.log("Submission successful:", result);
+      showWarning("Update Successfull");
+      // Optionally, show success message here
+    } catch (error) {
+      console.error("Error submitting data:", error);
+      showWarning("Update failed");
+      showWarning("Update Successfull");
+    }
+  };
+
+  const handleCancelMobile = () => {
+    setIsEditingMobile(false);
+  };
+
+  const handleEditAltMobile = () => {
+    setTempAltMobile(altMobileValue);
+    setIsEditingAltMobile(true);
+  };
+
+  const handleSaveAltMobile = async () => {
+    setAltMobileValue(tempAltMobile);
+    setIsEditingAltMobile(false);
+    // TODO: API call to save altMobileValue
+    const payload = {
+      uhid: profpat.uhid,
+      alternatenumber: tempAltMobile,
+    };
+    // console.log("Alternate mobile number",payload);
+    // return;
+    try {
+      const response = await fetch(API_URL + "update-patient-field", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+      console.log("Submission successful:", payload);
+      if (!response.ok) {
+        throw new Error("Failed to send data.");
+      }
+
+      const result = await response.json();
+      console.log("Submission successful:", result);
+      showWarning("Update Successfull");
+      // Optionally, show success message here
+    } catch (error) {
+      console.error("Error submitting data:", error);
+      showWarning("Update Failed");
+      showWarning("Update failed");
+    }
+  };
+
+  const handleCancelAltMobile = () => {
+    setIsEditingAltMobile(false);
+  };
+
+  const [isEditingAddress, setIsEditingAddress] = useState(false);
+  const [addressValue, setAddressValue] = useState(profpat.address || "");
+  const [tempAddress, setTempAddress] = useState(addressValue);
+
+  const handleEditAddress = () => {
+    setTempAddress(addressValue);
+    setIsEditingAddress(true);
+  };
+
+  const handleCancelAddress = () => {
+    setTempAddress(addressValue);
+    setIsEditingAddress(false);
+  };
+
+  const handleSaveAddress = async () => {
+    setAddressValue(tempAddress);
+    setIsEditingAddress(false);
+
+    // Optional: API call
+    const payload = {
+      uhid: profpat.uhid,
+      address: tempAddress,
+    };
+    console.log("Saving address", payload);
+
+    try {
+      const response = await fetch(API_URL + "update-patient-field", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+      console.log("Submission successful:", payload);
+      if (!response.ok) {
+        throw new Error("Failed to send data.");
+      }
+
+      const result = await response.json();
+      console.log("Submission successful:", result);
+      showWarning("Update Successfull");
+      // Optionally, show success message here
+    } catch (error) {
+      console.error("Error submitting data:", error);
+      showWarning("Update failed");
+      showWarning("Update Successfull");
+    }
+
+    // await fetch or axios call to update if needed
+  };
+
+  const [profileImage, setProfileImage] = useState(null);
+  const [imageUrl, setImageUrl] = useState("");
+  const [success, setSuccess] = useState("");
+  const [error, setError] = useState("");
+  const [previewUrl, setPreviewUrl] = useState(null);
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file && e.target.files) {
+      setProfileImage(file);
+      setPreviewUrl(URL.createObjectURL(file));
+      setSuccess("");
+      setError("");
+      setimgupload(true);
+    }
+  };
+
+  const isBlobUrl = previewUrl && previewUrl.startsWith("blob:");
+
+  const [showimgupload, setimgupload] = useState(false);
+
+  const fileInputRef = useRef(null); // To programmatically trigger the file input
+
+  const resetImage = () => {
+    setProfileImage(null);
+    setPreviewUrl(null);
+    setSuccess("");
+    setError("");
+
+    // Optionally clear the file input value
+    if (fileInputRef.current) {
+      fileInputRef.current.value = null;
+    }
+    setimgupload(false);
+  };
+
+  const handleUpload = async ({ uhid1, type1 }) => {
+    if (!profileImage) {
+      setError("Please select or capture an image.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("uhid", uhid1);
+    formData.append("usertype", type1); // <-- Make sure userType is defined
+    formData.append("profile_image", profileImage);
+
+    try {
+      const res = await axios.post(
+        `${API_URL}upload-profile-photo`,
+        formData
+        // ❌ DO NOT SET HEADERS — Axios will handle Content-Type with boundaries
+      );
+
+      console.log("Profile upload success:", res.data);
+      setSuccess("Image uploaded successfully.");
+      showWarning("Image Upload Successfull");
+      setError("");
+      setimgupload(false);
+    } catch (err) {
+      console.error("Profile upload failed:", err);
+      setError("Upload failed.");
+      showWarning("Image Upload failed");
+      setSuccess("");
+      setimgupload(true);
+    }
+  };
+
   return (
     <>
       <div className="flex flex-col lg:flex-row gap-4 w-[95%] mx-auto mt-4 items-center justify-between">
@@ -1033,11 +1349,11 @@ const page = ({
                 ? "pl-15 gap-5 flex-row "
                 : width >= 1000 && width < 1272 && width / height > 1
                   ? "pl-6 gap-2 flex-row "
-                  : width < 1000 && width>=750
+                  : width < 1000 && width >= 750
                     ? "pl-0 mt-6 gap-4 flex-row"
-                  :width<750 
-                    ?"pl-0 mt-6 flex-col gap-4"
-                    :"pl-0 mt-6 flex-col"
+                    : width < 750
+                      ? "pl-0 mt-6 flex-col gap-4"
+                      : "pl-0 mt-6 flex-col"
             }
           `}
         >
@@ -1174,9 +1490,7 @@ const page = ({
             >
               Account Creation
             </p> */}
-            <div
-              className={`w-full flex flex-row justify-between`}
-            >
+            <div className={`w-full flex flex-row justify-between`}>
               <div
                 className={`h-full bg-white shadow-md rounded-xl flex flex-col gap-6 p-2 items-center justify-center  cursor-pointer ${
                   width < 420 ? "w-1/2" : "w-36"
@@ -1227,7 +1541,6 @@ const page = ({
             </div>
           </div>
         </div>
-
 
         <div
           className={`w-full flex flex-col gap-3 ${
@@ -1493,17 +1806,24 @@ const page = ({
                             }`}
                           >
                             <Image
-                              className={`rounded-full ${
+                              src={
+                                profileImages[patient.uhid] ||
+                                (patient.gender === "male"
+                                  ? Manavatar
+                                  : Womanavatar)
+                              }
+                              alt={patient.uhid}
+                              width={40} // or your desired width
+                              height={40} // or your desired height
+                              className={`rounded-full cursor-pointer ${
                                 width < 530
                                   ? "w-11 h-11 flex justify-center items-center"
                                   : "w-10 h-10"
                               }`}
-                              src={
-                                patient.gender === "male"
-                                  ? Manavatar
-                                  : Womanavatar
-                              }
-                              alt={patient.uhid}
+                              onClick={() => {
+                                setshowprofile(true);
+                                setprofpat(patient);
+                              }}
                             />
 
                             <div
@@ -1709,17 +2029,24 @@ const page = ({
                                 }`}
                               >
                                 <Image
-                                  className={`rounded-full ${
+                                  src={
+                                    profileImages[doc.uhid] ||
+                                    (doc.gender === "male"
+                                      ? Mandocavatar
+                                      : Womandocavatar)
+                                  }
+                                  alt={doc.uhid}
+                                  width={40} // or your desired width
+                                  height={40} // or your desired height
+                                  className={`rounded-full cursor-pointer ${
                                     width < 530
                                       ? "w-11 h-11 flex justify-center items-center"
                                       : "w-10 h-10"
                                   }`}
-                                  src={
-                                    doc.gender === "male"
-                                      ? Mandocavatar
-                                      : Womandocavatar
-                                  }
-                                  alt={doc.uhid}
+                                  onClick={() => {
+                                    setshowdoc(true);
+                                    setprofdoc(doc);
+                                  }}
                                 />
 
                                 <div
@@ -1899,8 +2226,672 @@ const page = ({
             </div>
           </div>
         </div>
-
       </div>
+      {showprofile && (
+        <div
+          className="fixed inset-0 z-40 "
+          style={{
+            backgroundColor: "rgba(0, 0, 0, 0.7)", // white with 50% opacity
+          }}
+        >
+          <div
+            className={`
+                  min-h-screen w-3/4 flex flex-col items-center justify-center mx-auto
+                  ${width < 950 ? "p-4 gap-4 " : "p-8 "}
+                `}
+          >
+            <div
+              className={`w-full bg-white rounded-2xl py-8 px-20  overflow-y-auto overflow-x-hidden max-h-[90vh] ${
+                width < 1095 ? "flex flex-col gap-4" : ""
+              }`}
+            >
+              <div
+                className={`w-full bg-white  ${width < 760 ? "h-fit" : "h-[90%]"} `}
+              >
+                <div
+                  className={`w-full h-full rounded-lg flex flex-col gap-8 ${
+                    width < 760 ? "py-0" : "py-4"
+                  }`}
+                >
+                  <div className={`relative w-full`}>
+                    <div className="absolute top-0 right-0">
+                      <Image
+                        className={`cursor-pointer ${
+                          width < 530 ? "w-4 h-4" : "w-4 h-4"
+                        }`}
+                        src={Closeicon}
+                        alt="close"
+                        onClick={() => {
+                          setMessage("");
+                          setshowprofile(false);
+                          window.location.reload();
+                        }}
+                      />
+                    </div>
+                    <div
+                      className={`w-full flex gap-4 flex-col ${
+                        width < 530
+                          ? "justify-center items-center"
+                          : "justify-start items-start "
+                      }`}
+                    >
+                      <p className="font-bold text-2xl text-black">
+                        PATIENT PROFILE
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="w-full h-full flex flex-col gap-6">
+                    <div className="w-full h-full flex flex-col gap-8">
+                      <div
+                        className={`w-full flex  gap-4 ${
+                          width < 700 ? "flex-col" : "flex-row"
+                        }`}
+                      >
+                        <div
+                          className={`flex flex-col justify-start items-center gap-2 ${
+                            width < 700 ? "w-full" : "w-1/2"
+                          }`}
+                        >
+                          <div
+                            className="w-[256px] h-[256px] cursor-pointer"
+                            onClick={() => fileInputRef.current.click()}
+                            style={{ position: "relative" }}
+                          >
+                            {isBlobUrl ? (
+                              // Plain <img> for blob URLs
+                              <img
+                                src={previewUrl}
+                                alt="Preview"
+                                style={{
+                                  width: "100%",
+                                  height: "100%",
+                                  objectFit: "fill",
+                                  borderRadius: 8,
+                                }}
+                                className="border"
+                              />
+                            ) : (
+                              // Next.js Image for static or remote URLs
+                              <Image
+                                src={
+                                  profileImages[profpat.uhid] ||
+                                  (profpat.gender === "male"
+                                    ? Manavatar
+                                    : Womanavatar)
+                                }
+                                alt="Upload or Capture"
+                                layout="fill"
+                                objectFit="cover"
+                                className="rounded border w-full h-full"
+                              />
+                            )}
+
+                            <input
+                              type="file"
+                              accept="image/*"
+                              capture="environment"
+                              style={{ display: "none" }}
+                              ref={fileInputRef}
+                              onChange={handleImageChange}
+                            />
+                          </div>
+                          <div>
+                            {showimgupload && (
+                              <div className="w-full flex flex-row justify-center items-center gap-8">
+                                <div className="w-1/2 flex flex-row justify-start items-center">
+                                  <p
+                                    className="font-semibold italic text-[#475467] text-lg cursor-pointer"
+                                    onClick={resetImage}
+                                  >
+                                    RESET
+                                  </p>
+                                </div>
+                                <div className="w-1/2 flex flex-row justify-end items-center">
+                                  <p
+                                    className=" rounded-full px-3 py-[1px] cursor-pointer text-center text-white text-lg font-semibold border-[#005585] border-2"
+                                    style={{
+                                      backgroundColor: "rgba(0, 85, 133, 0.9)",
+                                    }}
+                                    onClick={() => {
+                                      handleUpload({
+                                        uhid1: profpat.uhid,
+                                        type1: "patient",
+                                      });
+                                    }}
+                                  >
+                                    UPLOAD
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div
+                          className={`flex flex-col justify-between items-start gap-2 ${
+                            width < 700 ? "w-full" : "w-1/2"
+                          }`}
+                        >
+                          <div className="flex flex-row gap-4 w-full">
+                            <p className="text-black text-lg font-bold w-1/2">
+                              FIRST NAME
+                            </p>
+                            <p className="text-black text-lg font-medium w-1/2">
+                              {profpat.first_name}
+                            </p>
+                          </div>
+
+                          <div className="flex flex-row gap-4 w-full">
+                            <p className="text-black text-lg font-bold w-1/2">
+                              LAST NAME
+                            </p>
+                            <p className="text-black text-lg font-medium w-1/2">
+                              {profpat.last_name}
+                            </p>
+                          </div>
+
+                          <div className="flex flex-row gap-4 w-full">
+                            <p className="text-black text-lg font-bold w-1/2">
+                              DATE OF BIRTH
+                            </p>
+                            <p className="text-black text-lg font-medium w-1/2">
+                              {profpat.dob}
+                            </p>
+                          </div>
+
+                          <div className="flex flex-row gap-4 w-full">
+                            <p className="text-black text-lg font-bold w-1/2">
+                              GENDER
+                            </p>
+                            <p className="text-black text-lg font-medium w-1/2">
+                              {profpat.gender}
+                            </p>
+                          </div>
+
+                          <div className="flex flex-row gap-4 w-full items-center">
+                            <p className="text-black text-lg font-bold w-1/2">
+                              ADDRESS
+                            </p>
+
+                            {isEditingAddress ? (
+                              <div className="flex w-1/2 gap-2 items-center">
+                                <input
+                                  className="border flex-1 bg-gray-100 text-black p-1 rounded-md text-sm"
+                                  value={tempAddress}
+                                  onChange={(e) =>
+                                    setTempAddress(e.target.value)
+                                  }
+                                />
+                                <div className="flex gap-1">
+                                  <button
+                                    onClick={handleSaveAddress}
+                                    className="text-green-600 text-xs cursor-pointer"
+                                  >
+                                    <ClipboardDocumentCheckIcon className="w-5 h-5" />
+                                  </button>
+                                  <button
+                                    onClick={handleCancelAddress}
+                                    className="text-red-600 text-xs cursor-pointer"
+                                  >
+                                    <XMarkIcon className="w-5 h-5" />
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex w-1/2 justify-between items-center">
+                                <p className="text-black text-lg font-medium">
+                                  {profpat.address ||
+                                    addressValue ||
+                                    "Not found"}
+                                </p>
+                                <button
+                                  onClick={handleEditAddress}
+                                  className="text-gray-400 hover:text-gray-600 cursor-pointer"
+                                >
+                                  <PencilIcon className="w-4 h-4" />
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div
+                        className={`w-full flex  gap-4 ${
+                          width < 700 ? "flex-col" : "flex-row"
+                        }`}
+                      >
+                        <div
+                          className={`flex flex-col justify-center items-center gap-2 ${
+                            width < 700 ? "w-full" : "w-1/2"
+                          }`}
+                        >
+                          <div className="flex flex-row gap-4 w-full items-center">
+                            <p className="text-black text-lg font-bold w-1/4">
+                              MOBILE
+                            </p>
+
+                            {isEditingMobile ? (
+                              <div className="flex w-3/4 gap-2 items-center">
+                                <input
+                                  className="border flex-1 bg-gray-100 text-black p-1 rounded-md text-sm"
+                                  value={tempMobile}
+                                  onChange={(e) =>
+                                    setTempMobile(e.target.value)
+                                  }
+                                />
+                                <div className="flex gap-1">
+                                  <button
+                                    onClick={handleSaveMobile}
+                                    className="text-green-600 text-xs cursor-pointer"
+                                  >
+                                    <ClipboardDocumentCheckIcon className="w-5 h-5" />
+                                  </button>
+                                  <button
+                                    onClick={handleCancelMobile}
+                                    className="text-red-600 text-xs cursor-pointer"
+                                  >
+                                    <XMarkIcon className="w-5 h-5" />
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex w-1/2 justify-between items-center">
+                                <p className="text-black text-lg font-medium">
+                                  {profpat.phone_number ||
+                                    mobileValue ||
+                                    "Not found"}
+                                </p>
+                                <button
+                                  onClick={handleEditMobile}
+                                  className="text-gray-400 hover:text-gray-600 cursor-pointer"
+                                >
+                                  <PencilIcon className="w-4 h-4" />
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div
+                          className={`flex flex-col justify-center items-center gap-2 ${
+                            width < 700 ? "w-full" : "w-1/2"
+                          }`}
+                        >
+                          <div className="flex flex-row gap-4 w-full items-center">
+                            <p className="text-black text-lg font-bold w-1/2">
+                              ALTERNATE MOBILE
+                            </p>
+
+                            {isEditingAltMobile ? (
+                              <div className="flex w-1/2 gap-2 items-center">
+                                <input
+                                  className="border flex-1 bg-gray-100 text-black p-1 rounded-md text-sm"
+                                  value={tempAltMobile}
+                                  onChange={(e) =>
+                                    setTempAltMobile(e.target.value)
+                                  }
+                                />
+                                <div className="flex gap-1">
+                                  <button
+                                    onClick={handleSaveAltMobile}
+                                    className="text-green-600 text-xs cursor-pointer"
+                                  >
+                                    <ClipboardDocumentCheckIcon className="w-5 h-5" />
+                                  </button>
+                                  <button
+                                    onClick={handleCancelAltMobile}
+                                    className="text-red-600 text-xs cursor-pointer"
+                                  >
+                                    <XMarkIcon className="w-5 h-5" />
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex w-1/2 justify-between items-center">
+                                <p className="text-black text-lg font-medium">
+                                  {profpat.alternatenumber ||
+                                    altMobileValue ||
+                                    "Not found"}
+                                </p>
+                                <button
+                                  onClick={handleEditAltMobile}
+                                  className="text-gray-400 hover:text-gray-600 cursor-pointer"
+                                >
+                                  <PencilIcon className="w-4 h-4" />
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div
+                        className={`w-full flex  gap-4 ${
+                          width < 700 ? "flex-col" : "flex-row"
+                        }`}
+                      >
+                        <div
+                          className={`flex flex-col justify-start items-center gap-2 ${
+                            width < 700 ? "w-full" : "w-1/2"
+                          }`}
+                        >
+                          <div className="flex flex-row gap-4 w-full items-center">
+                            <p className="text-black text-lg font-bold w-1/4">
+                              EMAIL
+                            </p>
+
+                            {isEditingEmail ? (
+                              <div className="flex w-3/4 gap-2 items-center">
+                                <input
+                                  className="border flex-1 bg-gray-100 text-black p-1 rounded-md text-sm"
+                                  value={tempEmail}
+                                  onChange={(e) => setTempEmail(e.target.value)}
+                                />
+                                <div className="flex gap-1">
+                                  <button
+                                    onClick={handleSaveClick}
+                                    className="text-green-600 text-xs cursor-pointer"
+                                  >
+                                    <ClipboardDocumentCheckIcon className="w-5 h-5" />
+                                  </button>
+                                  <button
+                                    onClick={handleCancelClick}
+                                    className="text-red-600 text-xs cursor-pointer"
+                                  >
+                                    <XMarkIcon className="w-5 h-5" />
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex w-1/2 justify-between items-center">
+                                <p className="text-black text-lg font-medium">
+                                  {profpat.email || emailValue || "Not found"}
+                                </p>
+                                <button
+                                  onClick={handleEditClick}
+                                  className="text-gray-400 hover:text-gray-600 cursor-pointer"
+                                >
+                                  <PencilIcon className="w-4 h-4" />
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div
+                          className={`flex flex-row justify-start items-center gap-4 ${
+                            width < 700 ? "w-full" : "w-1/2"
+                          }`}
+                        >
+                          <div className="flex flex-row gap-4 w-full">
+                            <p className="text-black text-lg font-bold w-1/2">
+                              UHID
+                            </p>
+                            <p className="text-black text-lg font-semibol w-1/2">
+                              {profpat.uhid || "Not found"}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div
+                        className={`w-full flex  gap-4 ${
+                          width < 700 ? "flex-col" : "flex-row"
+                        }`}
+                      >
+                        <div
+                          className={`flex flex-col justify-start items-center gap-2 ${
+                            width < 700 ? "w-full" : "w-2/5"
+                          }`}
+                        >
+                          <div className="flex flex-row gap-4 w-full">
+                            <p className="text-black text-lg font-bold w-1/2">
+                              HEIGHT
+                            </p>
+                            <p className="text-black text-lg font-semibol w-1/2">
+                              {profpat.height || "Not found"}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div
+                          className={` flex flex-col justify-start items-center gap-2 ${
+                            width < 700 ? "w-full" : "w-2/5"
+                          }`}
+                        >
+                          <div className="flex flex-row gap-4 w-full">
+                            <p className="text-black text-lg font-bold w-1/2">
+                              WEIGHT
+                            </p>
+                            <p className="text-black text-lg font-semibol w-1/2">
+                              {profpat.weight || "Not found"}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div
+                          className={`flex flex-col justify-start items-center gap-2 ${
+                            width < 700 ? "w-full" : "w-1/5"
+                          }`}
+                        >
+                          <div className="flex flex-row gap-4 w-full">
+                            <p className="text-black text-lg font-bold w-1/2">
+                              BMI
+                            </p>
+                            <p className="text-black text-lg font-semibol w-1/2">
+                              {profpat.bmi || "Not found"}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* <div className="w-full flex flex-row justify-center items-center">
+                        <div className="w-1/2 flex flex-row justify-start items-center">
+                          <p
+                            className="font-semibold italic text-[#475467] text-lg cursor-pointer"
+                            onClick={clearAllFields}
+                          >
+                            CLEAR ALL
+                          </p>
+                        </div>
+                        <div className="w-1/2 flex flex-row justify-end items-center">
+                          <p
+                            className=" rounded-full px-3 py-[1px] cursor-pointer text-center text-white text-lg font-semibold border-[#005585] border-2"
+                            style={{ backgroundColor: "rgba(0, 85, 133, 0.9)" }}
+                            onClick={!isSubmitting ? handleSendremainder : undefined}
+                          >
+                            {isSubmitting ? "CREATING..." : "CREATE"}
+                          </p>
+                        </div>
+                      </div> */}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showdoc && (
+        <div
+          className="fixed inset-0 z-40 "
+          style={{
+            backgroundColor: "rgba(0, 0, 0, 0.7)", // white with 50% opacity
+          }}
+        >
+          <div
+            className={`
+                  min-h-screen w-1/3 flex flex-col items-center justify-center mx-auto
+                  ${width < 950 ? "p-4 gap-4 " : "p-8 "}
+                `}
+          >
+            <div
+              className={`w-full bg-white rounded-2xl py-8 px-20  overflow-y-auto overflow-x-hidden max-h-[90vh] ${
+                width < 1095 ? "flex flex-col gap-4" : ""
+              }`}
+            >
+              <div
+                className={`w-full bg-white  ${width < 760 ? "h-fit" : "h-[90%]"} `}
+              >
+                <div
+                  className={`w-full h-full rounded-lg flex flex-col gap-8 ${
+                    width < 760 ? "py-0" : "py-4"
+                  }`}
+                >
+                  <div className={`relative w-full`}>
+                    <div className="absolute top-0 right-0">
+                      <Image
+                        className={`cursor-pointer ${
+                          width < 530 ? "w-4 h-4" : "w-4 h-4"
+                        }`}
+                        src={Closeicon}
+                        alt="close"
+                        onClick={() => {
+                          setMessage("");
+                          setshowprofile(false);
+                          window.location.reload();
+                        }}
+                      />
+                    </div>
+                    <div
+                      className={`w-full flex gap-4 flex-col ${
+                        width < 530
+                          ? "justify-center items-center"
+                          : "justify-start items-start "
+                      }`}
+                    >
+                      <p className="font-bold text-2xl text-black">
+                        DOCTOR PROFILE
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="w-full h-full flex flex-col gap-6">
+                    <div className="w-full h-full flex flex-col gap-8">
+                      <div
+                        className={`w-full flex  gap-4 ${
+                          width < 700 ? "flex-col" : "flex-row"
+                        }`}
+                      >
+                        <div
+                          className={`flex flex-col justify-start items-center gap-2 ${
+                            width < 700 ? "w-full" : "w-full"
+                          }`}
+                        >
+                          <div
+                            className="w-[256px] h-[500px] cursor-pointer"
+                            onClick={() => fileInputRef.current.click()}
+                            style={{ position: "relative" }}
+                          >
+                            {isBlobUrl ? (
+                              // Plain <img> for blob URLs
+                              <img
+                                src={previewUrl}
+                                alt="Preview"
+                                style={{
+                                  width: "100%",
+                                  height: "100%",
+                                  objectFit: "fill",
+                                  borderRadius: 8,
+                                }}
+                                className="border"
+                              />
+                            ) : (
+                              // Next.js Image for static or remote URLs
+                              <Image
+                                src={
+                                  profileImages[profdoc.uhid] ||
+                                  (profdoc.gender === "male"
+                                    ? Mandocavatar
+                                    : Womandocavatar)
+                                }
+                                alt="Upload or Capture"
+                                layout="fill"
+                                objectFit="cover"
+                                className="rounded border w-full h-full"
+                              />
+                            )}
+
+                            <input
+                              type="file"
+                              accept="image/*"
+                              capture="environment"
+                              style={{ display: "none" }}
+                              ref={fileInputRef}
+                              onChange={handleImageChange}
+                            />
+                          </div>
+                          <div>
+                            {showimgupload && (
+                              <div className="w-full flex flex-row justify-center items-center gap-8">
+                                <div className="w-1/2 flex flex-row justify-start items-center">
+                                  <p
+                                    className="font-semibold italic text-[#475467] text-lg cursor-pointer"
+                                    onClick={resetImage}
+                                  >
+                                    RESET
+                                  </p>
+                                </div>
+                                <div className="w-1/2 flex flex-row justify-end items-center">
+                                  <p
+                                    className=" rounded-full px-3 py-[1px] cursor-pointer text-center text-white text-lg font-semibold border-[#005585] border-2"
+                                    style={{
+                                      backgroundColor: "rgba(0, 85, 133, 0.9)",
+                                    }}
+                                    onClick={() => {
+                                      handleUpload({
+                                        uhid1: profdoc.uhid,
+                                        type1: "doctor",
+                                      });
+                                    }}
+                                  >
+                                    UPLOAD
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* <div className="w-full flex flex-row justify-center items-center">
+                        <div className="w-1/2 flex flex-row justify-start items-center">
+                          <p
+                            className="font-semibold italic text-[#475467] text-lg cursor-pointer"
+                            onClick={clearAllFields}
+                          >
+                            CLEAR ALL
+                          </p>
+                        </div>
+                        <div className="w-1/2 flex flex-row justify-end items-center">
+                          <p
+                            className=" rounded-full px-3 py-[1px] cursor-pointer text-center text-white text-lg font-semibold border-[#005585] border-2"
+                            style={{ backgroundColor: "rgba(0, 85, 133, 0.9)" }}
+                            onClick={!isSubmitting ? handleSendremainder : undefined}
+                          >
+                            {isSubmitting ? "CREATING..." : "CREATE"}
+                          </p>
+                        </div>
+                      </div> */}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showAlert && (
+        <div className="fixed top-8 left-1/2 transform -translate-x-1/2 z-50">
+          <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-6 py-3 rounded-lg shadow-lg animate-fade-in-out">
+            {alertMessage}
+          </div>
+        </div>
+      )}
 
       {/* <Patientreport
         isOpen={isOpen}

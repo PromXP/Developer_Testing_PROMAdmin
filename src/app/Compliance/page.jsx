@@ -661,7 +661,7 @@ const page = ({
   const containerRef = useRef(null);
   const cardRef = useRef(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [cardsPerPage, setCardsPerPage] = useState(6);
+  const [cardsPerPage, setCardsPerPage] = useState(50);
 
   const sortedPatients = filteredPatientsByDate.sort((a, b) => {
     const FAR_FUTURE = new Date(9999, 11, 31);
@@ -779,7 +779,7 @@ const page = ({
     scrollRef.current?.scrollBy({ left: amount, behavior: "smooth" });
   };
 
-    const getAge = (dobString) => {
+  const getAge = (dobString) => {
     if (!dobString) return "";
 
     const dob = new Date(dobString); // may return Invalid Date if format is "05 May 2002"
@@ -819,6 +819,32 @@ const page = ({
 
     return age;
   };
+
+  const [profileImages, setProfileImages] = useState({});
+
+  useEffect(() => {
+    const fetchAllImages = async () => {
+      try {
+        const res = await fetch(`${API_URL}get-all-profile-photos`);
+        if (!res.ok) throw new Error("Failed to fetch profile photos");
+        const data = await res.json();
+
+        // Convert array to object { uhid: profile_image_url }
+        const imagesMap = {};
+        data.patients.forEach((p) => {
+          imagesMap[p.uhid] = p.profile_image_url;
+        });
+
+        setProfileImages(imagesMap);
+      } catch (err) {
+        console.error("Error fetching profile images:", err);
+      }
+    };
+
+    fetchAllImages();
+  }, []); // empty dependency: fetch once on mount
+
+  const [showprofile, setshowprofile] = useState(false);
 
   return (
     <>
@@ -1112,8 +1138,11 @@ const page = ({
             {totalPages > 1 && selectedBox === "patients" && (
               <div className="flex items-center gap-2 max-w-full">
                 {/* Left Arrow */}
-          
-              <ChevronLeftIcon className="w-8 h-8 text-red-600 cursor-pointer"  onClick={() => scrollByAmount(-150)}/>
+
+                <ChevronLeftIcon
+                  className="w-8 h-8 text-red-600 cursor-pointer"
+                  onClick={() => scrollByAmount(-150)}
+                />
 
                 {/* Scrollable Page Buttons */}
                 <div
@@ -1137,9 +1166,11 @@ const page = ({
                 </div>
 
                 {/* Right Arrow */}
-             
-                  <ChevronRightIcon className="w-8 h-8 text-red-600 cursor-pointer" onClick={() => scrollByAmount(150)}/>
-            
+
+                <ChevronRightIcon
+                  className="w-8 h-8 text-red-600 cursor-pointer"
+                  onClick={() => scrollByAmount(150)}
+                />
               </div>
             )}
           </div>
@@ -1328,17 +1359,24 @@ const page = ({
                             }`}
                           >
                             <Image
-                              className={`rounded-full ${
+                              src={
+                                profileImages[patient.uhid] ||
+                                (patient.gender === "male"
+                                  ? Manavatar
+                                  : Womanavatar)
+                              }
+                              alt={patient.uhid}
+                              width={40} // or your desired width
+                              height={40} // or your desired height
+                              className={`rounded-full cursor-pointer ${
                                 width < 530
                                   ? "w-11 h-11 flex justify-center items-center"
                                   : "w-10 h-10"
                               }`}
-                              src={
-                                patient.gender === "male"
-                                  ? Manavatar
-                                  : Womanavatar
-                              }
-                              alt={patient.uhid}
+                              onClick={() => {
+                                setshowprofile(true);
+                                setprofpat(patient);
+                              }}
                             />
 
                             <div
@@ -1468,7 +1506,10 @@ const page = ({
                                     className="absolute -top-7 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out text-sm font-semibold text-black
     group-hover:border-2 group-hover:border-black group-hover:px-3 group-hover:rounded-lg"
                                   >
-                                    {Math.round((patient.completed / patient.total) * 100)}%
+                                    {Math.round(
+                                      (patient.completed / patient.total) * 100
+                                    )}
+                                    %
                                   </div>
 
                                   {/* Progress Bar Container */}
