@@ -2236,7 +2236,7 @@ const page = ({
         >
           <div
             className={`
-                  min-h-screen w-3/4 flex flex-col items-center justify-center mx-auto
+                  min-h-screen w-5/6 flex flex-col items-center justify-center mx-auto
                   ${width < 950 ? "p-4 gap-4 " : "p-8 "}
                 `}
           >
@@ -2606,7 +2606,7 @@ const page = ({
                               </div>
                             ) : (
                               <div className="flex w-1/2 justify-between items-center">
-                                <p className="text-black text-lg font-medium">
+                                <p className="text-black text-lg font-medium break-words w-full">
                                   {profpat.email || emailValue || "Not found"}
                                 </p>
                                 <button

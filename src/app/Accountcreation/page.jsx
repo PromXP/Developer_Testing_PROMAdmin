@@ -194,7 +194,7 @@ const page = ({ isOpenacc, onCloseacc, userData }) => {
       // If all valid, format as "dd Mmm yyyy"
       const formattedDate = manualDate.toLocaleDateString("en-GB", {
         day: "2-digit",
-        month: "numeric",
+        month: "short",
         year: "numeric",
       });
 
