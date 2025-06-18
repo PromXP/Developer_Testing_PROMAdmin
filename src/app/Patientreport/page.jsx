@@ -460,7 +460,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
       }
 
       // After both succeed
-      // handleSendremainder();
+      handleSendremainder();
       // sendwhatsapp();
       setSelectedItems([]);
       setSelectedOptiondrop("Selected Period");
