@@ -486,7 +486,7 @@ const page = ({ isOpenacc, onCloseacc, userData }) => {
     if (!selectedFunding.trim()) return showWarning("Funding Type is required.");
     if (selectedFunding === "OTHER" && !otherFunding.trim()) return showWarning("Please specify the other funding.");
 
-    return;
+    // return;
 
     // Calculate BMI
     const heightInMeters = parseFloat(heightbmi) / 100;
