@@ -581,11 +581,12 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
     try {
       data = JSON.parse(text);
       qsetIsSubmitting(true);
+      window.location.reload();
     } catch {
       data = { error: "Invalid JSON response", raw: text };
     }
     qsetIsSubmitting(false);
-    // window.location.reload();
+    
   };
 
   const [userData, setUserData] = useState(null);
