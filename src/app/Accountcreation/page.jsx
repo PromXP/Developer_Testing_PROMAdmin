@@ -476,6 +476,18 @@ const page = ({ isOpenacc, onCloseacc, userData }) => {
       return showWarning("Please specify other funding source");
     }
 
+    if (!address.trim()) return showWarning("Address is required.");
+    for (const id of idOptions) {
+      if (selectedIDs[id] && selectedIDs[id].trim() === "") {
+        return showWarning(`${id} cannot be empty.`);
+      }
+    }
+    if (!surgeryname.trim()) return showWarning("Surgery Name is required.");
+    if (!selectedFunding.trim()) return showWarning("Funding Type is required.");
+    if (selectedFunding === "OTHER" && !otherFunding.trim()) return showWarning("Please specify the other funding.");
+
+    return;
+
     // Calculate BMI
     const heightInMeters = parseFloat(heightbmi) / 100;
     const bmi = parseFloat(weight) / (heightInMeters * heightInMeters);
@@ -627,8 +639,6 @@ const page = ({ isOpenacc, onCloseacc, userData }) => {
     setShowAlert(true);
     setTimeout(() => setShowAlert(false), 4000);
   };
-
-
 
   if (!isOpenacc) return null;
   return (
