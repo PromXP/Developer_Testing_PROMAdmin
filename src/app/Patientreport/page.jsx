@@ -523,7 +523,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
       showWarning("Failed to send email.");
     } finally {
       qsetIsSubmitting(false);
-      window.location.reload();
+      // window.location.reload();
     }
   };
 
@@ -585,7 +585,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
       data = { error: "Invalid JSON response", raw: text };
     }
     qsetIsSubmitting(false);
-    window.location.reload();
+    // window.location.reload();
   };
 
   const [userData, setUserData] = useState(null);
