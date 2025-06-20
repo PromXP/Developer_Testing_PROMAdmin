@@ -1335,20 +1335,20 @@ const page = ({
         </div>
       </div>
       <div
-        className={` h-[85%] mx-auto flex  mt-5 ${
+        className={` h-[85%] mx-auto flex flex-wrap mt-5 ${
           width >= 1000 && width / height > 1
-            ? "w-[95%] flex-col gap-4"
-            : "w-full flex-col gap-4"
+            ? "w-[95%]  gap-4"
+            : "w-full gap-4"
         }`}
       >
         <div
-          className={`h-fit  flex 
+          className={`h-fit w-full  flex justify-between
 
             ${
               width >= 1272
-                ? "pl-15 gap-5 flex-row "
+                ? "pl-0 gap-5 flex-row "
                 : width >= 1000 && width < 1272 && width / height > 1
-                  ? "pl-6 gap-2 flex-row "
+                  ? "pl-0 gap-2 flex-row "
                   : width < 1000 && width >= 750
                     ? "pl-0 mt-6 gap-4 flex-row"
                     : width < 750
@@ -1358,17 +1358,17 @@ const page = ({
           `}
         >
           <div
-            className={`w-full  flex flex-row justify-between ${
+            className={`w-full  flex flex-wrap justify-between ${
               width < 1170 && width >= 1000
                 ? "gap-4"
                 : width < 1000
                   ? "h-fit"
-                  : "h-fit gap-12"
+                  : "h-fit gap-2"
             }`}
           >
             <div
               className={`h-full bg-white shadow-md rounded-xl flex flex-col gap-3 items-center justify-center p-4 cursor-pointer ${
-                width < 420 ? "w-1/2" : "w-36"
+                width < 420 ? "w-[45%]" : "w-36"
               } `}
               style={{
                 boxShadow:
@@ -1405,7 +1405,7 @@ const page = ({
 
             <div
               className={`h-full bg-white shadow-md rounded-xl flex flex-col gap-4 items-center justify-center p-4 cursor-pointer ${
-                width < 420 ? "w-1/2" : "w-36"
+                width < 420 ? "w-[45%]" : "w-36"
               } `}
               style={{
                 boxShadow:
@@ -1440,6 +1440,54 @@ const page = ({
                 }`}
               >
                 DOCTORS
+              </p>
+            </div>
+
+            <div
+              className={`h-full bg-white shadow-md rounded-xl flex flex-col gap-6 p-2 items-center justify-center  cursor-pointer ${
+                width < 420 ? "w-[45%]" : "w-36"
+              }`}
+              onClick={() => setIsOpenacc(true)}
+            >
+              <div className="w-full flex flex-row justify-center items-center">
+                <Image
+                  src={Patacc}
+                  alt="Profile"
+                  className={` rounded-lg ${
+                    width < 1030 && width >= 1000 ? "w-8 h-8" : "w-12 h-12"
+                  }`}
+                />
+              </div>
+              <p
+                className={`text-black  font-semibold ${
+                  width < 1030 && width >= 1000 ? "text-sm" : "text-lg"
+                }`}
+              >
+                PATIENT
+              </p>
+            </div>
+
+            <div
+              className={`h-full bg-white shadow-md rounded-xl flex flex-col gap-6 p-2 items-center justify-center cursor-pointer ${
+                width < 420 ? "w-[45%]" : "w-36"
+              }`}
+              onClick={() => setIsOpenaccdoc(true)}
+            >
+              <div className="w-full flex flex-row justify-center items-center">
+                <Image
+                  src={Docacc}
+                  alt="Profile"
+                  className={` rounded-lg ${
+                    width < 1030 && width >= 1000 ? "w-8 h-8" : "w-12 h-12"
+                  }`}
+                />
+              </div>
+              <p
+                className={`text-black  font-semibold ${
+                  width < 1030 && width >= 1000 ? "text-sm" : "text-lg"
+                }`}
+              >
+                DOCTOR
               </p>
             </div>
           </div>
@@ -1478,19 +1526,19 @@ const page = ({
 
           </div> */}
 
-          <div
+          {/* <div
             className={`w-full flex flex-col items-center ${
               width < 1170 && width >= 1000 ? "h-fit gap-1" : "h-fit"
             }`}
-          >
-            {/* <p
+          > */}
+          {/* <p
               className={`text-black  font-semibold ${
                 width < 1030 && width >= 1000 ? "text-base" : "text-lg"
               }`}
             >
               Account Creation
             </p> */}
-            <div className={`w-full flex flex-row justify-between`}>
+          {/* <div className={`w-full flex flex-row justify-between`}>
               <div
                 className={`h-full bg-white shadow-md rounded-xl flex flex-col gap-6 p-2 items-center justify-center  cursor-pointer ${
                   width < 420 ? "w-1/2" : "w-36"
@@ -1538,8 +1586,8 @@ const page = ({
                   DOCTOR
                 </p>
               </div>
-            </div>
-          </div>
+            </div> */}
+          {/* </div> */}
         </div>
 
         <div
