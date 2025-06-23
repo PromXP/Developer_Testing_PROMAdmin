@@ -1163,11 +1163,219 @@ const page = ({
     // await fetch or axios call to update if needed
   };
 
+  const [isEditingPassport, setIsEditingPassport] = useState(false);
+  const [passportvalue, setpassportvalue] = useState(
+    profpat?.idproof?.PASSPORT || ""
+  );
+  const [temppassport, setTemppassport] = useState(passportvalue); // used for cancel action
+
+  const [isEditingPan, setIsEditingPan] = useState(false);
+  const [panvalue, setpanvalue] = useState(profpat?.idproof?.PAN || "");
+  const [temppan, setTemppan] = useState(panvalue); // used for cancel action
+
+  const [isEditingAadhaar, setIsEditingAadhaar] = useState(false);
+  const [aadhaarvalue, setaadhaarvalue] = useState(
+    profpat?.idproof?.AADHAAR || ""
+  );
+  const [tempaadhaar, setTempaadhaar] = useState(aadhaarvalue); // used for cancel action
+
+  const [isEditingABHA, setIsEditingABHA] = useState(false);
+  const [abhavalue, setabhavalue] = useState(profpat?.idproof?.ABHA || "");
+  const [tempabha, setTempabha] = useState(abhavalue); // used for cancel action
+
   const [profileImage, setProfileImage] = useState(null);
   const [imageUrl, setImageUrl] = useState("");
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
   const [previewUrl, setPreviewUrl] = useState(null);
+
+  const handleEditPassport = () => {
+    setTemppassport(passportvalue);
+    setIsEditingPassport(true);
+  };
+
+  const handleCancelPassport = () => {
+    setTemppassport(passportvalue);
+    setIsEditingPassport(false);
+  };
+
+  const handleSavePassport = async () => {
+    setpassportvalue(temppassport);
+    setIsEditingPassport(false);
+
+    // Optional: API call
+    const payload = {
+      uhid: profpat.uhid,
+      "idproof.PASSPORT": temppassport,
+    };
+    console.log("Saving address", payload);
+
+    try {
+      const response = await fetch(API_URL + "update-patient-field", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+      console.log("Submission successful:", payload);
+      if (!response.ok) {
+        throw new Error("Failed to send data.");
+      }
+
+      const result = await response.json();
+      console.log("Submission successful:", result);
+      showWarning("Update Successfull");
+      // Optionally, show success message here
+    } catch (error) {
+      console.error("Error submitting data:", error);
+      showWarning("Update failed");
+      showWarning("Update Successfull");
+    }
+
+    // await fetch or axios call to update if needed
+  };
+
+  const handleEditPan = () => {
+    setTemppan(panvalue);
+    setIsEditingPan(true);
+  };
+
+  const handleCancelPan = () => {
+    setTemppan(panvalue);
+    setIsEditingPan(false);
+  };
+
+  const handleSavePan = async () => {
+    setpanvalue(temppan);
+    setIsEditingPan(false);
+
+    // Optional: API call
+    const payload = {
+      uhid: profpat.uhid,
+      "idproof.PAN": temppan,
+    };
+    console.log("Saving address", payload);
+
+    try {
+      const response = await fetch(API_URL + "update-patient-field", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+      console.log("Submission successful:", payload);
+      if (!response.ok) {
+        throw new Error("Failed to send data.");
+      }
+
+      const result = await response.json();
+      console.log("Submission successful:", result);
+      showWarning("Update Successfull");
+      // Optionally, show success message here
+    } catch (error) {
+      console.error("Error submitting data:", error);
+      showWarning("Update failed");
+      showWarning("Update Successfull");
+    }
+
+    // await fetch or axios call to update if needed
+  };
+
+  const handleEditAadhaar = () => {
+    setTempaadhaar(aadhaarvalue);
+    setIsEditingAadhaar(true);
+  };
+
+  const handleCancelAadhaar = () => {
+    setTempaadhaar(aadhaarvalue);
+    setIsEditingAadhaar(false);
+  };
+
+  const handleSaveAadhaar = async () => {
+    setaadhaarvalue(tempaadhaar);
+    setIsEditingAadhaar(false);
+
+    // Optional: API call
+    const payload = {
+      uhid: profpat.uhid,
+      "idproof.AADHAAR": tempaadhaar,
+    };
+    console.log("Saving address", payload);
+
+    try {
+      const response = await fetch(API_URL + "update-patient-field", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+      console.log("Submission successful:", payload);
+      if (!response.ok) {
+        throw new Error("Failed to send data.");
+      }
+
+      const result = await response.json();
+      console.log("Submission successful:", result);
+      showWarning("Update Successfull");
+      // Optionally, show success message here
+    } catch (error) {
+      console.error("Error submitting data:", error);
+      showWarning("Update failed");
+      showWarning("Update Successfull");
+    }
+
+    // await fetch or axios call to update if needed
+  };
+
+  const handleEditABHA = () => {
+    setTempabha(abhavalue);
+    setIsEditingABHA(true);
+  };
+
+  const handleCancelABHA = () => {
+    setTempabha(abhavalue);
+    setIsEditingABHA(false);
+  };
+
+  const handleSaveABHA = async () => {
+    setabhavalue(tempabha);
+    setIsEditingABHA(false);
+
+    // Optional: API call
+    const payload = {
+      uhid: profpat.uhid,
+      "idproof.ABHA": tempabha,
+    };
+    console.log("Saving address", payload);
+
+    try {
+      const response = await fetch(API_URL + "update-patient-field", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+      console.log("Submission successful:", payload);
+      if (!response.ok) {
+        throw new Error("Failed to send data.");
+      }
+
+      const result = await response.json();
+      console.log("Submission successful:", result);
+      showWarning("Update Successfull");
+      // Optionally, show success message here
+    } catch (error) {
+      console.error("Error submitting data:", error);
+      showWarning("Update failed");
+      showWarning("Update Successfull");
+    }
+
+    // await fetch or axios call to update if needed
+  };
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -1229,6 +1437,12 @@ const page = ({
       setSuccess("");
       setimgupload(true);
     }
+  };
+
+  const formatMaskedID = (id) => {
+    if (!id || id.length <= 4) return id;
+    const maskedLength = id.length - 4;
+    return "*".repeat(maskedLength) + id.slice(-4);
   };
 
   return (
@@ -1367,6 +1581,30 @@ const page = ({
             }`}
           >
             <div
+              className={`h-full bg-white shadow-md rounded-xl flex flex-col gap-6 p-2 items-center justify-center  cursor-pointer ${
+                width < 420 ? "w-[45%]" : "w-36"
+              }`}
+              onClick={() => setIsOpenacc(true)}
+            >
+              <div className="w-full flex flex-row justify-center items-center">
+                <Image
+                  src={Patacc}
+                  alt="Profile"
+                  className={` rounded-lg ${
+                    width < 1030 && width >= 1000 ? "w-8 h-8" : "w-12 h-12"
+                  }`}
+                />
+              </div>
+              <p
+                className={`text-black  font-semibold ${
+                  width < 1030 && width >= 1000 ? "text-sm" : "text-lg"
+                }`}
+              >
+                PATIENT
+              </p>
+            </div>
+
+            <div
               className={`h-full bg-white shadow-md rounded-xl flex flex-col gap-3 items-center justify-center p-4 cursor-pointer ${
                 width < 420 ? "w-[45%]" : "w-36"
               } `}
@@ -1440,30 +1678,6 @@ const page = ({
                 }`}
               >
                 DOCTORS
-              </p>
-            </div>
-
-            <div
-              className={`h-full bg-white shadow-md rounded-xl flex flex-col gap-6 p-2 items-center justify-center  cursor-pointer ${
-                width < 420 ? "w-[45%]" : "w-36"
-              }`}
-              onClick={() => setIsOpenacc(true)}
-            >
-              <div className="w-full flex flex-row justify-center items-center">
-                <Image
-                  src={Patacc}
-                  alt="Profile"
-                  className={` rounded-lg ${
-                    width < 1030 && width >= 1000 ? "w-8 h-8" : "w-12 h-12"
-                  }`}
-                />
-              </div>
-              <p
-                className={`text-black  font-semibold ${
-                  width < 1030 && width >= 1000 ? "text-sm" : "text-lg"
-                }`}
-              >
-                PATIENT
               </p>
             </div>
 
@@ -2684,6 +2898,226 @@ const page = ({
                         </div>
                       </div>
 
+                      <div className="w-full flex flex-col gap-4">
+                        <p className="text-black text-lg font-bold">
+                          ID PROOFS:
+                        </p>
+                        <div
+                          className={`w-full flex  gap-4 ${
+                            width < 700 ? "flex-col" : "flex-row"
+                          }`}
+                        >
+                          <div
+                            className={`flex flex-col justify-start items-center gap-2 ${
+                              width < 700 ? "w-full" : "w-1/2"
+                            }`}
+                          >
+                            <div className="flex flex-row gap-4 w-full items-center">
+                              <p className="text-black text-lg font-bold w-1/4">
+                                PASSPORT
+                              </p>
+
+                              {isEditingPassport ? (
+                                <div className="flex w-3/4 gap-2 items-center">
+                                  <input
+                                    className="border flex-1 bg-gray-100 text-black p-1 rounded-md text-sm"
+                                    value={temppassport}
+                                    onChange={(e) =>
+                                      setTemppassport(e.target.value)
+                                    }
+                                  />
+                                  <div className="flex gap-1">
+                                    <button
+                                      onClick={handleSavePassport}
+                                      className="text-green-600 text-xs cursor-pointer"
+                                    >
+                                      <ClipboardDocumentCheckIcon className="w-5 h-5" />
+                                    </button>
+                                    <button
+                                      onClick={handleCancelPassport}
+                                      className="text-red-600 text-xs cursor-pointer"
+                                    >
+                                      <XMarkIcon className="w-5 h-5" />
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="flex w-1/2 justify-between items-center">
+                                  <p className="text-black text-lg font-medium break-words w-full">
+                                    {formatMaskedID(profpat?.idproof?.PASSPORT) ||
+                                      passportvalue ||
+                                      "Not found"}
+                                  </p>
+                                  <button
+                                    onClick={handleEditPassport}
+                                    className="text-gray-400 hover:text-gray-600 cursor-pointer"
+                                  >
+                                    <PencilIcon className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          <div
+                            className={`flex flex-row justify-start items-center gap-4 ${
+                              width < 700 ? "w-full" : "w-1/2"
+                            }`}
+                          >
+                            <div className="flex flex-row gap-4 w-full">
+                              <p className="text-black text-lg font-bold w-1/2">
+                                PAN
+                              </p>
+                              {isEditingPan ? (
+                                <div className="flex w-3/4 gap-2 items-center">
+                                  <input
+                                    className="border flex-1 bg-gray-100 text-black p-1 rounded-md text-sm"
+                                    value={temppan}
+                                    onChange={(e) => setTemppan(e.target.value)}
+                                  />
+                                  <div className="flex gap-1">
+                                    <button
+                                      onClick={handleSavePan}
+                                      className="text-green-600 text-xs cursor-pointer"
+                                    >
+                                      <ClipboardDocumentCheckIcon className="w-5 h-5" />
+                                    </button>
+                                    <button
+                                      onClick={handleCancelPan}
+                                      className="text-red-600 text-xs cursor-pointer"
+                                    >
+                                      <XMarkIcon className="w-5 h-5" />
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="flex w-1/2 justify-between items-center">
+                                  <p className="text-black text-lg font-medium break-words w-full">
+                                    {formatMaskedID(profpat?.idproof?.PAN) ||
+                                      panvalue ||
+                                      "Not found"}
+                                  </p>
+                                  <button
+                                    onClick={handleEditPan}
+                                    className="text-gray-400 hover:text-gray-600 cursor-pointer"
+                                  >
+                                    <PencilIcon className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div
+                          className={`w-full flex  gap-4 ${
+                            width < 700 ? "flex-col" : "flex-row"
+                          }`}
+                        >
+                          <div
+                            className={`flex flex-col justify-start items-center gap-2 ${
+                              width < 700 ? "w-full" : "w-1/2"
+                            }`}
+                          >
+                            <div className="flex flex-row gap-4 w-full items-center">
+                              <p className="text-black text-lg font-bold w-1/4">
+                                AADHAAR
+                              </p>
+                              {isEditingAadhaar ? (
+                                <div className="flex w-3/4 gap-2 items-center">
+                                  <input
+                                    className="border flex-1 bg-gray-100 text-black p-1 rounded-md text-sm"
+                                    value={tempaadhaar}
+                                    onChange={(e) =>
+                                      setTempaadhaar(e.target.value)
+                                    }
+                                  />
+                                  <div className="flex gap-1">
+                                    <button
+                                      onClick={handleSaveAadhaar}
+                                      className="text-green-600 text-xs cursor-pointer"
+                                    >
+                                      <ClipboardDocumentCheckIcon className="w-5 h-5" />
+                                    </button>
+                                    <button
+                                      onClick={handleCancelAadhaar}
+                                      className="text-red-600 text-xs cursor-pointer"
+                                    >
+                                      <XMarkIcon className="w-5 h-5" />
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="flex w-1/2 justify-between items-center">
+                                  <p className="text-black text-lg font-medium break-words w-full">
+                                    {formatMaskedID(profpat?.idproof?.AADHAAR) ||
+                                      abhavalue ||
+                                      "Not found"}
+                                  </p>
+                                  <button
+                                    onClick={handleEditAadhaar}
+                                    className="text-gray-400 hover:text-gray-600 cursor-pointer"
+                                  >
+                                    <PencilIcon className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          <div
+                            className={`flex flex-row justify-start items-center gap-4 ${
+                              width < 700 ? "w-full" : "w-1/2"
+                            }`}
+                          >
+                            <div className="flex flex-row gap-4 w-full">
+                              <p className="text-black text-lg font-bold w-1/2">
+                                ABHA
+                              </p>
+                              {isEditingABHA ? (
+                                <div className="flex w-3/4 gap-2 items-center">
+                                  <input
+                                    className="border flex-1 bg-gray-100 text-black p-1 rounded-md text-sm"
+                                    value={tempabha}
+                                    onChange={(e) =>
+                                      setTempabha(e.target.value)
+                                    }
+                                  />
+                                  <div className="flex gap-1">
+                                    <button
+                                      onClick={handleSaveABHA}
+                                      className="text-green-600 text-xs cursor-pointer"
+                                    >
+                                      <ClipboardDocumentCheckIcon className="w-5 h-5" />
+                                    </button>
+                                    <button
+                                      onClick={handleCancelABHA}
+                                      className="text-red-600 text-xs cursor-pointer"
+                                    >
+                                      <XMarkIcon className="w-5 h-5" />
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="flex w-1/2 justify-between items-center">
+                                  <p className="text-black text-lg font-medium break-words w-full">
+                                    {formatMaskedID(profpat?.idproof?.ABHA) ||
+                                      abhavalue ||
+                                      "Not found"}
+                                  </p>
+                                  <button
+                                    onClick={handleEditABHA}
+                                    className="text-gray-400 hover:text-gray-600 cursor-pointer"
+                                  >
+                                    <PencilIcon className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
                       <div
                         className={`w-full flex  gap-4 ${
                           width < 700 ? "flex-col" : "flex-row"
@@ -2734,6 +3168,8 @@ const page = ({
                           </div>
                         </div>
                       </div>
+
+                      
                     </div>
                   </div>
 

@@ -20,6 +20,12 @@ import {
   ChevronUpIcon,
   MinusCircleIcon,
   TrashIcon,
+  PencilIcon,
+  CheckCircleIcon,
+  PencilSquareIcon,
+  ChevronLeftIcon,
+  ClipboardDocumentCheckIcon,
+  XMarkIcon,
 } from "@heroicons/react/16/solid";
 
 import Minus from "@/app/assets/minus.png";
@@ -586,7 +592,6 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
       data = { error: "Invalid JSON response", raw: text };
     }
     qsetIsSubmitting(false);
-    
   };
 
   const [userData, setUserData] = useState(null);
@@ -776,30 +781,6 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
 
   const handleClockClick = () => {
     timeInputRef.current?.showPicker(); // First open date
-  };
-
-  const handleDateChangesurgery = (e) => {
-    const selectedDate = e.target.value;
-
-    if (!selectedDate) return;
-
-    const today = new Date();
-    const selected = new Date(selectedDate);
-
-    // Set time to 00:00:00 to compare only the date part
-    today.setHours(0, 0, 0, 0);
-    selected.setHours(0, 0, 0, 0);
-
-    if (selected < today) {
-      showWarning("Please select a valid future or current date.");
-      return;
-    }
-
-    setSelectedDateSurgery(selectedDate);
-  };
-
-  const handleTimeChange = (e) => {
-    setSelectedTime(e.target.value);
   };
 
   const handleClearAllsurgery = () => {
@@ -1420,6 +1401,229 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
     fetchPatientImage();
   }, []); // empty dependency: fetch once on mount
 
+  const formatDateToDisplay = (isoString) => {
+    if (!isoString) return "Not found";
+    const date = new Date(isoString);
+    const dd = String(date.getUTCDate()).padStart(2, "0");
+    const mm = String(date.getUTCMonth() + 1).padStart(2, "0");
+    const yyyy = date.getUTCFullYear();
+    return `${dd}-${mm}-${yyyy}`;
+  };
+
+  const [surgerydateDisplay, setSurgeryDateDisplay] = useState("");
+  useEffect(() => {
+    if (patient?.post_surgery_details_left?.date_of_surgery) {
+      const iso = patient.post_surgery_details_left.date_of_surgery;
+      setSurgeryDateISO(iso);
+
+      const date = new Date(iso);
+      const dd = String(date.getUTCDate() + 1).padStart(2, "0");
+      const mm = String(date.getUTCMonth() + 1).padStart(2, "0");
+      const yyyy = date.getUTCFullYear();
+      setSurgeryDateDisplay(`${dd}-${mm}-${yyyy}`);
+    }
+  }, [patient]);
+
+  const [surgerydateISO, setSurgeryDateISO] = useState(
+    patient?.post_surgery_details_left?.date_of_surgery || ""
+  );
+
+  const [isEditingSurgeryDate, setIsEditingSurgeryDate] = useState(false);
+  const [tempSurgeryDateISO, setTempSurgeryDateISO] = useState(""); // backup for cancel
+  const [tempSurgeryDateDisplay, setTempSurgeryDateDisplay] = useState(""); // backup for cancel
+
+  const handleEditClick = () => {
+    setTempSurgeryDateISO(surgerydateISO);
+    setTempSurgeryDateDisplay(surgerydateDisplay);
+    setIsEditingSurgeryDate(true);
+  };
+
+  const handleCancelClick = () => {
+    setSurgeryDateISO(tempSurgeryDateISO);
+    setSurgeryDateDisplay(tempSurgeryDateDisplay);
+    setIsEditingSurgeryDate(false);
+  };
+
+  const handleSaveClick = async () => {
+    setIsEditingSurgeryDate(false);
+
+    const payload = {
+      uhid: patient?.uhid,
+      post_surgery_details_left: {
+        date_of_surgery: surgerydateISO,
+        surgeon: patient?.post_surgery_details_left?.surgeon || "",
+        surgery_name: patient?.post_surgery_details_left?.surgery_name || "",
+        sub_doctor: patient?.post_surgery_details_left?.sub_doctor || "", // ✅ FIXED
+        procedure: patient?.post_surgery_details_left?.procedure || "",
+        implant: patient?.post_surgery_details_left?.implant || "",
+        technology: patient?.post_surgery_details_left?.technology || "",
+      },
+    };
+
+    console.log("Submission successful:", payload);
+    try {
+      const response = await fetch(
+        `${API_URL}update-post-surgery-details-left`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      if (!response.ok) throw new Error("Failed to update");
+      const result = await response.json();
+      console.log("Submission successful:", result);
+    } catch (err) {
+      console.error("Save error:", err);
+    }
+  };
+
+  const handleManualSurgeryDateChange = (e) => {
+    let value = e.target.value.replace(/\D/g, "");
+
+    if (value.length >= 3 && value.length <= 4) {
+      value = value.slice(0, 2) + "-" + value.slice(2);
+    } else if (value.length > 4 && value.length <= 8) {
+      value =
+        value.slice(0, 2) + "-" + value.slice(2, 4) + "-" + value.slice(4);
+    } else if (value.length > 8) {
+      value = value.slice(0, 8);
+      value =
+        value.slice(0, 2) + "-" + value.slice(2, 4) + "-" + value.slice(4);
+    }
+
+    setSurgeryDateDisplay(value);
+
+    if (value.length === 10) {
+      const [dayStr, monthStr, yearStr] = value.split("-");
+      const day = parseInt(dayStr, 10);
+      const month = parseInt(monthStr, 10);
+      const year = parseInt(yearStr, 10);
+
+      const utcDate = new Date(Date.UTC(year, month - 1, day));
+      if (
+        utcDate.getUTCDate() === day &&
+        utcDate.getUTCMonth() + 1 === month &&
+        utcDate.getUTCFullYear() === year
+      ) {
+        const isoDate = utcDate.toISOString();
+        setSurgeryDateISO(isoDate);
+      } else {
+        setSurgeryDateISO("");
+      }
+    }
+  };
+
+  const [surgerydateDisplayr, setSurgeryDateDisplayr] = useState("");
+  useEffect(() => {
+    if (patient?.post_surgery_details_right?.date_of_surgery) {
+      const iso = patient.post_surgery_details_right.date_of_surgery;
+      setSurgeryDateISOr(iso);
+
+      const date = new Date(iso);
+      const dd = String(date.getUTCDate() + 1).padStart(2, "0");
+      const mm = String(date.getUTCMonth() + 1).padStart(2, "0");
+      const yyyy = date.getUTCFullYear();
+      setSurgeryDateDisplayr(`${dd}-${mm}-${yyyy}`);
+    }
+  }, [patient]);
+
+  const [surgerydateISOr, setSurgeryDateISOr] = useState(
+    patient?.post_surgery_details_right?.date_of_surgery || ""
+  );
+
+  const [isEditingSurgeryDater, setIsEditingSurgeryDater] = useState(false);
+  const [tempSurgeryDateISOr, setTempSurgeryDateISOr] = useState(""); // backup for cancel
+  const [tempSurgeryDateDisplayr, setTempSurgeryDateDisplayr] = useState(""); // backup for cancel
+
+  const handleEditClickr = () => {
+    setTempSurgeryDateISOr(surgerydateISOr);
+    setTempSurgeryDateDisplayr(surgerydateDisplayr);
+    setIsEditingSurgeryDater(true);
+  };
+
+  const handleCancelClickr = () => {
+    setSurgeryDateISOr(tempSurgeryDateISOr);
+    setSurgeryDateDisplayr(tempSurgeryDateDisplayr);
+    setIsEditingSurgeryDater(false);
+  };
+
+  const handleSaveClickr = async () => {
+    setIsEditingSurgeryDater(false);
+
+    const payload = {
+      uhid: patient?.uhid,
+      post_surgery_details_right: {
+        date_of_surgery: surgerydateISOr,
+        surgeon: patient?.post_surgery_details_right?.surgeon || "",
+        surgery_name: patient?.post_surgery_details_right?.surgery_name || "",
+        sub_doctor: patient?.post_surgery_details_right?.sub_doctor || "", // ✅ FIXED
+        procedure: patient?.post_surgery_details_right?.procedure || "",
+        implant: patient?.post_surgery_details_right?.implant || "",
+        technology: patient?.post_surgery_details_right?.technology || "",
+      },
+    };
+
+    console.log("Submission successful:", payload);
+    try {
+      const response = await fetch(
+        `${API_URL}update-post-surgery-details-right`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      if (!response.ok) throw new Error("Failed to update");
+      const result = await response.json();
+      console.log("Submission successful:", result);
+    } catch (err) {
+      console.error("Save error:", err);
+    }
+  };
+
+  const handleManualSurgeryDateChanger = (e) => {
+    let value = e.target.value.replace(/\D/g, "");
+
+    if (value.length >= 3 && value.length <= 4) {
+      value = value.slice(0, 2) + "-" + value.slice(2);
+    } else if (value.length > 4 && value.length <= 8) {
+      value =
+        value.slice(0, 2) + "-" + value.slice(2, 4) + "-" + value.slice(4);
+    } else if (value.length > 8) {
+      value = value.slice(0, 8);
+      value =
+        value.slice(0, 2) + "-" + value.slice(2, 4) + "-" + value.slice(4);
+    }
+
+    setSurgeryDateDisplayr(value);
+
+    if (value.length === 10) {
+      const [dayStr, monthStr, yearStr] = value.split("-");
+      const day = parseInt(dayStr, 10);
+      const month = parseInt(monthStr, 10);
+      const year = parseInt(yearStr, 10);
+
+      const utcDate = new Date(Date.UTC(year, month - 1, day));
+      if (
+        utcDate.getUTCDate() === day &&
+        utcDate.getUTCMonth() + 1 === month &&
+        utcDate.getUTCFullYear() === year
+      ) {
+        const isoDate = utcDate.toISOString();
+        setSurgeryDateISOr(isoDate);
+      } else {
+        setSurgeryDateISOr("");
+      }
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -1913,113 +2117,111 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                   </div>
 
                   <div
-                    className={`bg-white shadow-lg rounded-2xl px-4 py-2 flex flex-col ml-1 mr-1 justify-between ${
+                    className={`bg-white shadow-lg rounded-2xl px-4 py-2 flex flex-col ml-1 mr-1 ${
                       width < 1095 ? "w-full gap-4" : "w-1/5 gap-4"
                     }`}
                   >
-                    <h2 className="font-bold text-black text-7 w-full text-center">
+                    <h2 className="font-bold text-black text-lg w-full text-center h-1/5">
                       SURGERY SCHEDULER
                     </h2>
-                    <div className="w-full flex justify-center items-center gap-4">
-                      <label className="flex items-center gap-1 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={surgleftChecked}
-                          onChange={(e) => setsurgLeftChecked(e.target.checked)}
-                          className="h-4 w-4"
-                        />
-                        <span className="text-sm font-medium text-[#475467]">
-                          Left
-                        </span>
-                      </label>
 
-                      <label className="flex items-center gap-1 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={surgrightChecked}
-                          onChange={(e) =>
-                            setsurgRightChecked(e.target.checked)
-                          }
-                          className="h-4 w-4"
-                        />
-                        <span className="text-sm font-medium text-[#475467]">
-                          Right
-                        </span>
-                      </label>
-                    </div>
-                    <div className="w-full flex flex-col gap-6">
-                      <div
-                        className={`w-full flex flex-row  ${
-                          width < 1095 ? "gap-10" : ""
-                        }`}
-                      >
-                        <div
-                          className={`flex flex-col ${
-                            width < 1095 ? "w-1/2 items-end" : "w-2/3"
-                          }`}
-                        >
-                          <p className="font-medium text-sm text-[#475467]">
-                            DATE
+                    <div className="w-full flex flex-col gap-6 justify-between h-4/5">
+
+                      <div className="w-full flex flex-col gap-6 justify-center h-full">
+                        <div className="flex flex-col gap-4 w-full h-1/2 items-center">
+                          <p className="text-black text-center text-lg font-bold w-full">
+                            LEFT KNEE DATE
                           </p>
-                          <input
-                            type="text"
-                            placeholder="dd-mm-yyyy"
-                            value={selectedDatesurgery}
-                            onChange={handleManualDateChange}
-                            maxLength={10}
-                            className="text-sm italic font-semibold text-[#475467] border border-gray-300 rounded px-2 py-1 w-full "
-                          />
+
+                          {isEditingSurgeryDate ? (
+                            <div className="flex w-full gap-2 items-center">
+                              <input
+                                type="text"
+                                placeholder="SURGERY DATE (dd-mm-yyyy) *"
+                                className="w-full text-black py-2 px-4 rounded-sm text-lg font-semibold outline-none"
+                                value={surgerydateDisplay}
+                                onChange={handleManualSurgeryDateChange}
+                                maxLength={10}
+                                style={{
+                                  backgroundColor: "rgba(217, 217, 217, 0.5)",
+                                }}
+                              />
+                              <div className="flex gap-1">
+                                <button
+                                  onClick={handleSaveClick}
+                                  className="text-green-600 text-xs cursor-pointer"
+                                >
+                                  <ClipboardDocumentCheckIcon className="w-5 h-5" />
+                                </button>
+                                <button
+                                  onClick={handleCancelClick}
+                                  className="text-red-600 text-xs cursor-pointer"
+                                >
+                                  <XMarkIcon className="w-5 h-5" />
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex w-1/2 justify-between items-center">
+                              <p className="text-black text-lg font-medium break-words w-full">
+                                {surgerydateDisplay || "Not found"}
+                              </p>
+                              <button
+                                onClick={handleEditClick}
+                                className="text-gray-400 hover:text-gray-600 cursor-pointer"
+                              >
+                                <PencilIcon className="w-4 h-4" />
+                              </button>
+                            </div>
+                          )}
                         </div>
-                        <div
-                          className={`flex flex-col  relative gap-4 ${
-                            width < 1095
-                              ? "w-1/2 justify-center items-start"
-                              : "w-1/3 justify-center items-center"
-                          }`}
-                        >
-                          <Image
-                            src={Bigcalendar}
-                            alt="clock"
-                            className="w-8 h-8 pointer-events-none"
-                            // onClick={handleCalendarClick}
-                          />
-                        </div>
-                      </div>
-                      <div
-                        className={`w-full flex flex-row ${
-                          width < 1095 ? "gap-10" : ""
-                        }`}
-                      >
-                        <div
-                          className={`flex flex-col ${
-                            width < 1095 ? "w-1/2 items-end" : "w-2/3"
-                          }`}
-                        >
-                          <p className="font-medium text-sm text-[#475467]">
-                            TIME
+
+                        <div className="flex flex-col gap-4 w-full h-1/2 items-center">
+                          <p className="text-black text-center text-lg font-bold w-full">
+                            RIGHT KNEE DATE
                           </p>
-                          <input
-                            type="text"
-                            placeholder="HH:MM (24 hrs)"
-                            value={selectedTime}
-                            onChange={handleManualTimeChange}
-                            className="text-sm italic font-semibold text-[#475467] border border-gray-300 rounded px-2 py-1 w-full"
-                            maxLength={5}
-                          />
-                        </div>
-                        <div
-                          className={`flex flex-col relative gap-4 ${
-                            width < 1095
-                              ? "w-1/2 justify-center items-start"
-                              : "w-1/3 justify-center items-center"
-                          }`}
-                        >
-                          <Image
-                            src={Clock}
-                            alt="clock"
-                            className="w-8 h-8 pointer-events-none"
-                            // onClick={handleClockClick}
-                          />
+
+                          {isEditingSurgeryDater ? (
+                            <div className="flex w-full gap-2 items-center">
+                              <input
+                                type="text"
+                                placeholder="SURGERY DATE (dd-mm-yyyy) *"
+                                className="w-full text-black py-2 px-4 rounded-sm text-lg font-semibold outline-none"
+                                value={surgerydateDisplayr}
+                                onChange={handleManualSurgeryDateChanger}
+                                maxLength={10}
+                                style={{
+                                  backgroundColor: "rgba(217, 217, 217, 0.5)",
+                                }}
+                              />
+                              <div className="flex gap-1">
+                                <button
+                                  onClick={handleSaveClickr}
+                                  className="text-green-600 text-xs cursor-pointer"
+                                >
+                                  <ClipboardDocumentCheckIcon className="w-5 h-5" />
+                                </button>
+                                <button
+                                  onClick={handleCancelClickr}
+                                  className="text-red-600 text-xs cursor-pointer"
+                                >
+                                  <XMarkIcon className="w-5 h-5" />
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex w-1/2 justify-between items-center">
+                              <p className="text-black text-lg font-medium break-words w-full">
+                                {surgerydateDisplayr || "Not found"}
+                              </p>
+                              <button
+                                onClick={handleEditClickr}
+                                className="text-gray-400 hover:text-gray-600 cursor-pointer"
+                              >
+                                <PencilIcon className="w-4 h-4" />
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -2031,47 +2233,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                         </div>
                       </div>
                     )}
-                    <div
-                      className={`w-full flex flex-row justify-center items-center ${
-                        width < 1095 ? "gap-10" : ""
-                      }`}
-                    >
-                      <div
-                        className={`w-1/2 flex flex-row  items-center ${
-                          width < 1095 ? "justify-end" : "justify-start"
-                        }`}
-                      >
-                        <p
-                          className="font-semibold italic text-[#475467] text-sm cursor-pointer"
-                          onClick={handleClearAllsurgery}
-                        >
-                          CLEAR ALL
-                        </p>
-                      </div>
-                      <div
-                        className={`w-1/2 flex flex-row  items-center ${
-                          width < 1095 ? "justify-start" : "justify-end"
-                        }`}
-                      >
-                        <p
-                          className="font-semibold rounded-full px-3 py-[1px] cursor-pointer text-center text-white text-sm border-[#005585] border-2"
-                          style={{ backgroundColor: "rgba(0, 85, 133, 0.9)" }}
-                          onClick={() => {
-                            if (!patient?.doctor_name) {
-                              showWarning("Please assign a doctor first");
-                              return;
-                            }
-                            if (!sisSubmitting) {
-                              handleAssignsurgery();
-                            } else {
-                              undefined;
-                            }
-                          }}
-                        >
-                          {sisSubmitting ? "SCHEDULING..." : "SCHEDULE"}
-                        </p>
-                      </div>
-                    </div>
+                 
                   </div>
                 </div>
               )}
@@ -2837,15 +2999,15 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
           }}
         >
           <div
-            className={`bg-white p-6 rounded-lg overflow-y-auto overflow-x-hidden  ${width < 1000 ? "w-3/5 h-1/2" : " w-1/3 h-1/2"}`}
+            className={`bg-white p-6 rounded-lg overflow-y-auto overflow-x-hidden  ${width < 1000 ? "w-3/5 h-1/2" : " w-1/3 h-1/4"}`}
           >
             <div
               className={`flex flex-col ml-1 mr-1 justify-between h-full ${
                 width < 1095 ? "w-full gap-4" : "w-full gap-4"
               }`}
             >
-              <div className="w-full flex flex-row justify-between h-[10%] items-center">
-                <h2 className="font-bold text-black text-7">
+              <div className="w-full flex flex-row justify-between h-1/2 items-center">
+                <h2 className="font-bold text-black text-xl">
                   SURGERY SCHEDULER
                 </h2>
                 <button
@@ -2860,115 +3022,97 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                 </button>
               </div>
 
-              <div className="w-full flex justify-center items-center gap-4">
-                <label className="flex items-center gap-1 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={surgleftChecked}
-                    onChange={(e) => setsurgLeftChecked(e.target.checked)}
-                    className="h-4 w-4"
-                  />
-                  <span className="text-sm font-medium text-[#475467]">
-                    Left
-                  </span>
-                </label>
+              <div className="w-full flex flex-col gap-6 h-1/2 justify-center">
+                <div className="flex flex-row gap-4 w-full items-center">
+                  <p className="text-black text-lg font-bold w-1/3">
+                    LEFT KNEE DATE
+                  </p>
 
-                <label className="flex items-center gap-1 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={surgrightChecked}
-                    onChange={(e) => setsurgRightChecked(e.target.checked)}
-                    className="h-4 w-4"
-                  />
-                  <span className="text-sm font-medium text-[#475467]">
-                    Right
-                  </span>
-                </label>
-              </div>
-
-              <div className="w-full flex flex-col gap-6 h-[80%] justify-center">
-                <div
-                  className={`w-full flex flex-row  ${
-                    width < 1095 ? "gap-10" : ""
-                  }`}
-                >
-                  <div
-                    className={`flex flex-col ${
-                      width < 1095 ? "w-1/2 items-end" : "w-2/3"
-                    }`}
-                  >
-                    <p className="font-medium text-sm text-[#475467]">DATE</p>
-                    <input
-                      type="text"
-                      placeholder="dd-mm-yyyy"
-                      value={selectedDatesurgery}
-                      onChange={handleManualDateChange}
-                      maxLength={10}
-                      className="text-sm italic font-semibold text-[#475467] border border-gray-300 rounded px-2 py-1 w-full "
-                    />
-                  </div>
-                  <div
-                    className={`flex flex-col  relative gap-4 ${
-                      width < 1095
-                        ? "w-1/2 justify-center items-start"
-                        : "w-1/3 justify-center items-center"
-                    }`}
-                  >
-                    {/* <input
-                      type="date"
-                      ref={dateInputRefsurgery}
-                      className="absolute opacity-0 pointer-events-none"
-                      onChange={handleDateChangesurgery}
-                    /> */}
-                    <Image
-                      src={Bigcalendar}
-                      alt="clock"
-                      className="w-8 h-8 pointer-events-none"
-                      // onClick={handleCalendarClick}
-                    />
-                  </div>
+                  {isEditingSurgeryDate ? (
+                    <div className="flex w-1/2 gap-2 items-center">
+                      <input
+                        type="text"
+                        placeholder="SURGERY DATE (dd-mm-yyyy) *"
+                        className="w-full text-black py-2 px-4 rounded-sm text-lg font-semibold outline-none"
+                        value={surgerydateDisplay}
+                        onChange={handleManualSurgeryDateChange}
+                        maxLength={10}
+                        style={{ backgroundColor: "rgba(217, 217, 217, 0.5)" }}
+                      />
+                      <div className="flex gap-1">
+                        <button
+                          onClick={handleSaveClick}
+                          className="text-green-600 text-xs cursor-pointer"
+                        >
+                          <ClipboardDocumentCheckIcon className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={handleCancelClick}
+                          className="text-red-600 text-xs cursor-pointer"
+                        >
+                          <XMarkIcon className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex w-1/2 justify-between items-center">
+                      <p className="text-black text-lg font-medium break-words w-full">
+                        {surgerydateDisplay || "Not found"}
+                      </p>
+                      <button
+                        onClick={handleEditClick}
+                        className="text-gray-400 hover:text-gray-600 cursor-pointer"
+                      >
+                        <PencilIcon className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
                 </div>
-                <div
-                  className={`w-full flex flex-row ${
-                    width < 1095 ? "gap-10" : ""
-                  }`}
-                >
-                  <div
-                    className={`flex flex-col ${
-                      width < 1095 ? "w-1/2 items-end" : "w-2/3"
-                    }`}
-                  >
-                    <p className="font-medium text-sm text-[#475467]">TIME</p>
-                    <input
-                      type="text"
-                      placeholder="HH:MM (24 hrs)"
-                      value={selectedTime}
-                      onChange={handleManualTimeChange}
-                      className="text-sm italic font-semibold text-[#475467] border border-gray-300 rounded px-2 py-1 w-full"
-                      maxLength={5}
-                    />
-                  </div>
-                  <div
-                    className={`flex flex-col relative gap-4 ${
-                      width < 1095
-                        ? "w-1/2 justify-center items-start"
-                        : "w-1/3 justify-center items-center"
-                    }`}
-                  >
-                    {/* <input
-                      type="time"
-                      ref={timeInputRef}
-                      className="absolute opacity-0 pointer-events-none"
-                      onChange={handleTimeChange}
-                    /> */}
 
-                    <Image
-                      src={Clock}
-                      alt="clock"
-                      className="w-8 h-8 pointer-events-none"
-                      // onClick={handleClockClick}
-                    />
-                  </div>
+                <div className="flex flex-row gap-4 w-full items-center">
+                  <p className="text-black text-lg font-bold w-1/3">
+                    RIGHT KNEE DATE
+                  </p>
+
+                  {isEditingSurgeryDater ? (
+                    <div className="flex w-1/2 gap-2 items-center">
+                      <input
+                        type="text"
+                        placeholder="SURGERY DATE (dd-mm-yyyy) *"
+                        className="w-full text-black py-2 px-4 rounded-sm text-lg font-semibold outline-none"
+                        value={surgerydateDisplayr}
+                        onChange={handleManualSurgeryDateChanger}
+                        maxLength={10}
+                        style={{ backgroundColor: "rgba(217, 217, 217, 0.5)" }}
+                      />
+                      <div className="flex gap-1">
+                        <button
+                          onClick={handleSaveClickr}
+                          className="text-green-600 text-xs cursor-pointer"
+                        >
+                          <ClipboardDocumentCheckIcon className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={handleCancelClickr}
+                          className="text-red-600 text-xs cursor-pointer"
+                        >
+                          <XMarkIcon className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex w-1/2 justify-between items-center">
+                      <p className="text-black text-lg font-medium break-words w-full">
+                        {surgerydateDisplayr || "Not found"}
+                      </p>
+                      <button
+                        onClick={handleEditClickr}
+                        className="text-gray-400 hover:text-gray-600 cursor-pointer"
+                      >
+                        <PencilIcon className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -2979,51 +3123,11 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                   </div>
                 </div>
               )}
-              <div
-                className={`w-full flex flex-row justify-between items-center h-[10%]${
-                  width < 1095 ? "gap-10" : ""
-                }`}
-              >
-                <div
-                  className={`w-1/2 flex flex-row  items-center ${
-                    width < 1095 ? "justify-center" : "justify-start"
-                  }`}
-                >
-                  <p
-                    className="font-semibold italic text-[#475467] text-sm cursor-pointer"
-                    onClick={handleClearAllsurgery}
-                  >
-                    CLEAR ALL
-                  </p>
-                </div>
-                <div
-                  className={`w-1/2 flex flex-row  items-center ${
-                    width < 1095 ? "justify-center" : "justify-end"
-                  }`}
-                >
-                  <p
-                    className="font-semibold rounded-full px-3 py-[1px] cursor-pointer text-center text-white text-sm border-[#005585] border-2"
-                    style={{ backgroundColor: "rgba(0, 85, 133, 0.9)" }}
-                    onClick={() => {
-                      if (!patient?.doctor_name) {
-                        showWarning("Please assign a doctor first");
-                        return;
-                      }
-                      if (!sisSubmitting) {
-                        handleAssignsurgery();
-                      } else {
-                        undefined;
-                      }
-                    }}
-                  >
-                    {sisSubmitting ? "SCHEDULING..." : "SCHEDULE"}
-                  </p>
-                </div>
-              </div>
             </div>
           </div>
         </div>
       )}
+
       {showAlert && (
         <div className="fixed top-8 left-1/2 transform -translate-x-1/2 z-50">
           <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-6 py-3 rounded-lg shadow-lg animate-fade-in-out">

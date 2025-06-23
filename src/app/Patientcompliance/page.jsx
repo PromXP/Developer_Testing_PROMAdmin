@@ -290,7 +290,7 @@ const page = ({ isOpencomp, patient11 }) => {
     const deadlineA = new Date(a.deadline);
     const deadlineB = new Date(b.deadline);
 
-    console.log("Deadline Comparison",deadlineA+" / "+deadlineB);
+    console.log("Deadline Comparison", deadlineA + " / " + deadlineB);
 
     // Sort by deadline in ascending or descending order
     return sortAsc ? deadlineA - deadlineB : deadlineB - deadlineA;
@@ -454,7 +454,7 @@ const page = ({ isOpencomp, patient11 }) => {
   const containerRef = useRef(null);
   const cardRef = useRef(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [cardsPerPage, setCardsPerPage] = useState(6);
+  const [cardsPerPage, setCardsPerPage] = useState(50);
 
   // Calculate total pages and current visible patients
   const totalPages = Math.ceil(sortedQuestionnaires.length / cardsPerPage);
@@ -481,10 +481,10 @@ const page = ({ isOpencomp, patient11 }) => {
   }, []);
 
   const scrollRef = useRef(null);
-  
-    const scrollByAmount = (amount) => {
-      scrollRef.current?.scrollBy({ left: amount, behavior: "smooth" });
-    };
+
+  const scrollByAmount = (amount) => {
+    scrollRef.current?.scrollBy({ left: amount, behavior: "smooth" });
+  };
 
   if (!isOpencomp) return null;
 
@@ -700,12 +700,15 @@ const page = ({ isOpencomp, patient11 }) => {
             )}
           </div>
 
-            <div className="w-full flex justify-center items-center mt-4">
+          <div className="w-full flex justify-center items-center mt-4">
             {totalPages > 1 && selectedBox === "patients" && (
               <div className="flex items-center gap-2 max-w-full">
                 {/* Left Arrow */}
-          
-              <ChevronLeftIcon className="w-8 h-8 text-red-600 cursor-pointer"  onClick={() => scrollByAmount(-150)}/>
+
+                <ChevronLeftIcon
+                  className="w-8 h-8 text-red-600 cursor-pointer"
+                  onClick={() => scrollByAmount(-150)}
+                />
 
                 {/* Scrollable Page Buttons */}
                 <div
@@ -729,15 +732,17 @@ const page = ({ isOpencomp, patient11 }) => {
                 </div>
 
                 {/* Right Arrow */}
-             
-                  <ChevronRightIcon className="w-8 h-8 text-red-600 cursor-pointer" onClick={() => scrollByAmount(150)}/>
-            
+
+                <ChevronRightIcon
+                  className="w-8 h-8 text-red-600 cursor-pointer"
+                  onClick={() => scrollByAmount(150)}
+                />
               </div>
             )}
           </div>
 
           <div
-           ref={containerRef}
+            ref={containerRef}
             className={`pr-2 mt-4 ${
               width < 650 && width >= 450
                 ? patfilter.toLowerCase() === "post op"
@@ -761,10 +766,7 @@ const page = ({ isOpencomp, patient11 }) => {
             }`}
           >
             <div className="overflow-y-auto flex-1">
-              <div
-               
-                className="grid grid-cols-1 transition-all duration-300"
-              >
+              <div className="grid grid-cols-1 transition-all duration-300">
                 {selectedBox === "patients" &&
                   paginatedPatients.map((ques, index) => (
                     <div
@@ -871,10 +873,14 @@ const page = ({ isOpencomp, patient11 }) => {
                                 : width < 530
                                   ? "w-full text-center"
                                   : "w-2/3 text-center"
-                            }`}
+                            }${ques.completed === 1 ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
                           >
-                            <div className="w-1/2 flex flex-row items-center gap-6 justify-center relative">
-                              <div className="flex flex-col items-start">
+                            <div
+                              className={`w-1/2 flex flex-row items-center gap-6 justify-center relative ${ques.completed === 1 ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                            >
+                              <div
+                                className={`flex flex-col items-start ${ques.completed === 1 ? "opacity-50 cursor-not-allowed" : ""}`}
+                              >
                                 <p className="font-medium text-black">
                                   DEADLINE
                                 </p>
@@ -899,25 +905,33 @@ const page = ({ isOpencomp, patient11 }) => {
                               {editingIndex === index ? (
                                 <div className="flex flex-row gap-2 items-center ml-2">
                                   <CalendarDaysIcon
-                                    className="w-4 h-4 cursor-pointer"
-                                    onClick={() => openDatePicker(index)}
+                                    className={`w-4 h-4  ${ques.completed === 1 ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                                    onClick={() => {
+                                      if (ques.completed !== 1)
+                                        openDatePicker(index);
+                                    }}
                                   />
                                   <XMarkIcon
                                     className="w-4 h-4 cursor-pointer text-red-500"
                                     onClick={() => {
-                                      setEditingIndex(null);
-                                      setSelectedDates((prev) => {
-                                        const updated = { ...prev };
-                                        delete updated[index]; // Remove selected date for this index
-                                        return updated;
-                                      });
+                                      if (ques.completed !== 1) {
+                                        setEditingIndex(null);
+                                        setSelectedDates((prev) => {
+                                          const updated = { ...prev };
+                                          delete updated[index];
+                                          return updated;
+                                        });
+                                      }
                                     }}
                                   />
                                 </div>
                               ) : (
                                 <PencilSquareIcon
-                                  className="w-4 h-4 cursor-pointer ml-2"
-                                  onClick={() => setEditingIndex(index)}
+                                  className={`w-4 h-4 ml-2 ${ques.completed === 1 ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                                  onClick={() => {
+                                    if (ques.completed !== 1)
+                                      setEditingIndex(index);
+                                  }}
                                 />
                               )}
                             </div>
@@ -927,7 +941,7 @@ const page = ({ isOpencomp, patient11 }) => {
                         <div
                           className={` flex flex-row justify-center items-center ${
                             width < 640 ? "w-full" : "w-[20%]"
-                          }`}
+                          } ${ques.completed === 1 ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
                         >
                           <div
                             className={`flex flex-row gap-1 items-center ${
@@ -936,15 +950,18 @@ const page = ({ isOpencomp, patient11 }) => {
                                 : width < 530
                                   ? "w-full justify-center"
                                   : ""
-                            }`}
-                            onClick={() => handleReschedule(ques, index)}
+                            } ${ques.completed === 1 ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                            onClick={() => {
+                              if (ques.completed !== 1)
+                                handleReschedule(ques, index);
+                            }}
                           >
-                            <div className="text-sm font-medium border-b-2 text-[#476367] border-blue-gray-500 cursor-pointer">
+                            <div className="text-sm font-medium border-b-2 text-[#476367] border-blue-gray-500">
                               Reschedule
                             </div>
                             <ArrowUpRightIcon
                               color="blue"
-                              className="w-4 h-4 cursor-pointer"
+                              className="w-4 h-4"
                             />
                           </div>
                         </div>
@@ -954,7 +971,6 @@ const page = ({ isOpencomp, patient11 }) => {
               </div>
             </div>
           </div>
-         
         </div>
       </div>
 
