@@ -156,7 +156,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
 
   const [selectedDate, setSelectedDate] = useState(() => {
     const today = new Date();
-    today.setDate(today.getDate() + 3);
+    today.setDate(today.getDate());
     return today.toISOString().split("T")[0];
   });
   const dateInputRef = useRef(null);
