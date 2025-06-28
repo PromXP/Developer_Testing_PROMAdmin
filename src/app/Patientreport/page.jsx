@@ -51,6 +51,9 @@ const poppins = Poppins({
 const page = ({ isOpen, onClose, patient1, doctor }) => {
   // const parsedUser = JSON.parse(patient);
 
+    const router = useRouter();
+  
+
   const useWindowSize = () => {
     const [size, setSize] = useState({
       width: 0,

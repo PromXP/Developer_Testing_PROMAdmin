@@ -90,6 +90,10 @@ const page = ({ isOpenacc, onCloseacc, userData }) => {
   const [selectedDate, setSelectedDate] = useState("");
   const [surgerydate, setsurgeryDate] = useState("");
   const [surgeryname, setsurgeryname] = useState("");
+  const [surgerydatel, setsurgeryDatel] = useState("");
+  const [surgerynamel, setsurgerynamel] = useState("");
+  const [surgerydater, setsurgeryDater] = useState("");
+  const [surgerynamer, setsurgerynamer] = useState("");
 
   const dateInputRef = useRef(null);
 
@@ -230,7 +234,7 @@ const page = ({ isOpenacc, onCloseacc, userData }) => {
 
       // Basic validations
       if (day < 1 || day > 31 || month < 1 || month > 12) {
-        showWarning("Please enter a valid date of birth.");
+        showWarning("Please enter a valid surgery date");
         setS("");
         return;
       }
@@ -499,6 +503,15 @@ const page = ({ isOpenacc, onCloseacc, userData }) => {
     }
     if (rightChecked) {
       currentStatus.push("Right Leg");
+    }
+
+    if(selectedKnees.includes("Left")){
+        setsurgeryDatel(surgerydate);
+        setsurgerynamel(surgeryname);
+    }
+    if(selectedKnees.includes("Right")){
+        setsurgeryDater(surgerydate);
+        setsurgerynamer(surgeryname);
     }
 
     const payload = {

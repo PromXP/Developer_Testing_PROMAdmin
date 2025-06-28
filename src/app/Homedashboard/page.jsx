@@ -992,6 +992,10 @@ const page = ({
   };
 
   const handleSaveClick = async () => {
+    if(!tempEmail){
+      showWarning("Enter Mail ID");
+      return;
+    }
     setEmailValue(tempEmail);
     setIsEditingEmail(false);
     const payload = {
@@ -1034,12 +1038,18 @@ const page = ({
   };
 
   const handleSaveMobile = async () => {
+
+    if(!tempMobile){
+      showWarning("Enter Mobile Number");
+      return;
+    }
+
     setMobileValue(tempMobile);
     setIsEditingMobile(false);
     // TODO: Call API to persist mobileValue
     const payload = {
       uhid: profpat.uhid,
-      phone_number: altMobileValue,
+      phone_number: tempMobile,
     };
     try {
       const response = await fetch(API_URL + "update-patient-field", {
@@ -1075,6 +1085,10 @@ const page = ({
   };
 
   const handleSaveAltMobile = async () => {
+    if(!tempAltMobile){
+      showWarning("Enter Alternate Mobile Number");
+      return;
+    }
     setAltMobileValue(tempAltMobile);
     setIsEditingAltMobile(false);
     // TODO: API call to save altMobileValue
@@ -1127,6 +1141,10 @@ const page = ({
   };
 
   const handleSaveAddress = async () => {
+    if(!tempAddress){
+      showWarning("Enter Address");
+      return;
+    }
     setAddressValue(tempAddress);
     setIsEditingAddress(false);
 
@@ -1200,6 +1218,10 @@ const page = ({
   };
 
   const handleSavePassport = async () => {
+    if(!temppassport){
+      showWarning("Enter PASSPORT Number");
+      return;
+    }
     setpassportvalue(temppassport);
     setIsEditingPassport(false);
 
@@ -1247,6 +1269,10 @@ const page = ({
   };
 
   const handleSavePan = async () => {
+    if(!temppan){
+      showWarning("Enter PAN Number");
+      return;
+    }
     setpanvalue(temppan);
     setIsEditingPan(false);
 
@@ -1294,6 +1320,10 @@ const page = ({
   };
 
   const handleSaveAadhaar = async () => {
+    if(!tempaadhaar){
+      showWarning("Enter AADHAAR Number");
+      return;
+    }
     setaadhaarvalue(tempaadhaar);
     setIsEditingAadhaar(false);
 
@@ -1341,6 +1371,10 @@ const page = ({
   };
 
   const handleSaveABHA = async () => {
+    if(!tempabha){
+      showWarning("Enter ABHA Number");
+      return;
+    }
     setabhavalue(tempabha);
     setIsEditingABHA(false);
 
