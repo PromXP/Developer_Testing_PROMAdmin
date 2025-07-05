@@ -411,7 +411,7 @@ const page = ({ isOpenacc, onCloseacc, userData }) => {
 
   const handleSendremainder = async () => {
     // handleUpload();
-    // return;
+
 
     console.log("DOB", selectedDate);
 
@@ -541,26 +541,26 @@ const page = ({ isOpenacc, onCloseacc, userData }) => {
       questionnaire_assigned_right: [],
       questionnaire_scores_right: [],
       surgery_scheduled_left: {
-        date: surgerydate, // replace with actual selected date
+        date: "dd-mm-yyyy", // replace with actual selected date
         time: "hh:mm AM", // replace with actual selected time
       },
       surgery_scheduled_right: {
-        date: surgerydate, // replace with actual selected date
+        date: "dd-mm-yyyy", // replace with actual selected date
         time: "hh:mm AM", // replace with actual selected time
       },
-      post_surgery_details_left: {
-        date_of_surgery: surgerydate,
+       post_surgery_details_left: {
+        date_of_surgery: selectedKnees.includes("Left Knee") ? surgerydate : "0001-01-01T00:00:00.000+00:00",
         surgeon: "", // replace accordingly
-        surgery_name: surgeryname, // if different
+        surgery_name: selectedKnees.includes("Left Knee") ? surgeryname : "", // if different
         sub_doctor: "",
         procedure: "", // replace
         implant: "", // replace
         technology: "", // replace
       },
       post_surgery_details_right: {
-        date_of_surgery: surgerydate,
+        date_of_surgery: selectedKnees.includes("Right Knee") ? surgerydate :"0001-01-01T00:00:00.000+00:00",
         surgeon: "", // replace accordingly
-        surgery_name: surgeryname, // if different
+        surgery_name: selectedKnees.includes("Right Knee") ? surgeryname : "", // if different
         sub_doctor: "",
         procedure: "", // replace
         implant: "", // replace
@@ -571,9 +571,10 @@ const page = ({ isOpenacc, onCloseacc, userData }) => {
       current_status: selectedKnees.join(", "),
     };
 
+        console.log("Patient Payload", JSON.stringify(payload, null, 2));
+
     handleUpload();
 
-    console.log("Patient Payload", JSON.stringify(payload, null, 2));
 
     // return;
     setIsSubmitting(true); // 🔒 Lock submission

@@ -51,8 +51,7 @@ const poppins = Poppins({
 const page = ({ isOpen, onClose, patient1, doctor }) => {
   // const parsedUser = JSON.parse(patient);
 
-    const router = useRouter();
-  
+  const router = useRouter();
 
   const useWindowSize = () => {
     const [size, setSize] = useState({
@@ -1019,6 +1018,30 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
     console.log("Right Leg Combined Data", rightlegdata);
   }
 
+  const assigned =
+    selectedLeg === "left"
+      ? patient?.questionnaire_assigned_left || []
+      : patient?.questionnaire_assigned_right || [];
+
+  console.log("Questionnaires", assigned);
+
+  const deadlineMap = {};
+
+  assigned.forEach((entry) => {
+    const periodKey = periodMap[entry.period] || entry.period;
+
+    // Only set if not already present (i.e., first one wins)
+    if (!deadlineMap[periodKey] && entry.deadline) {
+      const date = new Date(entry.deadline);
+      const dd = String(date.getUTCDate()).padStart(2, "0");
+      const mm = String(date.getUTCMonth() + 1).padStart(2, "0");
+      const yyyy = date.getUTCFullYear();
+      deadlineMap[periodKey] = `${dd}-${mm}-${yyyy}`;
+    }
+  });
+
+  console.log("Questionnaires deadlines", deadlineMap);
+
   const scoreRanges = {
     "Oxford Knee Score": [0, 48, false],
     "SHORT FORM 12": [0, 100, false],
@@ -1414,16 +1437,27 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
   };
 
   const [surgerydateDisplay, setSurgeryDateDisplay] = useState("");
+
   useEffect(() => {
     if (patient?.post_surgery_details_left?.date_of_surgery) {
       const iso = patient.post_surgery_details_left.date_of_surgery;
-      setSurgeryDateISO(iso);
 
-      const date = new Date(iso);
-      const dd = String(date.getUTCDate() + 1).padStart(2, "0");
-      const mm = String(date.getUTCMonth() + 1).padStart(2, "0");
-      const yyyy = date.getUTCFullYear();
-      setSurgeryDateDisplay(`${dd}-${mm}-${yyyy}`);
+      if (iso === "0001-01-01T00:00:00.000+00:00") {
+        setSurgeryDateDisplay("Not found");
+        setSurgeryDateISO(""); // or keep as is if you want
+      } else {
+        setSurgeryDateISO(iso);
+
+        const [yyyy, mm, dd] = iso.split("T")[0].split("-");
+
+        const formatted = `${dd}-${mm}-${yyyy}`;
+        setSurgeryDateDisplay(formatted);
+        setSurgeryDateISO(iso);
+      }
+    } else {
+      // No date at all
+      setSurgeryDateDisplay("Not found");
+      setSurgeryDateISO("");
     }
   }, [patient]);
 
@@ -1484,6 +1518,42 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
     }
   };
 
+  const handleDeletesrugery = async () => {
+    const payload = {
+      uhid: patient?.uhid,
+      post_surgery_details_left: {
+        date_of_surgery: "0001-01-01T00:00:00.000+00:00",
+        surgeon: patient?.post_surgery_details_left?.surgeon || "",
+        surgery_name: "",
+        sub_doctor: patient?.post_surgery_details_left?.sub_doctor || "", // ✅ FIXED
+        procedure: patient?.post_surgery_details_left?.procedure || "",
+        implant: patient?.post_surgery_details_left?.implant || "",
+        technology: patient?.post_surgery_details_left?.technology || "",
+      },
+    };
+
+    console.log("Submission successful:", payload);
+    try {
+      const response = await fetch(
+        `${API_URL}update-post-surgery-details-left`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      if (!response.ok) throw new Error("Failed to update");
+      const result = await response.json();
+      console.log("Submission successful:", result);
+      window.location.reload();
+    } catch (err) {
+      console.error("Save error:", err);
+    }
+  };
+
   const handleManualSurgeryDateChange = (e) => {
     let value = e.target.value.replace(/\D/g, "");
 
@@ -1521,17 +1591,31 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
   };
 
   const [surgerydateDisplayr, setSurgeryDateDisplayr] = useState("");
-  useEffect(() => {
-    if (patient?.post_surgery_details_right?.date_of_surgery) {
-      const iso = patient.post_surgery_details_right.date_of_surgery;
-      setSurgeryDateISOr(iso);
 
-      const date = new Date(iso);
-      const dd = String(date.getUTCDate() + 1).padStart(2, "0");
-      const mm = String(date.getUTCMonth() + 1).padStart(2, "0");
-      const yyyy = date.getUTCFullYear();
-      setSurgeryDateDisplayr(`${dd}-${mm}-${yyyy}`);
+  useEffect(() => {
+    const iso = patient?.post_surgery_details_right?.date_of_surgery;
+
+    if (!iso || iso.startsWith("0001-01-01")) {
+      // Treat this as "Not found"
+      setSurgeryDateDisplayr("Not found");
+      setSurgeryDateISOr("");
+      return;
     }
+
+    const date = new Date(iso);
+
+    if (isNaN(date.getTime())) {
+      // Invalid date
+      setSurgeryDateDisplayr("Not found");
+      setSurgeryDateISOr("");
+      return;
+    }
+
+    const [yyyy, mm, dd] = iso.split("T")[0].split("-");
+
+    const formatted = `${dd}-${mm}-${yyyy}`;
+    setSurgeryDateDisplayr(formatted);
+    setSurgeryDateISOr(iso);
   }, [patient]);
 
   const [surgerydateISOr, setSurgeryDateISOr] = useState(
@@ -1586,6 +1670,42 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
       if (!response.ok) throw new Error("Failed to update");
       const result = await response.json();
       console.log("Submission successful:", result);
+    } catch (err) {
+      console.error("Save error:", err);
+    }
+  };
+
+  const handleDeleterightsurgery = async () => {
+    const payload = {
+      uhid: patient?.uhid,
+      post_surgery_details_right: {
+        date_of_surgery: "0001-01-01T00:00:00.000+00:00",
+        surgeon: patient?.post_surgery_details_right?.surgeon || "",
+        surgery_name: "",
+        sub_doctor: patient?.post_surgery_details_right?.sub_doctor || "", // ✅ FIXED
+        procedure: patient?.post_surgery_details_right?.procedure || "",
+        implant: patient?.post_surgery_details_right?.implant || "",
+        technology: patient?.post_surgery_details_right?.technology || "",
+      },
+    };
+
+    console.log("Submission successful:", payload);
+    try {
+      const response = await fetch(
+        `${API_URL}update-post-surgery-details-right`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      if (!response.ok) throw new Error("Failed to update");
+      const result = await response.json();
+      console.log("Submission successful:", result);
+      window.location.reload();
     } catch (err) {
       console.error("Save error:", err);
     }
@@ -2129,7 +2249,6 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                     </h2>
 
                     <div className="w-full flex flex-col gap-6 justify-between h-4/5">
-
                       <div className="w-full flex flex-col gap-6 justify-center h-full">
                         <div className="flex flex-col gap-4 w-full h-1/2 items-center">
                           <p className="text-black text-center text-lg font-bold w-full">
@@ -2165,7 +2284,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                               </div>
                             </div>
                           ) : (
-                            <div className="flex w-1/2 justify-between items-center">
+                            <div className="flex w-3/4 justify-between items-center gap-2">
                               <p className="text-black text-lg font-medium break-words w-full">
                                 {surgerydateDisplay || "Not found"}
                               </p>
@@ -2174,6 +2293,14 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                                 className="text-gray-400 hover:text-gray-600 cursor-pointer"
                               >
                                 <PencilIcon className="w-4 h-4" />
+                              </button>
+                              <button>
+                                <Image
+                                  src={Delete}
+                                  alt="remove surgery"
+                                  className="w-3 h-3 min-w-[16px] min-h-[16px] font-bold cursor-pointer"
+                                  onClick={handleDeletesrugery}
+                                />
                               </button>
                             </div>
                           )}
@@ -2213,7 +2340,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                               </div>
                             </div>
                           ) : (
-                            <div className="flex w-1/2 justify-between items-center">
+                            <div className="flex w-3/4 justify-between items-center">
                               <p className="text-black text-lg font-medium break-words w-full">
                                 {surgerydateDisplayr || "Not found"}
                               </p>
@@ -2222,6 +2349,14 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                                 className="text-gray-400 hover:text-gray-600 cursor-pointer"
                               >
                                 <PencilIcon className="w-4 h-4" />
+                              </button>
+                              <button>
+                                <Image
+                                  src={Delete}
+                                  alt="remove surgery"
+                                  className="w-3 h-3 min-w-[16px] min-h-[16px] font-bold cursor-pointer"
+                                  onClick={handleDeleterightsurgery}
+                                />
                               </button>
                             </div>
                           )}
@@ -2236,7 +2371,6 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                         </div>
                       </div>
                     )}
-                 
                   </div>
                 </div>
               )}
@@ -2370,36 +2504,42 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                         </th>
                       </tr>
                       <tr>
-                        {columns.map((col, idx) => (
-                          <th
-                            key={idx}
-                            className={`px-4 py-3 bg-[#D9D9D9] text-center whitespace-nowrap ${idx === 0 ? "w-3/5" : ""}`}
-                          >
-                            {idx === 0 ? (
-                              col
-                            ) : (
-                              <div className="flex items-center justify-center gap-2">
-                                <span className="text-[#475467]">
-                                  <Image
-                                    src={Delete}
-                                    alt="reset"
-                                    className="w-5 h-5 min-w-[20px] min-h-[20px] font-bold cursor-pointer"
-                                    onClick={() => handleDeleteClick(col)}
-                                  />
-                                </span>{" "}
-                                <span>{col}</span>
-                                <span className="text-[#475467]">
-                                  <Image
-                                    src={Minus}
-                                    alt="reset"
-                                    className="w-5 h-5 min-w-[20px] min-h-[20px] font-bold cursor-pointer"
-                                    onClick={() => handleMinusClick(col)}
-                                  />
-                                </span>{" "}
-                              </div>
-                            )}
-                          </th>
-                        ))}
+                        {columns.map((col, idx) => {
+                          const key = periodMap[col] || col;
+                          const deadline = deadlineMap[key];
+
+                          return (
+                            <th
+                              key={idx}
+                              className={`px-4 py-3 bg-[#D9D9D9] text-center whitespace-nowrap ${
+                                idx === 0 ? "w-3/5" : ""
+                              }`}
+                            >
+                              {idx === 0 ? (
+                                col
+                              ) : (
+                                <div className="flex flex-col items-center gap-1">
+                                  <div className="flex items-center justify-between gap-2 w-full">
+                                    <span>{col}</span>
+                                    <span className="text-[#475467]">
+                                      <Image
+                                        src={Minus}
+                                        alt="reset"
+                                        className="w-5 h-5 min-w-[20px] min-h-[20px] font-bold cursor-pointer"
+                                        onClick={() => handleMinusClick(col)}
+                                      />
+                                    </span>
+                                  </div>
+                                  {deadline && (
+                                    <span className="text-[14px] text-red-700 font-semibold">
+                                      {deadline}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                            </th>
+                          );
+                        })}
                       </tr>
                     </thead>
                     <tbody className="bg-white text-[16px] font-semibold">
@@ -3068,6 +3208,14 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                       >
                         <PencilIcon className="w-4 h-4" />
                       </button>
+                      <button>
+                        <Image
+                          src={Delete}
+                          alt="remove surgery"
+                          className="w-3 h-3 min-w-[16px] min-h-[16px] font-bold cursor-pointer"
+                          onClick={handleDeletesrugery}
+                        />
+                      </button>
                     </div>
                   )}
                 </div>
@@ -3113,6 +3261,14 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                         className="text-gray-400 hover:text-gray-600 cursor-pointer"
                       >
                         <PencilIcon className="w-4 h-4" />
+                      </button>
+                      <button>
+                        <Image
+                          src={Delete}
+                          alt="remove surgery"
+                          className="w-3 h-3 min-w-[16px] min-h-[16px] font-bold cursor-pointer"
+                          onClick={handleDeleterightsurgery}
+                        />
                       </button>
                     </div>
                   )}
