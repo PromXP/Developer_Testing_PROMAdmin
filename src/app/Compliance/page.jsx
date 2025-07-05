@@ -22,7 +22,7 @@ import {
   CalendarDaysIcon,
   PencilIcon,
   ClipboardDocumentCheckIcon,
-    XMarkIcon,
+  XMarkIcon,
 } from "@heroicons/react/16/solid";
 import Patientimg from "@/app/assets/patimg.png";
 import Patcount from "@/app/assets/patcount.png";
@@ -122,7 +122,7 @@ const page = ({
 
       if (storedUser) {
         const parsedUser = JSON.parse(storedUser);
-        console.log("Retrieved user from localStorage:", parsedUser);
+        // console.log("Retrieved user from localStorage:", parsedUser);
 
         // if (parsedUser.password === "doctor@123") {
         //   setpassopen(true);
@@ -149,10 +149,10 @@ const page = ({
 
             setUserData(response.data); // Store the full response data (e.g., tokens)
             localStorage.setItem("uhid", response.data.user.uhid);
-            console.log(
-              "Successfully logged in with stored credentials",
-              response.data.user.uhid
-            );
+            // console.log(
+            //   "Successfully logged in with stored credentials",
+            //   response.data.user.uhid
+            // );
           } catch (error) {
             console.error("Login failed with stored credentials", error);
             alert("Login failed. Please check your credentials.");
@@ -195,7 +195,13 @@ const page = ({
   const [isOpenacc, setIsOpenacc] = useState(false);
   const [isOpenaccdoc, setIsOpenaccdoc] = useState(false);
 
-  const [selectedDate, setSelectedDate] = useState("");
+  const [selectedDate, setSelectedDate] = useState(
+    new Date().toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    })
+  );
   const dateInputRef = useRef(null);
 
   const [selectedLeg, setSelectedLeg] = useState("left");
@@ -289,7 +295,7 @@ const page = ({
 
   useEffect(() => {
     if (doctors.length > 0) {
-      console.log("Doctors after fetching:", doctors); // ✅ correct timing
+      // console.log("Doctors after fetching:", doctors); // ✅ correct timing
     }
   }, [doctors]); // run when doctors updates
 
@@ -322,7 +328,7 @@ const page = ({
       return acc;
     }, {});
 
-    console.log("status", groupedByPeriod);
+    // console.log("status", groupedByPeriod);
 
     const currentPeriod = optionsdrop.find((period, index) => {
       const assigned = groupedByPeriod[period] || [];
@@ -402,7 +408,7 @@ const page = ({
 
       const period = getCurrentPeriod(patient, selectedLegSide).toLowerCase();
 
-      console.log("Inside period", period);
+      // console.log("Inside period", period);
 
       if (selectedFilter === "pre operative") {
         return period.includes("pre");
@@ -462,7 +468,7 @@ const page = ({
   let notAssignedPatientsCount = 0;
 
   patients.forEach((patient) => {
-    console.log("Patient in filter 1", patient);
+    // console.log("Patient in filter 1", patient);
 
     const status = patient.current_status?.toLowerCase() || "";
     const selectedFilter = patprogressfilter.toLowerCase();
@@ -486,7 +492,7 @@ const page = ({
 
     assignedQuestionnaires.forEach((q) => {
       const deadlineInDateFormat = convertToDateString(q.deadline);
-      console.log("Deadline", deadlineInDateFormat);
+      // console.log("Deadline", deadlineInDateFormat);
 
       if (
         (!selectedDate || isSameDay(deadlineInDateFormat, selectedDate)) && // Date match
@@ -500,7 +506,7 @@ const page = ({
       }
     });
 
-    console.log("Patient in filter 2", patient);
+    // console.log("Patient in filter 2", patient);
   });
 
   patients.forEach((patient) => {
@@ -545,9 +551,9 @@ const page = ({
     }
   });
 
-  console.log("Pending Patients:", pendingPatientsCount);
-  console.log("Completed Patients:", completedPatientsCount);
-  console.log("Not Assigned Patients:", notAssignedPatientsCount);
+  // console.log("Pending Patients:", pendingPatientsCount);
+  // console.log("Completed Patients:", completedPatientsCount);
+  // console.log("Not Assigned Patients:", notAssignedPatientsCount);
 
   const [sortAsc, setSortAsc] = useState(false);
   const [selectedBox, setSelectedBox] = useState("patients");
@@ -618,7 +624,7 @@ const page = ({
 
   useEffect(() => {
     if (patientProgress.length > 0) {
-      console.log("Patient Compliance:", patientProgress); // ✅ correct timing
+      // console.log("Patient Compliance:", patientProgress); // ✅ correct timing
     }
   }, [patientProgress]); // run when doctors updates
 
@@ -641,7 +647,9 @@ const page = ({
       if (!q.deadline) return false;
 
       const qDeadline = new Date(q.deadline);
-      const selected = new Date(dateInputRef.current.value);
+      const inputValue = dateInputRef.current?.value;
+      const selected = inputValue ? new Date(inputValue) : new Date();
+      console.log("Compliance date", inputValue + " " + selected);
 
       return (
         qDeadline.getDate() === selected.getDate() &&
@@ -649,6 +657,18 @@ const page = ({
         qDeadline.getFullYear() === selected.getFullYear()
       );
     });
+  });
+
+  const onlyPendingPatients = filteredPatientsByDate.filter((patient) => {
+    const assigned =
+      selectedLeg === "left"
+        ? patient.questionnaire_assigned_left
+        : patient.questionnaire_assigned_right;
+
+    if (!assigned || assigned.length === 0) return false;
+
+    const completedCount = assigned.filter((q) => q.completed === 1).length;
+    return completedCount < assigned.length; // Only if some are incomplete
   });
 
   const formatDate = (date) => {
@@ -660,6 +680,9 @@ const page = ({
 
   const handleClearDate = () => {
     setSelectedDate(""); // Clear selected date
+    
+      dateInputRef.current.value = ""; // Reset the <input type="date"> to empty
+
   };
 
   const containerRef = useRef(null);
@@ -667,7 +690,7 @@ const page = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [cardsPerPage, setCardsPerPage] = useState(50);
 
-  const sortedPatients = filteredPatientsByDate.sort((a, b) => {
+  const sortedPatients = onlyPendingPatients.sort((a, b) => {
     const FAR_FUTURE = new Date(9999, 11, 31);
     const now = new Date();
 
@@ -899,13 +922,13 @@ const page = ({
         },
         body: JSON.stringify(payload),
       });
-      console.log("Submission successful:", payload);
+      // console.log("Submission successful:", payload);
       if (!response.ok) {
         throw new Error("Failed to send data.");
       }
 
       const result = await response.json();
-      console.log("Submission successful:", result);
+      // console.log("Submission successful:", result);
       showWarning("Update Successfull");
       // Optionally, show success message here
     } catch (error) {
@@ -940,13 +963,13 @@ const page = ({
         },
         body: JSON.stringify(payload),
       });
-      console.log("Submission successful:", payload);
+      // console.log("Submission successful:", payload);
       if (!response.ok) {
         throw new Error("Failed to send data.");
       }
 
       const result = await response.json();
-      console.log("Submission successful:", result);
+      // console.log("Submission successful:", result);
       showWarning("Update Successfull");
       // Optionally, show success message here
     } catch (error) {
@@ -983,13 +1006,13 @@ const page = ({
         },
         body: JSON.stringify(payload),
       });
-      console.log("Submission successful:", payload);
+      // console.log("Submission successful:", payload);
       if (!response.ok) {
         throw new Error("Failed to send data.");
       }
 
       const result = await response.json();
-      console.log("Submission successful:", result);
+      // console.log("Submission successful:", result);
       showWarning("Update Successfull");
       // Optionally, show success message here
     } catch (error) {
@@ -1026,7 +1049,7 @@ const page = ({
       uhid: profpat.uhid,
       address: tempAddress,
     };
-    console.log("Saving address", payload);
+    // console.log("Saving address", payload);
 
     try {
       const response = await fetch(API_URL + "update-patient-field", {
@@ -1036,13 +1059,13 @@ const page = ({
         },
         body: JSON.stringify(payload),
       });
-      console.log("Submission successful:", payload);
+      // console.log("Submission successful:", payload);
       if (!response.ok) {
         throw new Error("Failed to send data.");
       }
 
       const result = await response.json();
-      console.log("Submission successful:", result);
+      // console.log("Submission successful:", result);
       showWarning("Update Successfull");
       // Optionally, show success message here
     } catch (error) {
@@ -1099,7 +1122,7 @@ const page = ({
       uhid: profpat.uhid,
       "idproof.PASSPORT": temppassport,
     };
-    console.log("Saving address", payload);
+    // console.log("Saving address", payload);
 
     try {
       const response = await fetch(API_URL + "update-patient-field", {
@@ -1109,13 +1132,13 @@ const page = ({
         },
         body: JSON.stringify(payload),
       });
-      console.log("Submission successful:", payload);
+      // console.log("Submission successful:", payload);
       if (!response.ok) {
         throw new Error("Failed to send data.");
       }
 
       const result = await response.json();
-      console.log("Submission successful:", result);
+      // console.log("Submission successful:", result);
       showWarning("Update Successfull");
       // Optionally, show success message here
     } catch (error) {
@@ -1146,7 +1169,7 @@ const page = ({
       uhid: profpat.uhid,
       "idproof.PAN": temppan,
     };
-    console.log("Saving address", payload);
+    // console.log("Saving address", payload);
 
     try {
       const response = await fetch(API_URL + "update-patient-field", {
@@ -1156,13 +1179,13 @@ const page = ({
         },
         body: JSON.stringify(payload),
       });
-      console.log("Submission successful:", payload);
+      // console.log("Submission successful:", payload);
       if (!response.ok) {
         throw new Error("Failed to send data.");
       }
 
       const result = await response.json();
-      console.log("Submission successful:", result);
+      // console.log("Submission successful:", result);
       showWarning("Update Successfull");
       // Optionally, show success message here
     } catch (error) {
@@ -1193,7 +1216,7 @@ const page = ({
       uhid: profpat.uhid,
       "idproof.AADHAAR": tempaadhaar,
     };
-    console.log("Saving address", payload);
+    // console.log("Saving address", payload);
 
     try {
       const response = await fetch(API_URL + "update-patient-field", {
@@ -1203,13 +1226,13 @@ const page = ({
         },
         body: JSON.stringify(payload),
       });
-      console.log("Submission successful:", payload);
+      // console.log("Submission successful:", payload);
       if (!response.ok) {
         throw new Error("Failed to send data.");
       }
 
       const result = await response.json();
-      console.log("Submission successful:", result);
+      // console.log("Submission successful:", result);
       showWarning("Update Successfull");
       // Optionally, show success message here
     } catch (error) {
@@ -1240,7 +1263,7 @@ const page = ({
       uhid: profpat.uhid,
       "idproof.ABHA": tempabha,
     };
-    console.log("Saving address", payload);
+    // console.log("Saving address", payload);
 
     try {
       const response = await fetch(API_URL + "update-patient-field", {
@@ -1250,13 +1273,13 @@ const page = ({
         },
         body: JSON.stringify(payload),
       });
-      console.log("Submission successful:", payload);
+      // console.log("Submission successful:", payload);
       if (!response.ok) {
         throw new Error("Failed to send data.");
       }
 
       const result = await response.json();
-      console.log("Submission successful:", result);
+      // console.log("Submission successful:", result);
       showWarning("Update Successfull");
       // Optionally, show success message here
     } catch (error) {
@@ -1316,7 +1339,7 @@ const page = ({
         // ❌ DO NOT SET HEADERS — Axios will handle Content-Type with boundaries
       );
 
-      console.log("Profile upload success:", res.data);
+      // console.log("Profile upload success:", res.data);
       setSuccess("Image uploaded successfully.");
       showWarning("Image Upload Successfull");
       setError("");
@@ -2607,7 +2630,9 @@ const page = ({
                               ) : (
                                 <div className="flex w-1/2 justify-between items-center">
                                   <p className="text-black text-lg font-medium break-words w-full">
-                                    {formatMaskedID(profpat?.idproof?.PASSPORT) ||
+                                    {formatMaskedID(
+                                      profpat?.idproof?.PASSPORT
+                                    ) ||
                                       passportvalue ||
                                       "Not found"}
                                   </p>
@@ -2713,7 +2738,9 @@ const page = ({
                               ) : (
                                 <div className="flex w-1/2 justify-between items-center">
                                   <p className="text-black text-lg font-medium break-words w-full">
-                                    {formatMaskedID(profpat?.idproof?.AADHAAR) ||
+                                    {formatMaskedID(
+                                      profpat?.idproof?.AADHAAR
+                                    ) ||
                                       abhavalue ||
                                       "Not found"}
                                   </p>
@@ -2831,8 +2858,6 @@ const page = ({
                           </div>
                         </div>
                       </div>
-
-                      
                     </div>
                   </div>
 
