@@ -406,7 +406,12 @@ const page = ({
         return true;
       }
 
-      const period = getCurrentPeriod(patient, selectedLegSide).toLowerCase();
+      const period1 = getCurrentPeriod(patient, selectedLegSide).toLowerCase();
+      const period = getPeriodFromSurgeryDate(
+                                selectedLeg === "left"
+                                  ? patient?.post_surgery_details_left?.date_of_surgery
+                                  : patient?.post_surgery_details_right?.date_of_surgery, patient
+                              ).toLowerCase();
 
       // console.log("Inside period", period);
 
@@ -473,7 +478,12 @@ const page = ({
     const status = patient.current_status?.toLowerCase() || "";
     const selectedFilter = patprogressfilter.toLowerCase();
 
-    const period = getCurrentPeriod(patient, selectedLeg).toLowerCase();
+    const period1 = getCurrentPeriod(patient, selectedLeg).toLowerCase();
+    const period = getPeriodFromSurgeryDate(
+                                selectedLeg === "left"
+                                  ? patient?.post_surgery_details_left?.date_of_surgery
+                                  : patient?.post_surgery_details_right?.date_of_surgery, patient
+                              ).toLowerCase();
 
     const statusMatch =
       selectedFilter === "all" ||
@@ -513,7 +523,12 @@ const page = ({
     const status = patient.current_status?.toLowerCase() || "";
     const selectedFilter = patprogressfilter.toLowerCase();
 
-    const period = getCurrentPeriod(patient, selectedLeg).toLowerCase();
+    const period1 = getCurrentPeriod(patient, selectedLeg).toLowerCase();
+    const period = getPeriodFromSurgeryDate(
+                                selectedLeg === "left"
+                                  ? patient?.post_surgery_details_left?.date_of_surgery
+                                  : patient?.post_surgery_details_right?.date_of_surgery, patient
+                              ).toLowerCase();
 
     const statusMatch =
       selectedFilter === "all" ||
@@ -1359,6 +1374,44 @@ const page = ({
     return "*".repeat(maskedLength) + id.slice(-4);
   };
 
+   function getPeriodFromSurgeryDate(surgeryDateStr,patient) {
+    if (!surgeryDateStr) return "Not Found";
+
+  const surgeryDate = new Date(surgeryDateStr);
+
+  // Check for invalid or default placeholder date
+  if (
+    isNaN(surgeryDate) ||
+    surgeryDate.getFullYear() === 1 // Covers "0001-01-01T00:00:00.000+00:00"
+  ) {
+    return "Not Found";
+  }
+
+    const today = new Date();
+    const diffInDays = Math.floor((today - surgeryDate) / (1000 * 60 * 60 * 24));
+
+    if (diffInDays < 0) {
+      return "Pre Op";
+    }
+
+    const periodOffsets = {
+      "6W": 42,
+      "3M": 90,
+      "6M": 180,
+      "1Y": 365,
+      "2Y": 730,
+    };
+
+    const periods = Object.entries(periodOffsets)
+      .map(([label, offset]) => ({
+        label,
+        diff: Math.abs(diffInDays - offset),
+      }))
+      .sort((a, b) => a.diff - b.diff);
+
+    return periods[0]?.label || "Unknown";
+  }
+
   return (
     <>
       <div className="flex flex-col lg:flex-row w-[95%] gap-4 mx-auto mt-4 items-center justify-between">
@@ -1945,7 +1998,11 @@ const page = ({
                                       : "w-[35%] text-end"
                                 }`}
                               >
-                                {getCurrentPeriod(patient, selectedLeg)}
+                                {getPeriodFromSurgeryDate(
+                                selectedLeg === "left"
+                                  ? patient?.post_surgery_details_left?.date_of_surgery
+                                  : patient?.post_surgery_details_right?.date_of_surgery, patient
+                              )}
                               </div>
                             </div>
                           </div>

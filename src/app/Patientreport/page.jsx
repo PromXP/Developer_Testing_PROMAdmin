@@ -483,6 +483,215 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
     }
   };
 
+  const isValidDate = (dateStr) => {
+    return dateStr && !dateStr.startsWith("0001-01-01");
+  };
+
+  const leftSurgeryDateStr =
+    patient?.post_surgery_details_left?.date_of_surgery;
+  const rightSurgeryDateStr =
+    patient?.post_surgery_details_right?.date_of_surgery;
+
+  const hasLeftSurgery = isValidDate(leftSurgeryDateStr);
+  const hasRightSurgery = isValidDate(rightSurgeryDateStr);
+
+  const expectedPeriods = ["Pre Op", "6W", "3M", "6M", "1Y", "2Y"];
+
+  const assignedLeftPeriods = new Set(
+    (patient?.questionnaire_assigned_left || [])
+      .filter((q) => q.deadline)
+      .map((q) => q.period)
+  );
+
+  const hasLeftAssigned = expectedPeriods.every((p) => assignedLeftPeriods.has(p));
+
+
+  const assignedRightPeriods = new Set(
+  (patient?.questionnaire_assigned_right || [])
+    .filter((q) => q.deadline)
+    .map((q) => q.period)
+  );
+
+  const hasRightAssigned = expectedPeriods.every((p) => assignedRightPeriods.has(p));
+
+
+  const shouldDisableAssign =
+    // Case 1: Only left surgery is valid and left Q assigned
+    (hasLeftSurgery && !hasRightSurgery && hasLeftAssigned) ||
+    // Case 2: Only right surgery is valid and right Q assigned
+    (!hasLeftSurgery && hasRightSurgery && hasRightAssigned) ||
+    // Case 3: No valid surgery on either leg
+    (!hasLeftSurgery && !hasRightSurgery) ||
+    // Case 4: Both legs have surgery, and both already assigned
+    (hasLeftSurgery && hasRightSurgery && hasLeftAssigned && hasRightAssigned);
+  const periods = ["Pre Op", "6W", "3M", "6M", "1Y", "2Y"];
+  const periodOffsets = {
+    "Pre Op": -7,
+    "6W": 42,
+    "3M": 90,
+    "6M": 180,
+    "1Y": 365,
+    "2Y": 730,
+  };
+
+  const assignedDate = new Date().toISOString();
+
+  const calculateDeadline = (surgeryDateStr, offsetDays) => {
+    const surgeryDate = new Date(surgeryDateStr);
+    const deadline = new Date(surgeryDate);
+    deadline.setDate(surgeryDate.getDate() + offsetDays);
+    return deadline.toISOString();
+  };
+
+  const handleAllassign = async () => {
+    if (qisSubmitting) {
+      showWarning("Please wait, assigning is in progress...");
+      return;
+    }
+
+    if (selectedItems.length === 0) {
+      showWarning("Please select at least one questionnaire.");
+      return;
+    }
+
+    // Block any further submission attempts now
+    qsetIsSubmitting(true);
+    setWarning(""); // Clear any existing warning
+
+    let payloadLeft = null;
+    let payloadRight = null;
+
+    const todayStr = new Date().toISOString().split("T")[0];
+
+    try {
+      if (isValidDate(leftSurgeryDateStr) && !hasLeftAssigned) {
+        const assignedLeftPeriods = new Set(
+          (patient?.questionnaire_assigned_left || [])
+            .filter((q) => q.deadline)
+            .map((q) => q.period)
+        );
+        payloadLeft = {
+          uhid: patient?.uhid,
+          questionnaire_assigned_left: periods
+            .filter((period) => !assignedLeftPeriods.has(period))
+            .flatMap((period) =>
+              selectedItems.map((item) => ({
+                name: item,
+                period,
+                assigned_date: assignedDate,
+                deadline: calculateDeadline(leftSurgeryDateStr, periodOffsets[period]),
+                completed: 0,
+              }))
+            ),
+        };
+
+        const hasTodayDeadlineInLeft = payloadLeft?.questionnaire_assigned_left?.some(
+          (q) => q.deadline && q.deadline.split("T")[0] === todayStr
+        );
+
+        const responseLeft = await fetch(API_URL + "add-questionnaire-left", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payloadLeft),
+        });
+
+        const resultLeft = await responseLeft.json();
+
+        if (!responseLeft.ok) {
+          // console.error("Left API Error:", resultLeft);
+          qsetIsSubmitting(false);
+          showWarning("Something went wrong with Left Knee. Please try again.");
+          return;
+        }
+
+        if (
+          resultLeft.message === "No new questionnaire(s) to add" ||
+          resultLeft.message === "No changes made"
+        ) {
+          showWarning("Left Knee questionnaires are already added");
+          qsetIsSubmitting(false);
+
+          return;
+        }
+        // console.log("Successfully assigned for Left leg:", resultLeft);
+      }
+
+      if (isValidDate(rightSurgeryDateStr) && !hasRightAssigned) {
+        const assignedRightPeriods = new Set(
+          (patient?.questionnaire_assigned_right || [])
+            .filter((q) => q.deadline)
+            .map((q) => q.period)
+        );
+        payloadRight = {
+          uhid: patient?.uhid,
+          questionnaire_assigned_right: periods
+            .filter((period) => !assignedRightPeriods.has(period))
+            .flatMap((period) =>
+              selectedItems.map((item) => ({
+                name: item,
+                period,
+                assigned_date: assignedDate,
+                deadline: calculateDeadline(rightSurgeryDateStr, periodOffsets[period]),
+                completed: 0,
+              }))
+            ),
+        };
+
+        const hasTodayDeadlineInRight = payloadRight?.questionnaire_assigned_right?.some(
+          (q) => q.deadline && q.deadline.split("T")[0] === todayStr
+        );
+
+        const responseRight = await fetch(API_URL + "add-questionnaire-right", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payloadRight),
+        });
+
+        const resultRight = await responseRight.json();
+
+        if (!responseRight.ok) {
+          // console.error("Right API Error:", resultRight);
+          showWarning(
+            "Something went wrong with Right Knee. Please try again."
+          );
+          qsetIsSubmitting(false);
+
+          return;
+        }
+
+        if (
+          resultRight.message === "No new questionnaire(s) to add" ||
+          resultRight.message === "No changes made"
+        ) {
+          showWarning(
+            "Right Knee questionnaires are already added for selected Period"
+          );
+          qsetIsSubmitting(false);
+
+          return;
+        }
+      }
+      setSelectedItems([]);
+      showWarning("Questionnaires successfully assigned!");
+      if (hasTodayDeadlineInLeft || hasTodayDeadlineInRight) {
+        handleSendremainder(); // Replace with your desired function
+      }
+      setTimeout(() => setWarning(""), 3000);
+      window.location.reload();
+    } catch (err) {
+      console.error("Network error:", err);
+      showWarning("Network error. Please try again.");
+      qsetIsSubmitting(false);
+    }
+
+    console.log("Questionnaires Left", payloadLeft);
+    console.log("Questionnaires Right", payloadRight);
+  };
+
   const socket = useWebSocket();
 
   const handleSendremainder = async () => {
@@ -498,9 +707,10 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          name: patient?.first_name + " " + patient?.last_name,
           email: patient?.email,
           subject: "New Questionnaire Assigned",
-          message: "Questionnaire Assigned",
+          message: "This is a kind reminder regarding your pending health questionnaire(s). Completing these forms helps us track your recovery and provide better care.",
         }),
       });
 
@@ -960,7 +1170,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
       return { label: name, values, others: othersMap };
     });
 
-    console.log("Left Leg Combined Data", leftlegdata);
+    // console.log("Left Leg Combined Data", leftlegdata);
   }
 
   if (
@@ -1015,7 +1225,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
       return { label: name, values, others: othersMap };
     });
 
-    console.log("Right Leg Combined Data", rightlegdata);
+    // console.log("Right Leg Combined Data", rightlegdata);
   }
 
   const assigned =
@@ -1023,7 +1233,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
       ? patient?.questionnaire_assigned_left || []
       : patient?.questionnaire_assigned_right || [];
 
-  console.log("Questionnaires", assigned);
+  // console.log("Questionnaires", assigned);
 
   const deadlineMap = {};
 
@@ -1040,7 +1250,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
     }
   });
 
-  console.log("Questionnaires deadlines", deadlineMap);
+  // console.log("Questionnaires deadlines", deadlineMap);
 
   const scoreRanges = {
     "Oxford Knee Score": [0, 48, false],
@@ -1442,7 +1652,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
     if (patient?.post_surgery_details_left?.date_of_surgery) {
       const iso = patient.post_surgery_details_left.date_of_surgery;
 
-      if (iso === "0001-01-01T00:00:00.000+00:00") {
+      if (iso.startsWith("0001-01-01")) {
         setSurgeryDateDisplay("Not found");
         setSurgeryDateISO(""); // or keep as is if you want
       } else {
@@ -1513,6 +1723,63 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
       if (!response.ok) throw new Error("Failed to update");
       const result = await response.json();
       console.log("Submission successful:", result);
+
+      if (isValidDate(surgerydateISO) && hasLeftAssigned) {
+        // Generate new list of updated questionnaires with updated deadlines
+        const updatedQuestionnaires = patient?.questionnaire_assigned_left?.map(
+          (q) => ({
+            name: q.name,
+            period: q.period,
+            assigned_date: q.assigned_date, // preserve original assigned date
+            deadline: calculateDeadline(
+              surgerydateISO,
+              periodOffsets[q.period]
+            ),
+            completed: q.completed ?? 0,
+          })
+        );
+
+        const payloadLeft = {
+          uhid: patient?.uhid,
+          questionnaire_assigned_left: updatedQuestionnaires,
+        };
+
+        console.log("Updated paylod", payloadLeft);
+
+        const responseLeft = await fetch(API_URL + "add-questionnaire-left", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payloadLeft),
+        });
+
+        const resultLeft = await responseLeft.json();
+
+        if (!responseLeft.ok) {
+          qsetIsSubmitting(false);
+          console.log("Left Surgery", responseLeft);
+          showWarning(
+            "Something went wrong while updating questionnaire deadlines."
+          );
+          return;
+        }
+
+        if (
+          resultLeft.message === "No new questionnaire(s) to add" ||
+          resultLeft.message === "No changes made"
+        ) {
+          showWarning("Left Knee questionnaires were already up to date.");
+          qsetIsSubmitting(false);
+          return;
+        }
+
+        showWarning(
+          "Questionnaire deadlines updated based on new surgery date."
+        );
+      }
+
+      window.location.reload();
     } catch (err) {
       console.error("Save error:", err);
     }
@@ -1670,6 +1937,62 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
       if (!response.ok) throw new Error("Failed to update");
       const result = await response.json();
       console.log("Submission successful:", result);
+
+      if (isValidDate(surgerydateISOr) && hasRightAssigned) {
+        // Generate new list of updated questionnaires with updated deadlines
+        const updatedQuestionnaires =
+          patient?.questionnaire_assigned_right?.map((q) => ({
+            name: q.name,
+            period: q.period,
+            assigned_date: q.assigned_date, // preserve original assigned date
+            deadline: calculateDeadline(
+              surgerydateISOr,
+              periodOffsets[q.period]
+            ),
+            completed: q.completed ?? 0,
+          }));
+
+        const payloadRight = {
+          uhid: patient?.uhid,
+          questionnaire_assigned_right: updatedQuestionnaires,
+        };
+
+        console.log("Updated paylod", payloadRight);
+
+        const responseRight = await fetch(API_URL + "add-questionnaire-right", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payloadRight),
+        });
+
+        const resultRight = await responseRight.json();
+
+        if (!responseRight.ok) {
+          qsetIsSubmitting(false);
+          console.log("Right Surgery", resultRight);
+          showWarning(
+            "Something went wrong while updating questionnaire deadlines."
+          );
+          return;
+        }
+
+        if (
+          resultRight.message === "No new questionnaire(s) to add" ||
+          resultRight.message === "No changes made"
+        ) {
+          showWarning("Right Knee questionnaires were already up to date.");
+          qsetIsSubmitting(false);
+          return;
+        }
+
+        showWarning(
+          "Questionnaire deadlines updated based on new surgery date."
+        );
+      }
+
+      window.location.reload();
     } catch (err) {
       console.error("Save error:", err);
     }
@@ -1746,6 +2069,46 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
       }
     }
   };
+
+  function getPeriodFromSurgeryDate(surgeryDateStr, patient) {
+    if (!surgeryDateStr) return "Not Found";
+
+    const surgeryDate = new Date(surgeryDateStr);
+
+    // Check for invalid or default placeholder date
+    if (
+      isNaN(surgeryDate) ||
+      surgeryDate.getFullYear() === 1 // Covers "0001-01-01T00:00:00.000+00:00"
+    ) {
+      return "Not Found";
+    }
+
+    const today = new Date();
+    const diffInDays = Math.floor(
+      (today - surgeryDate) / (1000 * 60 * 60 * 24)
+    );
+
+    if (diffInDays < 0) {
+      return "Pre Op";
+    }
+
+    const periodOffsets = {
+      "6W": 42,
+      "3M": 90,
+      "6M": 180,
+      "1Y": 365,
+      "2Y": 730,
+    };
+
+    const periods = Object.entries(periodOffsets)
+      .map(([label, offset]) => ({
+        label,
+        diff: Math.abs(diffInDays - offset),
+      }))
+      .sort((a, b) => a.diff - b.diff);
+
+    return periods[0]?.label || "Unknown";
+  }
 
   if (!isOpen) return null;
 
@@ -1923,17 +2286,43 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                             </p>
                             <p className="text-[#FFB978] font-bold text-6">
                               <>
-                                {leftcurrentstatus && (
+                                {getPeriodFromSurgeryDate(
+                                  patient?.post_surgery_details_left
+                                    ?.date_of_surgery,
+                                  patient
+                                ) && (
                                   <>
                                     <span className="text-red-500">L: </span>{" "}
-                                    {leftcurrentstatus}
+                                    {getPeriodFromSurgeryDate(
+                                      patient?.post_surgery_details_left
+                                        ?.date_of_surgery,
+                                      patient
+                                    )}
                                   </>
                                 )}
-                                {leftcurrentstatus && rightcurrentstatus && " "}
-                                {rightcurrentstatus && (
+                                {getPeriodFromSurgeryDate(
+                                  patient?.post_surgery_details_left
+                                    ?.date_of_surgery,
+                                  patient
+                                ) &&
+                                  getPeriodFromSurgeryDate(
+                                    patient?.post_surgery_details_right
+                                      ?.date_of_surgery,
+                                    patient
+                                  ) &&
+                                  "  "}
+                                {getPeriodFromSurgeryDate(
+                                  patient?.post_surgery_details_right
+                                    ?.date_of_surgery,
+                                  patient
+                                ) && (
                                   <>
                                     <span className="text-red-500">R: </span>{" "}
-                                    {rightcurrentstatus}
+                                    {getPeriodFromSurgeryDate(
+                                      patient?.post_surgery_details_right
+                                        ?.date_of_surgery,
+                                      patient
+                                    )}
                                   </>
                                 )}
                               </>
@@ -1947,6 +2336,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                 </div>
               </div>
             </div>
+
             {questionnaire_assigned_left.length === 0 &&
               questionnaire_assigned_right.length === 0 && (
                 <div
@@ -1956,11 +2346,12 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                       : "h-[45%] flex-row"
                   }`}
                 >
-                  <div
-                    className={` bg-white shadow-lg rounded-2xl px-4 py-2 flex flex-col mr-1 justify-between  ${
+                  {/* <div
+                    className={` bg-white shadow-lg  rounded-2xl px-4 py-2 flex flex-col mr-1 justify-between ${
                       width < 1095 ? "w-full  gap-2" : "w-2/5 gap-0"
                     }`}
                   >
+
                     <h2 className="font-bold text-black text-7">
                       ASSIGN QUESTIONNAIRES
                     </h2>
@@ -1992,7 +2383,6 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                           />
                         </div>
 
-                        {/* Dropdown */}
                         <select
                           value={selectedOption}
                           onChange={(e) => setSelectedOption(e.target.value)}
@@ -2024,7 +2414,6 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                           </p>
                         </div>
 
-                        {/* Date Picker */}
                         <div
                           onClick={openDatePicker}
                           className="flex items-center gap-2 w-[50%]"
@@ -2144,6 +2533,162 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                           className="font-semibold rounded-full px-3 py-[1px] cursor-pointer text-center text-white text-sm border-[#005585] border-2"
                           style={{ backgroundColor: "rgba(0, 85, 133, 0.9)" }}
                           onClick={!qisSubmitting ? handleAssign : undefined}
+                        >
+                          {qisSubmitting ? "ASSIGNING..." : "ASSIGN"}
+                        </p>
+                      </div>
+                    </div>
+
+                  </div> */}
+
+                  <div
+                    className={` bg-white shadow-lg  rounded-2xl px-4 py-2 flex flex-col mr-1 justify-between ${
+                      width < 1095 ? "w-full  gap-2" : "w-2/5 gap-0"
+                    }`}
+                  >
+                    <h2 className="font-bold text-black text-7">
+                      ASSIGN QUESTIONNAIRES
+                    </h2>
+
+                    <div
+                      className={`w-full flex  ${
+                        width < 470
+                          ? "flex-col justify-center items-center gap-2"
+                          : "flex-row"
+                      }`}
+                    >
+                      <div
+                        className={`w-[65%] flex flex-row  ${
+                          width < 470 ? "justify-between" : "gap-4"
+                        }`}
+                      >
+                        <div className="w-[50%] flex flex-row justify-between items-center">
+                          <input
+                            type="text"
+                            placeholder="Search..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="px-2 py-1 text-sm w-full text-black outline-none"
+                          />
+                          <Image
+                            src={Search}
+                            alt="search"
+                            className="w-3 h-3 "
+                          />
+                        </div>
+
+                        <p className="text-sm rounded mx-auto my-auto text-[#475467] bg-white">
+                          Pre Op
+                        </p>
+                      </div>
+
+                      <div
+                        className={`flex flex-row items-center gap-2 cursor-pointer ${
+                          width < 470
+                            ? "w-full justify-center"
+                            : "w-[35%] justify-center"
+                        }`}
+                      >
+                        <div className="w-full flex justify-center items-center text-center md:w-1/2  gap-1">
+                          <p className="font-medium text-sm text-[#475467]">
+                            Selected
+                          </p>
+                          <p className="font-semibold text-sm text-black">
+                            {selectedItems.length}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div
+                      className={`w-full  overflow-y-auto border rounded-md ${
+                        width < 1095 ? "h-36" : "h-[65%]"
+                      }`}
+                    >
+                      <div className="flex flex-wrap gap-2 h-full">
+                        {allItems
+                          .filter((item) =>
+                            item
+                              .toLowerCase()
+                              .includes(searchTerm.toLowerCase())
+                          )
+                          .map((item, index) => (
+                            <label
+                              key={index}
+                              className="flex items-center gap-2 font-medium  px-4 py-1 text-sm text-black cursor-pointer hover:bg-gray-50"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={selectedItems.includes(item)}
+                                onChange={() => handleCheckboxChange(item)}
+                                className="accent-[#475467]"
+                              />
+                              {item}
+                            </label>
+                          ))}
+                      </div>
+                    </div>
+
+                    {warning && (
+                      <div className="fixed top-8 left-1/2 transform -translate-x-1/2 z-50">
+                        <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-6 py-3 rounded-lg shadow-lg animate-fade-in-out">
+                          {warning}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="w-full flex flex-wrap md:flex-row justify-center items-center gap-y-3">
+                      <div className="w-1/2 md:w-1/4 flex justify-center md:justify-between items-center">
+                        <p
+                          className="font-semibold italic text-[#475467] text-sm cursor-pointer"
+                          onClick={handleClearAll}
+                        >
+                          CLEAR ALL
+                        </p>
+                      </div>
+                      <div className="w-1/2 md:w-1/4 flex justify-center md:justify-between items-center">
+                        <p
+                          className="font-semibold italic text-[#475467] text-sm cursor-pointer"
+                          onClick={handleSelectAll}
+                        >
+                          SELECT ALL
+                        </p>
+                      </div>
+                      <div className="w-1/2 md:w-1/4 flex justify-center items-center gap-4">
+                        {isValidDate(leftSurgeryDateStr) && (
+                          <span
+                            className={`text-sm font-semibold ${
+                              hasLeftAssigned ? "text-black" : "text-red-500"
+                            }`}
+                          >
+                            Left Knee
+                          </span>
+                        )}
+
+                        {isValidDate(rightSurgeryDateStr) && (
+                          <span
+                            className={`text-sm font-semibold ${
+                              hasRightAssigned ? "text-black" : "text-red-500"
+                            }`}
+                          >
+                            Right Knee
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="w-1/2 md:w-1/4 flex justify-center md:justify-end items-center">
+                        <p
+                          className={`font-semibold rounded-full px-3 py-[1px] text-center text-white text-sm border-[#005585] border-2 ${
+                            shouldDisableAssign || qisSubmitting
+                              ? "opacity-50 cursor-not-allowed"
+                              : "cursor-pointer"
+                          }`}
+                          style={{ backgroundColor: "rgba(0, 85, 133, 0.9)" }}
+                          onClick={
+                            !shouldDisableAssign && !qisSubmitting
+                              ? handleAllassign
+                              : undefined
+                          }
                         >
                           {qisSubmitting ? "ASSIGNING..." : "ASSIGN"}
                         </p>
@@ -2520,6 +3065,14 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                               ) : (
                                 <div className="flex flex-col items-center gap-1">
                                   <div className="flex items-center justify-between gap-2 w-full">
+                                    <span className="text-[#475467]">
+                                      <Image
+                                        src={Delete}
+                                        alt="reset"
+                                        className="w-5 h-5 min-w-[20px] min-h-[20px] font-bold cursor-pointer"
+                                        onClick={() => handleDeleteClick(col)}
+                                      />
+                                    </span>{" "}
                                     <span>{col}</span>
                                     <span className="text-[#475467]">
                                       <Image
@@ -2554,7 +3107,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                             (val) => typeof val === "number" && val < 50
                           );
 
-                          console.log("Score Map left", row.others);
+                          // console.log("Score Map left", row.others);
 
                           return (
                             <tr key={idx}>
@@ -2612,11 +3165,11 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                                   filteredNotes.push(currentLine);
                                 }
 
-                                console.log("📝 Period:", periodKey);
-                                console.log(
-                                  "📦 Others for cell:",
-                                  otherNotes.length
-                                );
+                                // console.log("📝 Period:", periodKey);
+                                // console.log(
+                                //   "📦 Others for cell:",
+                                //   otherNotes.length
+                                // );
 
                                 return (
                                   <td
@@ -2868,69 +3421,25 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                     <Image src={Search} alt="search" className="w-3 h-3 " />
                   </div>
 
-                  {/* Dropdown */}
-                  <select
-                    value={selectedOption}
-                    onChange={(e) => setSelectedOption(e.target.value)}
-                    className="text-sm border border-gray-300 rounded px-2 py-1 text-[#475467] bg-white w-[50%]"
-                  >
-                    <option value="Select Period">Select Period</option>
-                    <option value="Pre Op">Pre Op</option>
-                    <option value="6W">6 W</option>
-                    <option value="3M">3 M</option>
-                    <option value="6M">6 M</option>
-                    <option value="1Y">1 Y</option>
-                    <option value="2Y">2 Y</option>
-                  </select>
+                  <p className="text-sm rounded mx-auto my-auto text-[#475467] bg-white">
+                    Pre Op
+                  </p>
                 </div>
 
                 <div
-                  className={`flex flex-row  items-center  cursor-pointer ${
+                  className={`flex flex-row  items-center ${
                     width < 470
                       ? "w-full gap-4 justify-center"
                       : "w-[35%] justify-center gap-4"
                   }`}
-                  onClick={openDatePicker}
                 >
-                  <div className="w-[50%] flex justify-center items-center text-center md:w-full  gap-1">
+                  <div className="w-full flex justify-center items-center text-center md:w-full  gap-1">
                     <p className="font-medium text-sm text-[#475467]">
                       Selected
                     </p>
                     <p className="font-semibold text-sm text-black">
                       {selectedItems.length}
                     </p>
-                  </div>
-
-                  <div
-                    onClick={openDatePicker}
-                    className="flex items-center gap-2"
-                  >
-                    <p className="font-medium italic text-[#475467] text-sm">
-                      {selectedDate
-                        ? new Date(
-                            selectedDate + "T00:00:00"
-                          ).toLocaleDateString("en-GB", {
-                            day: "2-digit",
-                            month: "2-digit",
-                            year: "numeric",
-                          })
-                        : "DEADLINE"}
-                    </p>
-                    <div className="relative">
-                      <input
-                        type="date"
-                        ref={dateInputRef}
-                        value={selectedDate}
-                        // min={new Date().toISOString().split("T")[0]}
-                        onChange={handleDateChange}
-                        className="absolute opacity-0 pointer-events-none"
-                      />
-                      <Image
-                        src={Calendar}
-                        className="w-3 h-3"
-                        alt="Calendar"
-                      />
-                    </div>
                   </div>
                 </div>
               </div>
@@ -2988,36 +3497,40 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                   </p>
                 </div>
                 <div className="w-1/2 md:w-1/4 flex justify-center items-center gap-4">
-                  <label className="flex items-center gap-1 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={leftChecked}
-                      onChange={(e) => setLeftChecked(e.target.checked)}
-                      className="h-4 w-4"
-                    />
-                    <span className="text-sm font-medium text-[#475467]">
-                      Left
+                  {isValidDate(leftSurgeryDateStr) && (
+                    <span
+                      className={`text-sm font-semibold ${
+                        hasLeftAssigned ? "text-black" : "text-red-500"
+                      }`}
+                    >
+                      Left Knee
                     </span>
-                  </label>
+                  )}
 
-                  <label className="flex items-center gap-1 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={rightChecked}
-                      onChange={(e) => setRightChecked(e.target.checked)}
-                      className="h-4 w-4"
-                    />
-                    <span className="text-sm font-medium text-[#475467]">
-                      Right
+                  {isValidDate(rightSurgeryDateStr) && (
+                    <span
+                      className={`text-sm font-semibold ${
+                        hasRightAssigned ? "text-black" : "text-red-500"
+                      }`}
+                    >
+                      Right Knee
                     </span>
-                  </label>
+                  )}
                 </div>
 
                 <div className="w-1/2 md:w-1/4 flex justify-center md:justify-end items-center">
                   <p
-                    className="font-semibold rounded-full px-3 py-[1px] cursor-pointer text-center text-white text-sm border-[#005585] border-2"
+                    className={`font-semibold rounded-full px-3 py-[1px] text-center text-white text-sm border-[#005585] border-2 ${
+                      shouldDisableAssign || qisSubmitting
+                        ? "opacity-50 cursor-not-allowed"
+                        : "cursor-pointer"
+                    }`}
                     style={{ backgroundColor: "rgba(0, 85, 133, 0.9)" }}
-                    onClick={!qisSubmitting ? handleAssign : undefined}
+                    onClick={
+                      !shouldDisableAssign && !qisSubmitting
+                        ? handleAllassign
+                        : undefined
+                    }
                   >
                     {qisSubmitting ? "ASSIGNING..." : "ASSIGN"}
                   </p>

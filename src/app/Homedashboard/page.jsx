@@ -440,7 +440,12 @@ const page = ({
       // Apply pre/post-op filter
       if (selectedFilter === "all patients") return true;
 
-      const period = getCurrentPeriod(patient, selectedLegSide).toLowerCase();
+      const period1 = getCurrentPeriod(patient, selectedLegSide).toLowerCase();
+      const period = getPeriodFromSurgeryDate(
+                                selectedLeg === "left"
+                                  ? patient?.post_surgery_details_left?.date_of_surgery
+                                  : patient?.post_surgery_details_right?.date_of_surgery, patient
+                              ).toLowerCase()
 
       if (selectedFilter === "pre operative") return period.includes("pre");
 
@@ -530,7 +535,12 @@ const page = ({
   const coutpatients = filteredPatients;
 
   coutpatients.forEach((patient) => {
-    const periodRaw = getCurrentPeriod(patient, selectedLeg);
+    const periodRaw1 = getCurrentPeriod(patient, selectedLeg);
+    const periodRaw = getPeriodFromSurgeryDate(
+                                selectedLeg === "left"
+                                  ? patient?.post_surgery_details_left?.date_of_surgery
+                                  : patient?.post_surgery_details_right?.date_of_surgery, patient
+                              )
     const period = periodRaw ? periodRaw.toLowerCase() : ""; // Safe check
     const selectedFilter = patprogressfilter.toLowerCase();
 
@@ -1479,6 +1489,46 @@ const page = ({
     return "*".repeat(maskedLength) + id.slice(-4);
   };
 
+  function getPeriodFromSurgeryDate(surgeryDateStr,patient) {
+    if (!surgeryDateStr) return "Not Found";
+
+  const surgeryDate = new Date(surgeryDateStr);
+
+  // Check for invalid or default placeholder date
+  if (
+    isNaN(surgeryDate) ||
+    surgeryDate.getFullYear() === 1 // Covers "0001-01-01T00:00:00.000+00:00"
+  ) {
+    return "Not Found";
+  }
+
+    const today = new Date();
+    const diffInDays = Math.floor((today - surgeryDate) / (1000 * 60 * 60 * 24));
+
+    if (diffInDays < 0) {
+      return "Pre Op";
+    }
+
+    const periodOffsets = {
+      "6W": 42,
+      "3M": 90,
+      "6M": 180,
+      "1Y": 365,
+      "2Y": 730,
+    };
+
+    const periods = Object.entries(periodOffsets)
+      .map(([label, offset]) => ({
+        label,
+        diff: Math.abs(diffInDays - offset),
+      }))
+      .sort((a, b) => a.diff - b.diff);
+
+    return periods[0]?.label || "Unknown";
+  }
+
+
+
   return (
     <>
       <div className="flex flex-col lg:flex-row gap-4 w-[95%] mx-auto mt-4 items-center justify-between">
@@ -2197,7 +2247,12 @@ const page = ({
                                     : "w-[35%] text-end"
                               }`}
                             >
-                              {getCurrentPeriod(patient, selectedLeg)}
+                              {getPeriodFromSurgeryDate(
+                                selectedLeg === "left"
+                                  ? patient?.post_surgery_details_left?.date_of_surgery
+                                  : patient?.post_surgery_details_right?.date_of_surgery, patient
+                              )}
+
                             </div>
                             <div
                               className={`text-sm font-medium text-black ${
