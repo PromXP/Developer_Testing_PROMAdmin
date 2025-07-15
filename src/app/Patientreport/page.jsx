@@ -1269,7 +1269,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
     "Knee Injury and Ostheoarthritis Outcome Score, Joint Replacement (KOOS, JR)":
       [0, 28, true], // reverse: 0 good, 28 poor (flip colors)
     "Knee Society Score (KSS)": [0, 100, false],
-    "Forgotten Joint Score (FJS)": [0, 48, false],
+    "Forgotten Joint Score (FJS)": [0, 60, false],
   };
 
   const questionnairenames = [
