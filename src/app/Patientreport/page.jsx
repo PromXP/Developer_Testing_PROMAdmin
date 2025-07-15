@@ -503,17 +503,19 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
       .map((q) => q.period)
   );
 
-  const hasLeftAssigned = expectedPeriods.every((p) => assignedLeftPeriods.has(p));
-
-
-  const assignedRightPeriods = new Set(
-  (patient?.questionnaire_assigned_right || [])
-    .filter((q) => q.deadline)
-    .map((q) => q.period)
+  const hasLeftAssigned = expectedPeriods.every((p) =>
+    assignedLeftPeriods.has(p)
   );
 
-  const hasRightAssigned = expectedPeriods.every((p) => assignedRightPeriods.has(p));
+  const assignedRightPeriods = new Set(
+    (patient?.questionnaire_assigned_right || [])
+      .filter((q) => q.deadline)
+      .map((q) => q.period)
+  );
 
+  const hasRightAssigned = expectedPeriods.every((p) =>
+    assignedRightPeriods.has(p)
+  );
 
   const shouldDisableAssign =
     // Case 1: Only left surgery is valid and left Q assigned
@@ -579,15 +581,19 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                 name: item,
                 period,
                 assigned_date: assignedDate,
-                deadline: calculateDeadline(leftSurgeryDateStr, periodOffsets[period]),
+                deadline: calculateDeadline(
+                  leftSurgeryDateStr,
+                  periodOffsets[period]
+                ),
                 completed: 0,
               }))
             ),
         };
 
-        const hasTodayDeadlineInLeft = payloadLeft?.questionnaire_assigned_left?.some(
-          (q) => q.deadline && q.deadline.split("T")[0] === todayStr
-        );
+        const hasTodayDeadlineInLeft =
+          payloadLeft?.questionnaire_assigned_left?.some(
+            (q) => q.deadline && q.deadline.split("T")[0] === todayStr
+          );
 
         const responseLeft = await fetch(API_URL + "add-questionnaire-left", {
           method: "PUT",
@@ -633,15 +639,19 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                 name: item,
                 period,
                 assigned_date: assignedDate,
-                deadline: calculateDeadline(rightSurgeryDateStr, periodOffsets[period]),
+                deadline: calculateDeadline(
+                  rightSurgeryDateStr,
+                  periodOffsets[period]
+                ),
                 completed: 0,
               }))
             ),
         };
 
-        const hasTodayDeadlineInRight = payloadRight?.questionnaire_assigned_right?.some(
-          (q) => q.deadline && q.deadline.split("T")[0] === todayStr
-        );
+        const hasTodayDeadlineInRight =
+          payloadRight?.questionnaire_assigned_right?.some(
+            (q) => q.deadline && q.deadline.split("T")[0] === todayStr
+          );
 
         const responseRight = await fetch(API_URL + "add-questionnaire-right", {
           method: "PUT",
@@ -710,7 +720,8 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
           name: patient?.first_name + " " + patient?.last_name,
           email: patient?.email,
           subject: "New Questionnaire Assigned",
-          message: "This is a kind reminder regarding your pending health questionnaire(s). Completing these forms helps us track your recovery and provide better care.",
+          message:
+            "This is a kind reminder regarding your pending health questionnaire(s). Completing these forms helps us track your recovery and provide better care.",
         }),
       });
 
@@ -1253,14 +1264,23 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
   // console.log("Questionnaires deadlines", deadlineMap);
 
   const scoreRanges = {
-    "Oxford Knee Score": [0, 48, false],
-    "SHORT FORM 12": [0, 100, false],
-    "KOOS, JR.": [0, 28, true], // reverse: 0 good, 28 poor (flip colors)
-    "Knee Society Score": [0, 100, false],
-    "Forgotten Joint Score": [0, 48, false],
+    "Oxford Knee Score (OKS)": [0, 48, false],
+    "Short Form - 12 (SF-12)": [0, 100, false],
+    "Knee Injury and Ostheoarthritis Outcome Score, Joint Replacement (KOOS, JR)":
+      [0, 28, true], // reverse: 0 good, 28 poor (flip colors)
+    "Knee Society Score (KSS)": [0, 100, false],
+    "Forgotten Joint Score (FJS)": [0, 48, false],
   };
 
-  const getColor = (val, minVal = 0, maxVal = 100, reverse = false) => {
+  const questionnairenames = [
+    "Oxford Knee Score (OKS)",
+    "Short Form - 12 (SF-12)",
+    "Knee Injury and Ostheoarthritis Outcome Score, Joint Replacement (KOOS, JR)",
+    "Knee Society Score (KSS)",
+    "Forgotten Joint Score (FJS)",
+  ];
+
+  const getColor = (val, minVal, maxVal, reverse) => {
     const number = parseFloat(val);
     if (isNaN(number)) return "#B0C4C7";
 
@@ -3103,9 +3123,23 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                           : rightlegdata
                         ).map((row, idx) => {
                           // Check if any value is below the critical threshold
-                          const isCritical = row.values.some(
-                            (val) => typeof val === "number" && val < 50
-                          );
+                          const isCritical = row.values.some((val, idx) => {
+                            const questionnaireName = row.label;
+                            const [min, max, reverse] = scoreRanges[
+                              questionnaireName
+                            ] || [0, 100, false];
+
+                            const isNumeric =
+                              typeof val === "number" && !isNaN(val);
+
+                            if (!isNumeric) return false;
+
+                            const percentage = (val - min) / (max - min);
+                            const score = reverse ? 1 - percentage : percentage;
+
+                            // Consider "critical" if score is below 25% of the healthy range
+                            return score < 0.25;
+                          });
 
                           // console.log("Score Map left", row.others);
 
@@ -3125,7 +3159,9 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                                 const isNumeric = !isEmpty && !isNA;
 
                                 // Determine the questionnaire name for this column (example: from columns array)
-                                const questionnaireName = columns[vIdx];
+                                const questionnaireName = row.label;
+
+                                console.log("Questionnaire Row", row.label);
 
                                 // Get range info or default
                                 const [minVal, maxVal, reverse] = scoreRanges[
