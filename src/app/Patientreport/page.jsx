@@ -1404,15 +1404,19 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
           throw new Error(`HTTP error! Status: ${response.status}`);
         }
 
+
         const result = await response.json();
         // console.log("Left Leg questionnaire Reset successfully:", result);
 
-        window.location.reload();
+        // window.location.reload();
 
         // Show an alert box indicating that the UI will update soon
         showWarning(
           "Left Leg questionnaire Reset successfully. The changes will reflect soon."
         );
+
+                handleSendremainder();
+
 
         // Optionally refresh the data or trigger a UI update
       } catch (error) {
@@ -1449,16 +1453,16 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
         if (!response.ok) {
           throw new Error(`HTTP error! Status: ${response.status}`);
         }
-
         const result = await response.json();
         // console.log("Right Leg questionnaire Reset successfully:", result);
 
-        window.location.reload();
+        // window.location.reload();
 
         // Show an alert box indicating that the UI will update soon
         showWarning(
           "Right Leg questionnaire Reset successfully. The changes will reflect soon."
         );
+        handleSendremainder();
 
         // Optionally refresh the data or trigger a UI update
       } catch (error) {
