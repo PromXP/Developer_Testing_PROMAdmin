@@ -545,6 +545,9 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
     return deadline.toISOString();
   };
 
+   const [hasTodayDeadlineInLeft,sethasTodayDeadlineInLeft] = useState("");
+   const [hasTodayDeadlineInRight,sethasTodayDeadlineInRight] = useState("");
+
   const handleAllassign = async () => {
     if (qisSubmitting) {
       showWarning("Please wait, assigning is in progress...");
@@ -590,10 +593,10 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
             ),
         };
 
-        const hasTodayDeadlineInLeft =
+        sethasTodayDeadlineInLeft(
           payloadLeft?.questionnaire_assigned_left?.some(
             (q) => q.deadline && q.deadline.split("T")[0] === todayStr
-          );
+          ))
 
         const responseLeft = await fetch(API_URL + "add-questionnaire-left", {
           method: "PUT",
@@ -648,10 +651,10 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
             ),
         };
 
-        const hasTodayDeadlineInRight =
+        sethasTodayDeadlineInRight(
           payloadRight?.questionnaire_assigned_right?.some(
             (q) => q.deadline && q.deadline.split("T")[0] === todayStr
-          );
+          ))
 
         const responseRight = await fetch(API_URL + "add-questionnaire-right", {
           method: "PUT",
@@ -685,6 +688,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
           return;
         }
       }
+      
       setSelectedItems([]);
       showWarning("Questionnaires successfully assigned!");
       if (hasTodayDeadlineInLeft || hasTodayDeadlineInRight) {
