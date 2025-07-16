@@ -691,11 +691,12 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
       
       setSelectedItems([]);
       showWarning("Questionnaires successfully assigned!");
-      if (hasTodayDeadlineInLeft || hasTodayDeadlineInRight) {
-        handleSendremainder(); // Replace with your desired function
-      }
+      // if (hasTodayDeadlineInLeft || hasTodayDeadlineInRight) {
+      //   handleSendremainder(); // Replace with your desired function
+      // }
+      handleSendremainder();
       setTimeout(() => setWarning(""), 3000);
-      window.location.reload();
+      // window.location.reload();
     } catch (err) {
       console.error("Network error:", err);
       showWarning("Network error. Please try again.");
