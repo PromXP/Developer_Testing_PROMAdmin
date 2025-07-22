@@ -344,23 +344,31 @@ const page = ({
     return currentPeriod;
   };
 
-  const getNearestDeadlineNotCompleted = (patient, side) => {
-    const assigned =
-      side === "left"
-        ? patient.questionnaire_assigned_left
-        : patient.questionnaire_assigned_right;
+const getNearestDeadlineNotCompleted = (patient, side) => {
+  const assigned =
+    side === "left"
+      ? patient.questionnaire_assigned_left
+      : patient.questionnaire_assigned_right;
 
-    if (!assigned || assigned.length === 0) return null;
+  if (!assigned || assigned.length === 0) return null;
 
-    const now = new Date();
+  // Filter where not completed
+  const pending = assigned
+    .filter((q) => q.completed === 0)
+    .map((q) => {
+      const baseDate = new Date(q.deadline);
+      if (q.period === "Pre Op") {
+        baseDate.setDate(baseDate.getDate() - 1);
+      } else {
+        baseDate.setDate(baseDate.getDate() + 14);
+      }
+      // Attach the adjusted date back to the questionnaire object for reference
+      return { ...q, deadline: baseDate };
+    })
+    .sort((a, b) => a.deadline - b.deadline); // Sort by nearest adjusted deadline
 
-    // Filter where not completed and deadline is in the future
-    const pending = assigned
-      .filter((q) => q.completed === 0)
-      .sort((a, b) => new Date(a.deadline) - new Date(b.deadline)); // Sort by nearest deadline
-
-    return pending.length > 0 ? pending[0] : null;
-  };
+  return pending.length > 0 ? pending[0] : null;
+};
 
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -643,6 +651,16 @@ const page = ({
     }
   }, [patientProgress]); // run when doctors updates
 
+    const getAdjustedDeadline = (q) => {
+  const baseDate = new Date(q.deadline);
+  if (q.period === "Pre Op") {
+    baseDate.setDate(baseDate.getDate() - 1);
+  } else {
+    baseDate.setDate(baseDate.getDate() + 14);
+  }
+  return baseDate;
+};
+
   const filteredPatientsByDate = filteredPatients.filter((patient) => {
     if (selectedDate === "") {
       return true; // Show all patients by default
@@ -659,19 +677,24 @@ const page = ({
 
     // Check if patient has any questionnaire assigned with matching deadline
     return assignedQuestionnaires.some((q) => {
-      if (!q.deadline) return false;
+       if (q.completed === 0) {
+      const deadline = getAdjustedDeadline(q);
 
-      const qDeadline = new Date(q.deadline);
-      const inputValue = dateInputRef.current?.value;
-      const selected = inputValue ? new Date(inputValue) : new Date();
-      console.log("Compliance date", inputValue + " " + selected);
-
-      return (
-        qDeadline.getDate() === selected.getDate() &&
-        qDeadline.getMonth() === selected.getMonth() &&
-        qDeadline.getFullYear() === selected.getFullYear()
-      );
+      if (selectedDate === "Today") {
+        return isSameDay1(deadline, today);
+      } else {
+        // Compare with formatted selectedDate
+        const formatted = deadline.toLocaleDateString("en-GB", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        });
+        return formatted === selectedDate;
+      }
+    }
+    return false;
     });
+
   });
 
   const onlyPendingPatients = filteredPatientsByDate.filter((patient) => {
@@ -705,23 +728,69 @@ const page = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [cardsPerPage, setCardsPerPage] = useState(50);
 
+
+
+const isSameDay1 = (d1, d2) => {
+  return (
+    d1.getDate() === d2.getDate() &&
+    d1.getMonth() === d2.getMonth() &&
+    d1.getFullYear() === d2.getFullYear()
+  );
+};
+
+const today = new Date();
+const filteredPatientsByDate1 = onlyPendingPatients.filter((patient) => {
+  
+  if (!selectedDate || selectedDate === "") return true; // Show all if cleared
+
+  const assigned =
+    selectedLeg === "left"
+      ? patient.questionnaire_assigned_left
+      : patient.questionnaire_assigned_right;
+
+  return assigned.some((q) => {
+
+    if (q.completed === 0) {
+      const deadline = getAdjustedDeadline(q);
+
+      if (selectedDate === "Today") {
+        return isSameDay1(deadline, today);
+      } else {
+        // Compare with formatted selectedDate
+        const formatted = deadline.toLocaleDateString("en-GB", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        });
+        return formatted === selectedDate;
+      }
+    }
+            console.log("Today", selectedDate,deadline, today);
+
+    return false;
+  });
+});
+
+
   const sortedPatients = onlyPendingPatients.sort((a, b) => {
     const FAR_FUTURE = new Date(9999, 11, 31);
     const now = new Date();
 
     const getNearestDeadline = (patient) => {
-      const assigned =
-        selectedLeg === "left"
-          ? patient.questionnaire_assigned_left
-          : patient.questionnaire_assigned_right;
+    const assigned =
+      selectedLeg === "left"
+        ? patient.questionnaire_assigned_left
+        : patient.questionnaire_assigned_right;
 
-      const pending = assigned
-        .filter((q) => q.completed === 0)
-        .map((q) => new Date(q.deadline))
-        .sort((a, b) => a - b);
+    const pending = assigned
+      .filter((q) => q.completed === 0)
+      .map(getAdjustedDeadline)
+      .sort((a, b) => a - b);
 
-      return pending.length > 0 ? pending[0] : FAR_FUTURE;
-    };
+    
+
+    return pending.length > 0 ? pending[0] : FAR_FUTURE;
+  };
 
     const getCompletionPercent = (patient) => {
       const assigned =

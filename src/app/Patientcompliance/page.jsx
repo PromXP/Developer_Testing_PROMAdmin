@@ -251,6 +251,32 @@ const page = ({ isOpencomp, patient11 }) => {
     return `${year}-${month}-${day}`; // Return in YYYY-MM-DD format
   };
 
+  // Place this near your other helpers
+const getActualDeadlineForDisplay = (ques, patient1, selectedLeg) => {
+  let date;
+  const period = ques.period.toLowerCase();
+
+  if (period.includes("pre")) {
+    // Pre Op: 1 day before surgery date
+    const surgeryDateStr =
+      selectedLeg === "left"
+        ? patient1?.post_surgery_details_left?.date_of_surgery
+        : patient1?.post_surgery_details_right?.date_of_surgery;
+    if (!surgeryDateStr) return "";
+    date = new Date(surgeryDateStr);
+    date.setDate(date.getDate() - 1);
+  } else {
+    // Post Op: deadline + 14 days
+    date = new Date(ques.deadline);
+    date.setDate(date.getDate() + 14);
+  }
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${day}-${month}-${year}`;
+};
+
   const [editingIndex, setEditingIndex] = useState(null);
 
   const filteredQuestionnaire = filteredQuestionnairesByDate.filter((ques) => {
@@ -290,7 +316,7 @@ const page = ({ isOpencomp, patient11 }) => {
     const deadlineA = new Date(a.deadline);
     const deadlineB = new Date(b.deadline);
 
-    console.log("Deadline Comparison", deadlineA + " / " + deadlineB);
+    // console.log("Deadline Comparison", deadlineA + " / " + deadlineB);
 
     // Sort by deadline in ascending or descending order
     return sortAsc ? deadlineA - deadlineB : deadlineB - deadlineA;
@@ -311,16 +337,32 @@ const page = ({ isOpencomp, patient11 }) => {
       return;
     }
 
+      if (ques.period.toLowerCase().includes("pre")) {
+    alert("Pre Op period cannot be rescheduled.");
+    return;
+  }
+
     // const quest_period = questionnaire_assigned_left
 
     if (selectedLeg === "left") {
-      const payloadLeft = {
-        name: ques.name,
-        period: ques.period,
-        assigned_date: ques.assigned_date,
-        deadline: selectedDates[index],
-        completed: 0,
-      };
+      let adjustedDeadline = selectedDates[index];
+  if (ques.period.toLowerCase().includes("w") ||
+      ques.period.toLowerCase().includes("m") ||
+      ques.period.toLowerCase().includes("y") ||
+      ques.period.toLowerCase() === "post op") {
+    // Subtract 14 days for post-op
+    const dateObj = new Date(selectedDates[index]);
+    dateObj.setDate(dateObj.getDate() - 14);
+    adjustedDeadline = dateObj.toISOString();
+  }
+
+  const payloadLeft = {
+    name: ques.name,
+    period: ques.period,
+    assigned_date: ques.assigned_date,
+    deadline: adjustedDeadline,
+    completed: 0,
+  };
       console.log("Left leg reset " + JSON.stringify(payloadLeft, null, 2));
 
       console.log(
@@ -369,11 +411,24 @@ const page = ({ isOpencomp, patient11 }) => {
     }
 
     if (selectedLeg === "right") {
+      let adjustedDeadline = selectedDates[index];
+  if (ques.period.toLowerCase().includes("w") ||
+      ques.period.toLowerCase().includes("m") ||
+      ques.period.toLowerCase().includes("y") ||
+      ques.period.toLowerCase() === "post op") {
+    // Subtract 14 days for post-op
+    const dateObj = new Date(selectedDates[index]);
+    dateObj.setDate(dateObj.getDate() - 14);
+    adjustedDeadline = dateObj.toISOString();
+  }
+  else{
+
+  }
       const payloadRight = {
         name: ques.name,
         period: ques.period,
         assigned_date: ques.assigned_date,
-        deadline: selectedDates[index],
+        deadline: adjustedDeadline,
         completed: 0,
       };
 
@@ -887,7 +942,7 @@ const page = ({ isOpencomp, patient11 }) => {
                                 <p className="font-medium text-[#476367]">
                                   {selectedDates[index]
                                     ? formatDateForDisplay(selectedDates[index]) // Format the ISO string for display
-                                    : formatDateForDisplay(ques.deadline)}
+                                    : getActualDeadlineForDisplay(ques, patient1, selectedLeg)}
                                 </p>
                               </div>
 
@@ -927,7 +982,7 @@ const page = ({ isOpencomp, patient11 }) => {
                                 </div>
                               ) : (
                                 <PencilSquareIcon
-                                  className={`w-4 h-4 ml-2 ${ques.completed === 1 ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                                  className={`w-4 h-4 ml-2 ${ques.completed === 1 || ques.period.toLowerCase().includes("pre") ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
                                   onClick={() => {
                                     if (ques.completed !== 1)
                                       setEditingIndex(index);
@@ -941,7 +996,7 @@ const page = ({ isOpencomp, patient11 }) => {
                         <div
                           className={` flex flex-row justify-center items-center ${
                             width < 640 ? "w-full" : "w-[20%]"
-                          } ${ques.completed === 1 ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                          } ${ques.completed === 1 || ques.period.toLowerCase().includes("pre") ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
                         >
                           <div
                             className={`flex flex-row gap-1 items-center ${
@@ -950,7 +1005,7 @@ const page = ({ isOpencomp, patient11 }) => {
                                 : width < 530
                                   ? "w-full justify-center"
                                   : ""
-                            } ${ques.completed === 1 ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                            } ${ques.completed === 1 || ques.period.toLowerCase().includes("pre")  ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
                             onClick={() => {
                               if (ques.completed !== 1)
                                 handleReschedule(ques, index);
