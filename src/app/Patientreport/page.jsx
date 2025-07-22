@@ -542,34 +542,35 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
   const today = new Date();
   const surgeryDate = new Date(surgeryDateStr);
 
+  if (isNaN(surgeryDate)) return { deadline: null, expired: true };
 
   if (period === "Pre Op") {
     const sevenDaysBefore = new Date(surgeryDate);
     sevenDaysBefore.setDate(surgeryDate.getDate() - 7);
 
-    // If we're within 7 days before surgery, assign today's date
-    if (today >= sevenDaysBefore && today <= surgeryDate) {
-      const assigningDate = new Date(); // today
-      if (today > surgeryDate) return null;
-      return assigningDate.toISOString();
-    } else if (today < sevenDaysBefore) {
-      const assigningDate = sevenDaysBefore;
-      return assigningDate.toISOString();
+    if (today > surgeryDate) {
+      return { deadline: surgeryDate.toISOString(), expired: true };
+    } else if (today >= sevenDaysBefore) {
+      return { deadline: today.toISOString(), expired: false };
     } else {
-      return null; // Surgery already happened — expired
+      return { deadline: sevenDaysBefore.toISOString(), expired: false };
     }
   } else {
-    // Post-op case
     const assigningDate = new Date(surgeryDate);
-        console.log("Assigning date for", period, ":", assigningDate.toISOString());
-
     assigningDate.setDate(surgeryDate.getDate() + offsetDays);
+
     const expiryDate = new Date(assigningDate);
     expiryDate.setDate(assigningDate.getDate() + 14);
-    if (today >= expiryDate) return null; // expired
-    return assigningDate.toISOString();
+
+    const expired = today >= expiryDate;
+
+    return {
+      deadline: assigningDate.toISOString(),
+      expired,
+    };
   }
 };
+
 
 
   const [hasTodayDeadlineInLeft, sethasTodayDeadlineInLeft] = useState("");
@@ -597,35 +598,59 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
 
     try {
       if (isValidDate(leftSurgeryDateStr) && !hasLeftAssigned) {
-        const assignedLeftPeriods = new Set(
-          (patient?.questionnaire_assigned_left || [])
-            .filter((q) => q.deadline)
-            .map((q) => q.period)
-        );
-        payloadLeft = {
-          uhid: patient?.uhid,
-          questionnaire_assigned_left: periods
-            .filter((period) => !assignedLeftPeriods.has(period))
-            .flatMap((period) =>
-              selectedItems
-                .map((item) => {
-                  const deadline = calculateDeadline(
-                    leftSurgeryDateStr,
-                    periodOffsets[period],
-                    period
-                  );
-                  if (!deadline) return null; // Skip expired
-                  return {
-                    name: item,
-                    period,
-                    assigned_date: assignedDate,
-                    deadline: deadline, // same value
-                    completed: 0,
-                  };
-                })
-                .filter(Boolean)
-            ),
-        };
+        const periods = ["Pre Op", "6W", "3M", "6M", "1Y", "2Y"];
+
+const assignedLeftPeriods = new Set(
+  (patient?.questionnaire_assigned_left || [])
+    .filter((q) => q.deadline)
+    .map((q) => q.period)
+);
+
+const questionnairesToAssign = [];
+
+selectedItems.forEach((item) => {
+  let latestExpired = null;
+  let latestExpiredDeadline = null;
+
+  periods.forEach((period) => {
+    if (!assignedLeftPeriods.has(period)) {
+      const { deadline, expired } = calculateDeadline(leftSurgeryDateStr, periodOffsets[period], period);
+
+      if (deadline) {
+        if (!expired) {
+          questionnairesToAssign.push({
+            name: item,
+            period,
+            assigned_date: assignedDate,
+            deadline,
+            completed: 0,
+          });
+        } else {
+          // Track latest expired
+          latestExpired = period;
+          latestExpiredDeadline = deadline;
+        }
+      }
+    }
+  });
+
+  // Add latest expired questionnaire (if any)
+  if (latestExpired) {
+    questionnairesToAssign.push({
+      name: item,
+      period: latestExpired,
+      assigned_date: assignedDate,
+      deadline: latestExpiredDeadline,
+      completed: 0,
+    });
+  }
+});
+
+
+payloadLeft = {
+  uhid: patient?.uhid,
+  questionnaire_assigned_left: questionnairesToAssign,
+};
 
         console.log("Payload Left", payloadLeft);
 
@@ -668,34 +693,58 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
 
       if (isValidDate(rightSurgeryDateStr) && !hasRightAssigned) {
         const assignedRightPeriods = new Set(
-          (patient?.questionnaire_assigned_right || [])
-            .filter((q) => q.deadline)
-            .map((q) => q.period)
-        );
-        payloadRight = {
-          uhid: patient?.uhid,
-          questionnaire_assigned_right: periods
-            .filter((period) => !assignedLeftPeriods.has(period))
-            .flatMap((period) =>
-              selectedItems
-                .map((item) => {
-                  const deadline = calculateDeadline(
-                    rightSurgeryDateStr,
-                    periodOffsets[period],
-                    period
-                  );
-                  if (!deadline) return null; // Skip expired
-                  return {
-                    name: item,
-                    period,
-                    assigned_date: assignedDate,
-                    deadline: deadline, // same value
-                    completed: 0,
-                  };
-                })
-                .filter(Boolean)
-            ),
-        };
+  (patient?.questionnaire_assigned_right || [])
+    .filter((q) => q.deadline)
+    .map((q) => q.period)
+);
+
+let questionnairesRightToAssign = [];
+
+selectedItems.forEach((item) => {
+  let latestExpired = null;
+  let latestExpiredDeadline = null;
+
+  periods.forEach((period) => {
+    if (!assignedRightPeriods.has(period)) {
+      const { deadline, expired } = calculateDeadline(
+        rightSurgeryDateStr,
+        periodOffsets[period],
+        period
+      );
+
+      if (deadline) {
+        if (!expired) {
+          questionnairesRightToAssign.push({
+            name: item,
+            period,
+            assigned_date: assignedDate,
+            deadline,
+            completed: 0,
+          });
+        } else {
+          latestExpired = period;
+          latestExpiredDeadline = deadline;
+        }
+      }
+    }
+  });
+
+  if (latestExpired) {
+    questionnairesRightToAssign.push({
+      name: item,
+      period: latestExpired,
+      assigned_date: assignedDate,
+      deadline: latestExpiredDeadline,
+      completed: 0,
+    });
+  }
+});
+
+payloadRight = {
+  uhid: patient?.uhid,
+  questionnaire_assigned_right: questionnairesRightToAssign,
+};
+
 
         sethasTodayDeadlineInRight(
           payloadRight?.questionnaire_assigned_right?.some(
@@ -738,9 +787,9 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
 
       setSelectedItems([]);
       showWarning("Questionnaires successfully assigned!");
-      // if (hasTodayDeadlineInLeft || hasTodayDeadlineInRight) {
-      //   handleSendremainder(); // Replace with your desired function
-      // }
+      if (hasTodayDeadlineInLeft || hasTodayDeadlineInRight) {
+        handleSendremainder(); // Replace with your desired function
+      }
       // handleSendremainder();
       setTimeout(() => setWarning(""), 3000);
       window.location.reload();
