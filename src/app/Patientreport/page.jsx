@@ -662,6 +662,8 @@ payloadLeft = {
           )
         );
 
+        console.log("hasTodayDeadlineInLeft", hasTodayDeadlineInLeft+" "+ todayStr+ " " + payloadLeft?.questionnaire_assigned_left);
+
         const responseLeft = await fetch(API_URL + "add-questionnaire-left", {
           method: "PUT",
           headers: {
@@ -787,12 +789,12 @@ payloadRight = {
 
       setSelectedItems([]);
       showWarning("Questionnaires successfully assigned!");
-      if (hasTodayDeadlineInLeft || hasTodayDeadlineInRight) {
-        handleSendremainder(); // Replace with your desired function
-      }
-      // handleSendremainder();
+      // if (hasTodayDeadlineInLeft || hasTodayDeadlineInRight) {
+      //   handleSendremainder(); // Replace with your desired function
+      // }
+      handleSendremainder();
       setTimeout(() => setWarning(""), 3000);
-      window.location.reload();
+      // window.location.reload();
     } catch (err) {
       console.error("Network error:", err);
       showWarning("Network error. Please try again.");
@@ -3342,7 +3344,7 @@ payloadRight = {
                                   if (
                                   row.label ===
                                     "Oxford Knee Score (OKS)"){
-                                console.log("📝 Period:",row.label+" "+columns[vIdx+1]+" "+ vIdx);
+                                // console.log("📝 Period:",row.label+" "+columns[vIdx+1]+" "+ vIdx);
                                     }
 
                                 const filteredNotes = [];
