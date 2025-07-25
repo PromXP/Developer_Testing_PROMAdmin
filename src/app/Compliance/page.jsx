@@ -210,6 +210,8 @@ const page = ({
     dateInputRef.current?.showPicker();
   };
 
+    const today = new Date();
+
   const handleDateChange = (e) => {
     const dateValue = e.target.value;
     if (dateValue) {
@@ -690,6 +692,14 @@ const page = ({
     return baseDate;
   };
 
+    const isSameDay1 = (d1, d2) => {
+    return (
+      d1.getDate() === d2.getDate() &&
+      d1.getMonth() === d2.getMonth() &&
+      d1.getFullYear() === d2.getFullYear()
+    );
+  };
+
   const filteredPatientsByDate = filteredPatients.filter((patient) => {
     if (selectedDate === "") {
       return true; // Show all patients by default
@@ -787,15 +797,9 @@ return incompleteRelevantExists;
   const [currentPage, setCurrentPage] = useState(1);
   const [cardsPerPage, setCardsPerPage] = useState(50);
 
-  const isSameDay1 = (d1, d2) => {
-    return (
-      d1.getDate() === d2.getDate() &&
-      d1.getMonth() === d2.getMonth() &&
-      d1.getFullYear() === d2.getFullYear()
-    );
-  };
 
-  const today = new Date();
+
+
   const filteredPatientsByDate1 = onlyPendingPatients.filter((patient) => {
     if (!selectedDate || selectedDate === "") return true; // Show all if cleared
 
