@@ -407,7 +407,44 @@ const page = ({
   const [searchTerm, setSearchTerm] = useState("");
   const [searchDoctorTerm, setSearchDoctorTerm] = useState("");
 
+  const today = new Date();
+  const currentMonth = today.getMonth(); // 0-11
+  const currentYear = today.getFullYear();
+
   const filteredPatients = patients
+    // Filter: at least one questionnaire has a deadline in the current month
+    .filter((patient) => {
+      const questionnaires =
+        selectedLeg === "left"
+          ? patient?.questionnaire_assigned_left
+          : patient?.questionnaire_assigned_right;
+
+      if (!questionnaires || questionnaires.length === 0) return false;
+
+      const now = new Date();
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
+
+      return questionnaires.some((q) => {
+        const deadline = new Date(q.deadline);
+
+        // Only consider deadlines up to the end of current month
+        if (
+          deadline.getFullYear() < currentYear ||
+          (deadline.getFullYear() === currentYear &&
+            deadline.getMonth() <= currentMonth)
+        ) {
+          const isInCurrentMonth =
+            deadline.getMonth() === currentMonth &&
+            deadline.getFullYear() === currentYear;
+          const isNotCompleted = q.completed !== 1;
+
+          // Include if in current month OR not completed yet
+          return isInCurrentMonth || isNotCompleted;
+        }
+        return false; // deadline in future beyond current month → ignore
+      });
+    })
     .filter((patient) => {
       const status = patient.current_status?.toLowerCase() || "";
       const selectedFilter = patfilter.toLowerCase();
