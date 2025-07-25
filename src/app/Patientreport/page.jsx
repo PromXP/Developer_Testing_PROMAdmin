@@ -1702,13 +1702,29 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
 
     const today = new Date();
 
-    // Filter only questionnaires whose deadline is today or earlier
+    const surgeryDateISO =
+      selectedLeg === "left"
+        ? patient?.post_surgery_details_left?.date_of_surgery
+        : patient?.post_surgery_details_right?.date_of_surgery;
+
+    const surgeryDate = surgeryDateISO ? new Date(surgeryDateISO) : null;
+
     const relevant = data.filter((q) => {
-      const deadline = new Date(q.deadline);
-      return deadline <= today;
+      const qPeriod = q.period?.toLowerCase();
+
+      if (qPeriod === "pre op") {
+        // For Pre Op, check surgery date instead of deadline
+        if (!surgeryDate) return false; // if surgery date missing, skip
+        return surgeryDate <= today;
+      } else {
+        const deadline = new Date(q.deadline);
+        return deadline <= today;
+      }
     });
 
     if (relevant.length === 0) return 0;
+
+
 
     const completed = relevant.filter((q) => q.completed === 1).length;
     return Math.round((completed / relevant.length) * 100);

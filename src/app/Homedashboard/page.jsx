@@ -422,7 +422,7 @@ const page = ({
       if (!questionnaires || questionnaires.length === 0) return false;
 
       const now = new Date();
-      const currentMonth = now.getMonth();
+      const currentMonth = now.getMonth()+1;
       const currentYear = now.getFullYear();
 
       return questionnaires.some((q) => {
@@ -842,7 +842,26 @@ const page = ({
         )
         .filter((q) => {
           const deadline = new Date(q.deadline);
-          return deadline <= today;
+          const isDue = deadline <= today;
+
+          // Special case for Pre Op
+          if (q.period === "Pre Op") {
+            const surgeryDateStr =
+              selectedLeg === "left"
+                ? patient?.post_surgery_details_left?.date_of_surgery
+                : patient?.post_surgery_details_right?.date_of_surgery;
+
+            if (surgeryDateStr) {
+              const surgeryDate = new Date(surgeryDateStr);
+              const isSurgeryInFuture = today < surgeryDate;
+
+              return isDue || isSurgeryInFuture; // ✅ Pre Op shown if due or surgery not yet done
+            }
+
+            return isDue; // If no surgery date, fallback to normal check
+          }
+
+          return isDue; // ✅ For other periods
         });
 
       if (relevant.length === 0) return 1; // All deadlines are future
@@ -2361,7 +2380,27 @@ const page = ({
                                   )
                                   .filter((q) => {
                                     const deadline = new Date(q.deadline);
-                                    return deadline <= today;
+                                    const isDue = deadline <= today;
+
+                                    if (q.period === "Pre Op") {
+                                      const surgeryDateStr =
+                                        selectedLeg === "left"
+                                          ? patient?.post_surgery_details_left
+                                              ?.date_of_surgery
+                                          : patient?.post_surgery_details_right
+                                              ?.date_of_surgery;
+
+                                      if (surgeryDateStr) {
+                                        const surgeryDate = new Date(
+                                          surgeryDateStr
+                                        );
+                                        return isDue || today < surgeryDate; // ✅ allow Pre Op if due or surgery not yet done
+                                      }
+
+                                      return isDue; // fallback if no surgery date
+                                    }
+
+                                    return isDue; // ✅ other periods only if due
                                   });
 
                                 if (patient?.uhid === "pat003") {
@@ -2371,8 +2410,7 @@ const page = ({
                                   );
                                 }
 
-                                if (relevant.length === 0)
-                                  return "NOT DUE";
+                                if (relevant.length === 0) return "NOT DUE";
 
                                 const allCompleted = relevant.every(
                                   (q) => q.completed === 1
