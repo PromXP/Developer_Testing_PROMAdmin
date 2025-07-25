@@ -442,10 +442,11 @@ const page = ({
 
       const period1 = getCurrentPeriod(patient, selectedLegSide).toLowerCase();
       const period = getPeriodFromSurgeryDate(
-                                selectedLeg === "left"
-                                  ? patient?.post_surgery_details_left?.date_of_surgery
-                                  : patient?.post_surgery_details_right?.date_of_surgery, patient
-                              ).toLowerCase()
+        selectedLeg === "left"
+          ? patient?.post_surgery_details_left?.date_of_surgery
+          : patient?.post_surgery_details_right?.date_of_surgery,
+        patient
+      ).toLowerCase();
 
       if (selectedFilter === "pre operative") return period.includes("pre");
 
@@ -537,10 +538,11 @@ const page = ({
   coutpatients.forEach((patient) => {
     const periodRaw1 = getCurrentPeriod(patient, selectedLeg);
     const periodRaw = getPeriodFromSurgeryDate(
-                                selectedLeg === "left"
-                                  ? patient?.post_surgery_details_left?.date_of_surgery
-                                  : patient?.post_surgery_details_right?.date_of_surgery, patient
-                              )
+      selectedLeg === "left"
+        ? patient?.post_surgery_details_left?.date_of_surgery
+        : patient?.post_surgery_details_right?.date_of_surgery,
+      patient
+    );
     const period = periodRaw ? periodRaw.toLowerCase() : ""; // Safe check
     const selectedFilter = patprogressfilter.toLowerCase();
 
@@ -778,21 +780,39 @@ const page = ({
   const totalPages = Math.ceil(filteredPatients.length / cardsPerPage);
   const sortedpatients = filteredPatients.sort((a, b) => {
     const getStatusRank = (patient) => {
-      if (selectedLeg === "left") {
-        if (patient.questionnaire_assigned_left?.length === 0) return 1; // NOT ASSIGNED
-        if (
-          patient.questionnaire_assigned_left?.every((q) => q.completed === 1)
+      const periodOrder = ["Pre Op", "6W", "3M", "6M", "1Y", "2Y"];
+
+      const surgeryDateStr =
+        selectedLeg === "left"
+          ? patient?.post_surgery_details_left?.date_of_surgery
+          : patient?.post_surgery_details_right?.date_of_surgery;
+
+      const currentPeriod = getPeriodFromSurgeryDate(surgeryDateStr, patient);
+
+      const allAssigned =
+        selectedLeg === "left"
+          ? patient.questionnaire_assigned_left
+          : patient.questionnaire_assigned_right;
+
+      if (!allAssigned || allAssigned.length === 0) return 1; // NOT ASSIGNED
+
+      const today = new Date();
+
+      const relevant = allAssigned
+        .sort(
+          (a, b) =>
+            periodOrder.indexOf(a.period) - periodOrder.indexOf(b.period)
         )
-          return 3; // COMPLETED
-        return 2; // PENDING
-      } else {
-        if (patient.questionnaire_assigned_right?.length === 0) return 1; // NOT ASSIGNED
-        if (
-          patient.questionnaire_assigned_right?.every((q) => q.completed === 1)
-        )
-          return 3; // COMPLETED
-        return 2; // PENDING
-      }
+        .filter((q) => {
+          const deadline = new Date(q.deadline);
+          return deadline <= today;
+        });
+
+      if (relevant.length === 0) return 1; // All deadlines are future
+
+      const allCompleted = relevant.every((q) => q.completed === 1);
+
+      return allCompleted ? 3 : 2; // 3 = COMPLETED, 2 = PENDING
     };
 
     const rankA = getStatusRank(a);
@@ -800,6 +820,7 @@ const page = ({
 
     return sortByStatus ? rankA - rankB : rankB - rankA;
   });
+
   const paginatedPatients = sortedpatients.slice(
     (currentPage - 1) * cardsPerPage,
     currentPage * cardsPerPage
@@ -1002,7 +1023,7 @@ const page = ({
   };
 
   const handleSaveClick = async () => {
-    if(!tempEmail){
+    if (!tempEmail) {
       showWarning("Enter Mail ID");
       return;
     }
@@ -1048,8 +1069,7 @@ const page = ({
   };
 
   const handleSaveMobile = async () => {
-
-    if(!tempMobile){
+    if (!tempMobile) {
       showWarning("Enter Mobile Number");
       return;
     }
@@ -1095,7 +1115,7 @@ const page = ({
   };
 
   const handleSaveAltMobile = async () => {
-    if(!tempAltMobile){
+    if (!tempAltMobile) {
       showWarning("Enter Alternate Mobile Number");
       return;
     }
@@ -1151,7 +1171,7 @@ const page = ({
   };
 
   const handleSaveAddress = async () => {
-    if(!tempAddress){
+    if (!tempAddress) {
       showWarning("Enter Address");
       return;
     }
@@ -1228,7 +1248,7 @@ const page = ({
   };
 
   const handleSavePassport = async () => {
-    if(!temppassport){
+    if (!temppassport) {
       showWarning("Enter PASSPORT Number");
       return;
     }
@@ -1279,7 +1299,7 @@ const page = ({
   };
 
   const handleSavePan = async () => {
-    if(!temppan){
+    if (!temppan) {
       showWarning("Enter PAN Number");
       return;
     }
@@ -1330,7 +1350,7 @@ const page = ({
   };
 
   const handleSaveAadhaar = async () => {
-    if(!tempaadhaar){
+    if (!tempaadhaar) {
       showWarning("Enter AADHAAR Number");
       return;
     }
@@ -1381,7 +1401,7 @@ const page = ({
   };
 
   const handleSaveABHA = async () => {
-    if(!tempabha){
+    if (!tempabha) {
       showWarning("Enter ABHA Number");
       return;
     }
@@ -1489,21 +1509,23 @@ const page = ({
     return "*".repeat(maskedLength) + id.slice(-4);
   };
 
-  function getPeriodFromSurgeryDate(surgeryDateStr,patient) {
+  function getPeriodFromSurgeryDate(surgeryDateStr, patient) {
     if (!surgeryDateStr) return "Not Found";
 
-  const surgeryDate = new Date(surgeryDateStr);
+    const surgeryDate = new Date(surgeryDateStr);
 
-  // Check for invalid or default placeholder date
-  if (
-    isNaN(surgeryDate) ||
-    surgeryDate.getFullYear() === 1 // Covers "0001-01-01T00:00:00.000+00:00"
-  ) {
-    return "Not Found";
-  }
+    // Check for invalid or default placeholder date
+    if (
+      isNaN(surgeryDate) ||
+      surgeryDate.getFullYear() === 1 // Covers "0001-01-01T00:00:00.000+00:00"
+    ) {
+      return "Not Found";
+    }
 
     const today = new Date();
-    const diffInDays = Math.floor((today - surgeryDate) / (1000 * 60 * 60 * 24));
+    const diffInDays = Math.floor(
+      (today - surgeryDate) / (1000 * 60 * 60 * 24)
+    );
 
     if (diffInDays < 0) {
       return "Pre Op";
@@ -1526,8 +1548,6 @@ const page = ({
 
     return periods[0]?.label || "Unknown";
   }
-
-
 
   return (
     <>
@@ -2249,10 +2269,12 @@ const page = ({
                             >
                               {getPeriodFromSurgeryDate(
                                 selectedLeg === "left"
-                                  ? patient?.post_surgery_details_left?.date_of_surgery
-                                  : patient?.post_surgery_details_right?.date_of_surgery, patient
+                                  ? patient?.post_surgery_details_left
+                                      ?.date_of_surgery
+                                  : patient?.post_surgery_details_right
+                                      ?.date_of_surgery,
+                                patient
                               )}
-
                             </div>
                             <div
                               className={`text-sm font-medium text-black ${
@@ -2263,25 +2285,64 @@ const page = ({
                                     : "w-[65%] text-end"
                               }`}
                             >
-                              {(
-                                selectedLeg === "left"
-                                  ? patient.questionnaire_assigned_left
-                                      ?.length === 0
-                                  : patient.questionnaire_assigned_right
-                                      ?.length === 0
-                              )
-                                ? "NOT ASSIGNED"
-                                : (
-                                      selectedLeg === "left"
-                                        ? patient.questionnaire_assigned_left?.every(
-                                            (q) => q.completed === 1
-                                          )
-                                        : patient.questionnaire_assigned_right?.every(
-                                            (q) => q.completed === 1
-                                          )
-                                    )
-                                  ? "COMPLETED"
-                                  : "PENDING"}
+                              {(() => {
+                                const currentPeriod = getPeriodFromSurgeryDate(
+                                  selectedLeg === "left"
+                                    ? patient?.post_surgery_details_left
+                                        ?.date_of_surgery
+                                    : patient?.post_surgery_details_right
+                                        ?.date_of_surgery,
+                                  patient
+                                );
+
+                                const periodOrder = [
+                                  "Pre Op",
+                                  "6W",
+                                  "3M",
+                                  "6M",
+                                  "1Y",
+                                  "2Y",
+                                ];
+
+                                const allAssigned =
+                                  selectedLeg === "left"
+                                    ? patient.questionnaire_assigned_left
+                                    : patient.questionnaire_assigned_right;
+
+                                // If no questionnaires are assigned
+                                if (!allAssigned || allAssigned.length === 0)
+                                  return "NOT ASSIGNED";
+
+                                // Get only questionnaires up to the current period
+                                const today = new Date();
+
+                                const relevant = allAssigned
+                                  .sort(
+                                    (a, b) =>
+                                      periodOrder.indexOf(a.period) -
+                                      periodOrder.indexOf(b.period)
+                                  )
+                                  .filter((q) => {
+                                    const deadline = new Date(q.deadline);
+                                    return deadline <= today;
+                                  });
+
+                                if (patient?.uhid === "pat003") {
+                                  console.log(
+                                    "All assigned questionnaires:",
+                                    relevant
+                                  );
+                                }
+
+                                if (relevant.length === 0)
+                                  return "NOT ASSIGNED";
+
+                                const allCompleted = relevant.every(
+                                  (q) => q.completed === 1
+                                );
+
+                                return allCompleted ? "COMPLETED" : "PENDING";
+                              })()}
                             </div>
                           </div>
 
@@ -3033,7 +3094,9 @@ const page = ({
                               ) : (
                                 <div className="flex w-1/2 justify-between items-center">
                                   <p className="text-black text-lg font-medium break-words w-full">
-                                    {formatMaskedID(profpat?.idproof?.PASSPORT) ||
+                                    {formatMaskedID(
+                                      profpat?.idproof?.PASSPORT
+                                    ) ||
                                       passportvalue ||
                                       "Not found"}
                                   </p>
@@ -3139,7 +3202,9 @@ const page = ({
                               ) : (
                                 <div className="flex w-1/2 justify-between items-center">
                                   <p className="text-black text-lg font-medium break-words w-full">
-                                    {formatMaskedID(profpat?.idproof?.AADHAAR) ||
+                                    {formatMaskedID(
+                                      profpat?.idproof?.AADHAAR
+                                    ) ||
                                       abhavalue ||
                                       "Not found"}
                                   </p>
@@ -3257,8 +3322,6 @@ const page = ({
                           </div>
                         </div>
                       </div>
-
-                      
                     </div>
                   </div>
 

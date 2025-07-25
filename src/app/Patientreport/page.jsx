@@ -539,39 +539,37 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
   const assignedDate = new Date().toISOString();
 
   const calculateDeadline = (surgeryDateStr, offsetDays, period) => {
-  const today = new Date();
-  const surgeryDate = new Date(surgeryDateStr);
+    const today = new Date();
+    const surgeryDate = new Date(surgeryDateStr);
 
-  if (isNaN(surgeryDate)) return { deadline: null, expired: true };
+    if (isNaN(surgeryDate)) return { deadline: null, expired: true };
 
-  if (period === "Pre Op") {
-    const sevenDaysBefore = new Date(surgeryDate);
-    sevenDaysBefore.setDate(surgeryDate.getDate() - 7);
+    if (period === "Pre Op") {
+      const sevenDaysBefore = new Date(surgeryDate);
+      sevenDaysBefore.setDate(surgeryDate.getDate() - 7);
 
-    if (today > surgeryDate) {
-      return { deadline: surgeryDate.toISOString(), expired: true };
-    } else if (today >= sevenDaysBefore) {
-      return { deadline: today.toISOString(), expired: false };
+      if (today > surgeryDate) {
+        return { deadline: surgeryDate.toISOString(), expired: true };
+      } else if (today >= sevenDaysBefore) {
+        return { deadline: today.toISOString(), expired: false };
+      } else {
+        return { deadline: sevenDaysBefore.toISOString(), expired: false };
+      }
     } else {
-      return { deadline: sevenDaysBefore.toISOString(), expired: false };
+      const assigningDate = new Date(surgeryDate);
+      assigningDate.setDate(surgeryDate.getDate() + offsetDays);
+
+      const expiryDate = new Date(assigningDate);
+      expiryDate.setDate(assigningDate.getDate() + 14);
+
+      const expired = today >= expiryDate;
+
+      return {
+        deadline: assigningDate.toISOString(),
+        expired,
+      };
     }
-  } else {
-    const assigningDate = new Date(surgeryDate);
-    assigningDate.setDate(surgeryDate.getDate() + offsetDays);
-
-    const expiryDate = new Date(assigningDate);
-    expiryDate.setDate(assigningDate.getDate() + 14);
-
-    const expired = today >= expiryDate;
-
-    return {
-      deadline: assigningDate.toISOString(),
-      expired,
-    };
-  }
-};
-
-
+  };
 
   const [hasTodayDeadlineInLeft, sethasTodayDeadlineInLeft] = useState("");
   const [hasTodayDeadlineInRight, sethasTodayDeadlineInRight] = useState("");
@@ -600,57 +598,60 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
       if (isValidDate(leftSurgeryDateStr) && !hasLeftAssigned) {
         const periods = ["Pre Op", "6W", "3M", "6M", "1Y", "2Y"];
 
-const assignedLeftPeriods = new Set(
-  (patient?.questionnaire_assigned_left || [])
-    .filter((q) => q.deadline)
-    .map((q) => q.period)
-);
+        const assignedLeftPeriods = new Set(
+          (patient?.questionnaire_assigned_left || [])
+            .filter((q) => q.deadline)
+            .map((q) => q.period)
+        );
 
-const questionnairesToAssign = [];
+        const questionnairesToAssign = [];
 
-selectedItems.forEach((item) => {
-  let latestExpired = null;
-  let latestExpiredDeadline = null;
+        selectedItems.forEach((item) => {
+          let latestExpired = null;
+          let latestExpiredDeadline = null;
 
-  periods.forEach((period) => {
-    if (!assignedLeftPeriods.has(period)) {
-      const { deadline, expired } = calculateDeadline(leftSurgeryDateStr, periodOffsets[period], period);
+          periods.forEach((period) => {
+            if (!assignedLeftPeriods.has(period)) {
+              const { deadline, expired } = calculateDeadline(
+                leftSurgeryDateStr,
+                periodOffsets[period],
+                period
+              );
 
-      if (deadline) {
-        if (!expired) {
-          questionnairesToAssign.push({
-            name: item,
-            period,
-            assigned_date: assignedDate,
-            deadline,
-            completed: 0,
+              if (deadline) {
+                if (!expired) {
+                  questionnairesToAssign.push({
+                    name: item,
+                    period,
+                    assigned_date: assignedDate,
+                    deadline,
+                    completed: 0,
+                  });
+                } else {
+                  // Track latest expired
+                  latestExpired = period;
+                  latestExpiredDeadline = deadline;
+                }
+              }
+            }
           });
-        } else {
-          // Track latest expired
-          latestExpired = period;
-          latestExpiredDeadline = deadline;
-        }
-      }
-    }
-  });
 
-  // Add latest expired questionnaire (if any)
-  if (latestExpired) {
-    questionnairesToAssign.push({
-      name: item,
-      period: latestExpired,
-      assigned_date: assignedDate,
-      deadline: latestExpiredDeadline,
-      completed: 0,
-    });
-  }
-});
+          // Add latest expired questionnaire (if any)
+          if (latestExpired) {
+            questionnairesToAssign.push({
+              name: item,
+              period: latestExpired,
+              assigned_date: assignedDate,
+              deadline: latestExpiredDeadline,
+              completed: 0,
+            });
+          }
+        });
 
-
-payloadLeft = {
-  uhid: patient?.uhid,
-  questionnaire_assigned_left: questionnairesToAssign,
-};
+        payloadLeft = {
+          uhid: patient?.uhid,
+          questionnaire_assigned_left: questionnairesToAssign,
+        };
 
         console.log("Payload Left", payloadLeft);
 
@@ -662,7 +663,14 @@ payloadLeft = {
           )
         );
 
-        console.log("hasTodayDeadlineInLeft", hasTodayDeadlineInLeft+" "+ todayStr+ " " + payloadLeft?.questionnaire_assigned_left);
+        console.log(
+          "hasTodayDeadlineInLeft",
+          hasTodayDeadlineInLeft +
+            " " +
+            todayStr +
+            " " +
+            payloadLeft?.questionnaire_assigned_left
+        );
 
         const responseLeft = await fetch(API_URL + "add-questionnaire-left", {
           method: "PUT",
@@ -695,58 +703,57 @@ payloadLeft = {
 
       if (isValidDate(rightSurgeryDateStr) && !hasRightAssigned) {
         const assignedRightPeriods = new Set(
-  (patient?.questionnaire_assigned_right || [])
-    .filter((q) => q.deadline)
-    .map((q) => q.period)
-);
+          (patient?.questionnaire_assigned_right || [])
+            .filter((q) => q.deadline)
+            .map((q) => q.period)
+        );
 
-let questionnairesRightToAssign = [];
+        let questionnairesRightToAssign = [];
 
-selectedItems.forEach((item) => {
-  let latestExpired = null;
-  let latestExpiredDeadline = null;
+        selectedItems.forEach((item) => {
+          let latestExpired = null;
+          let latestExpiredDeadline = null;
 
-  periods.forEach((period) => {
-    if (!assignedRightPeriods.has(period)) {
-      const { deadline, expired } = calculateDeadline(
-        rightSurgeryDateStr,
-        periodOffsets[period],
-        period
-      );
+          periods.forEach((period) => {
+            if (!assignedRightPeriods.has(period)) {
+              const { deadline, expired } = calculateDeadline(
+                rightSurgeryDateStr,
+                periodOffsets[period],
+                period
+              );
 
-      if (deadline) {
-        if (!expired) {
-          questionnairesRightToAssign.push({
-            name: item,
-            period,
-            assigned_date: assignedDate,
-            deadline,
-            completed: 0,
+              if (deadline) {
+                if (!expired) {
+                  questionnairesRightToAssign.push({
+                    name: item,
+                    period,
+                    assigned_date: assignedDate,
+                    deadline,
+                    completed: 0,
+                  });
+                } else {
+                  latestExpired = period;
+                  latestExpiredDeadline = deadline;
+                }
+              }
+            }
           });
-        } else {
-          latestExpired = period;
-          latestExpiredDeadline = deadline;
-        }
-      }
-    }
-  });
 
-  if (latestExpired) {
-    questionnairesRightToAssign.push({
-      name: item,
-      period: latestExpired,
-      assigned_date: assignedDate,
-      deadline: latestExpiredDeadline,
-      completed: 0,
-    });
-  }
-});
+          if (latestExpired) {
+            questionnairesRightToAssign.push({
+              name: item,
+              period: latestExpired,
+              assigned_date: assignedDate,
+              deadline: latestExpiredDeadline,
+              completed: 0,
+            });
+          }
+        });
 
-payloadRight = {
-  uhid: patient?.uhid,
-  questionnaire_assigned_right: questionnairesRightToAssign,
-};
-
+        payloadRight = {
+          uhid: patient?.uhid,
+          questionnaire_assigned_right: questionnairesRightToAssign,
+        };
 
         sethasTodayDeadlineInRight(
           payloadRight?.questionnaire_assigned_right?.some(
@@ -792,7 +799,7 @@ payloadRight = {
       // if (hasTodayDeadlineInLeft || hasTodayDeadlineInRight) {
       //   handleSendremainder(); // Replace with your desired function
       // }
-      handleSendremainder();
+      // handleSendremainder();
       setTimeout(() => setWarning(""), 3000);
       // window.location.reload();
     } catch (err) {
@@ -1367,11 +1374,10 @@ payloadRight = {
   // console.log("Questionnaires deadlines", deadlineMap);
 
   const KOOSJR_MAP = [
-  100.000, 91.975, 84.600, 79.914, 76.332, 73.342, 70.704, 68.284, 65.994,
-  63.776, 61.583, 59.381, 57.140, 54.840, 52.465, 50.012, 47.487, 44.905,
-  42.281, 39.625, 36.931, 34.174, 31.307, 28.251, 24.875, 20.941, 15.939,
-  8.291, 0.000
-];
+    100.0, 91.975, 84.6, 79.914, 76.332, 73.342, 70.704, 68.284, 65.994, 63.776,
+    61.583, 59.381, 57.14, 54.84, 52.465, 50.012, 47.487, 44.905, 42.281,
+    39.625, 36.931, 34.174, 31.307, 28.251, 24.875, 20.941, 15.939, 8.291, 0.0,
+  ];
 
   const scoreRanges = {
     "Oxford Knee Score (OKS)": [0, 48, false],
@@ -1691,11 +1697,21 @@ payloadRight = {
       leg === "left"
         ? patient?.questionnaire_assigned_left
         : patient?.questionnaire_assigned_right;
+
     if (!data || data.length === 0) return 0;
 
-    const total = data.length;
-    const completed = data.filter((q) => q.completed === 1).length;
-    return Math.round((completed / total) * 100);
+    const today = new Date();
+
+    // Filter only questionnaires whose deadline is today or earlier
+    const relevant = data.filter((q) => {
+      const deadline = new Date(q.deadline);
+      return deadline <= today;
+    });
+
+    if (relevant.length === 0) return 0;
+
+    const completed = relevant.filter((q) => q.completed === 1).length;
+    return Math.round((completed / relevant.length) * 100);
   };
 
   const getComplianceColor = (percentage) => {
@@ -1863,10 +1879,8 @@ payloadRight = {
             name: q.name,
             period: q.period,
             assigned_date: q.assigned_date, // preserve original assigned date
-            deadline: calculateDeadline(
-              surgerydateISO,
-              periodOffsets[q.period]
-            ).deadline,
+            deadline: calculateDeadline(surgerydateISO, periodOffsets[q.period])
+              .deadline,
             completed: q.completed ?? 0,
           })
         );
@@ -3182,83 +3196,99 @@ payloadRight = {
                       </tr>
                       <tr>
                         {columns.map((col, idx) => {
-  const key = periodMap[col] || col;
-  let deadlineDisplay = "";
+                          const key = periodMap[col] || col;
+                          let deadlineDisplay = "";
 
-  // Get the surgery date for the selected leg
-  const surgeryDateStr =
-    selectedLeg === "left"
-      ? patient?.post_surgery_details_left?.date_of_surgery
-      : patient?.post_surgery_details_right?.date_of_surgery;
+                          // Get the surgery date for the selected leg
+                          const surgeryDateStr =
+                            selectedLeg === "left"
+                              ? patient?.post_surgery_details_left
+                                  ?.date_of_surgery
+                              : patient?.post_surgery_details_right
+                                  ?.date_of_surgery;
 
-  // Check if any questionnaire is assigned for this period
-  const isAssigned = assigned.some(q => (periodMap[q.period] || q.period) === key);
+                          // Check if any questionnaire is assigned for this period
+                          const isAssigned = assigned.some(
+                            (q) => (periodMap[q.period] || q.period) === key
+                          );
 
-  if (isAssigned && surgeryDateStr && !surgeryDateStr.startsWith("0001-01-01")) {
-    if (key === "Preop") {
-      // Pre Op: 1 day before surgery
-      const surgeryDate = new Date(surgeryDateStr);
-      surgeryDate.setDate(surgeryDate.getDate() - 1);
-      deadlineDisplay = surgeryDate.toLocaleDateString("en-GB", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      });
-    } else {
-      // Post Op: period offset + 14 days after surgery
-      const offset = periodOffsets[key] || 0;
-      const deadlineDate = new Date(surgeryDateStr);
-      deadlineDate.setDate(deadlineDate.getDate() + offset + 14);
-      deadlineDisplay = deadlineDate.toLocaleDateString("en-GB", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      });
-    }
-  } else {
-    deadlineDisplay = "";
-  }
+                          if (
+                            isAssigned &&
+                            surgeryDateStr &&
+                            !surgeryDateStr.startsWith("0001-01-01")
+                          ) {
+                            if (key === "Preop") {
+                              // Pre Op: 1 day before surgery
+                              const surgeryDate = new Date(surgeryDateStr);
+                              surgeryDate.setDate(surgeryDate.getDate() - 1);
+                              deadlineDisplay = surgeryDate.toLocaleDateString(
+                                "en-GB",
+                                {
+                                  day: "2-digit",
+                                  month: "2-digit",
+                                  year: "numeric",
+                                }
+                              );
+                            } else {
+                              // Post Op: period offset + 14 days after surgery
+                              const offset = periodOffsets[key] || 0;
+                              const deadlineDate = new Date(surgeryDateStr);
+                              deadlineDate.setDate(
+                                deadlineDate.getDate() + offset + 14
+                              );
+                              deadlineDisplay = deadlineDate.toLocaleDateString(
+                                "en-GB",
+                                {
+                                  day: "2-digit",
+                                  month: "2-digit",
+                                  year: "numeric",
+                                }
+                              );
+                            }
+                          } else {
+                            deadlineDisplay = "";
+                          }
 
-  return (
-    <th
-      key={idx}
-      className={`px-4 py-3 bg-[#D9D9D9] text-center whitespace-nowrap ${
-        idx === 0 ? "w-3/5" : ""
-      }`}
-    >
-      {idx === 0 ? (
-        col
-      ) : (
-        <div className="flex flex-col items-center gap-1">
-          <div className="flex items-center justify-between gap-2 w-full">
-            <span className="text-[#475467]">
-              <Image
-                src={Delete}
-                alt="reset"
-                className="w-5 h-5 min-w-[20px] min-h-[20px] font-bold cursor-pointer"
-                onClick={() => handleDeleteClick(col)}
-              />
-            </span>{" "}
-            <span>{col}</span>
-            <span className="text-[#475467]">
-              <Image
-                src={Minus}
-                alt="reset"
-                className="w-5 h-5 min-w-[20px] min-h-[20px] font-bold cursor-pointer"
-                onClick={() => handleMinusClick(col)}
-              />
-            </span>
-          </div>
-          {deadlineDisplay && (
-            <span className="text-[14px] text-red-700 font-semibold">
-              {deadlineDisplay}
-            </span>
-          )}
-        </div>
-      )}
-    </th>
-  );
-})}
+                          return (
+                            <th
+                              key={idx}
+                              className={`px-4 py-3 bg-[#D9D9D9] text-center whitespace-nowrap ${
+                                idx === 0 ? "w-3/5" : ""
+                              }`}
+                            >
+                              {idx === 0 ? (
+                                col
+                              ) : (
+                                <div className="flex flex-col items-center gap-1">
+                                  <div className="flex items-center justify-between gap-2 w-full">
+                                    <span className="text-[#475467]">
+                                      <Image
+                                        src={Delete}
+                                        alt="reset"
+                                        className="w-5 h-5 min-w-[20px] min-h-[20px] font-bold cursor-pointer"
+                                        onClick={() => handleDeleteClick(col)}
+                                      />
+                                    </span>{" "}
+                                    <span>{col}</span>
+                                    <span className="text-[#475467]">
+                                      <Image
+                                        src={Minus}
+                                        alt="reset"
+                                        className="w-5 h-5 min-w-[20px] min-h-[20px] font-bold cursor-pointer"
+                                        onClick={() => handleMinusClick(col)}
+                                      />
+                                    </span>
+                                  </div>
+                                  {deadlineDisplay && (
+                                    <span className="text-[14px] text-red-700 font-semibold">
+                                      {deadlineDisplay}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                            </th>
+                          );
+                        })}
                       </tr>
                     </thead>
                     <tbody className="bg-white text-[16px] font-semibold">
@@ -3298,18 +3328,19 @@ payloadRight = {
                               </td>
                               {row.values.map((val, vIdx) => {
                                 const isEmpty =
-                                  val === "" || val === null || val === undefined;
+                                  val === "" ||
+                                  val === null ||
+                                  val === undefined;
                                 const isNA = val === "N/A";
                                 let displayVal = val;
                                 let bgColor = "transparent";
-                     
 
                                 // Determine the questionnaire name for this column (example: from columns array)
                                 const questionnaireName = row.label;
 
                                 // console.log("Questionnaire Row", row.label);
 
-                               // KOOS, JR special mapping
+                                // KOOS, JR special mapping
                                 if (
                                   questionnaireName ===
                                     "Knee Injury and Ostheoarthritis Outcome Score, Joint Replacement (KOOS, JR)" &&
@@ -3318,34 +3349,33 @@ payloadRight = {
                                   val >= 0 &&
                                   val <= 28
                                 ) {
-
                                   displayVal = KOOSJR_MAP[val];
-                                  
+
                                   // console.log("Row Values", row.label + " " + displayVal);
 
                                   // Use mapped value for coloring
                                   bgColor = getColor(displayVal, 0, 100, false);
                                 } else {
                                   // Get range info or default
-                                  const [minVal, maxVal, reverse] =
-                                    scoreRanges[questionnaireName] || [0, 100, false];
-                                  bgColor = !isEmpty && !isNA
-                                    ? getColor(val, minVal, maxVal, reverse)
-                                    : "transparent";
+                                  const [minVal, maxVal, reverse] = scoreRanges[
+                                    questionnaireName
+                                  ] || [0, 100, false];
+                                  bgColor =
+                                    !isEmpty && !isNA
+                                      ? getColor(val, minVal, maxVal, reverse)
+                                      : "transparent";
                                 }
 
                                 const periodKey =
-                                  columns[vIdx+1] === "Pre Op"
+                                  columns[vIdx + 1] === "Pre Op"
                                     ? "Preop"
-                                    : columns[vIdx+1];
+                                    : columns[vIdx + 1];
                                 const otherNotes =
                                   row.others?.[periodKey] || [];
 
-                                  if (
-                                  row.label ===
-                                    "Oxford Knee Score (OKS)"){
-                                // console.log("📝 Period:",row.label+" "+columns[vIdx+1]+" "+ vIdx);
-                                    }
+                                if (row.label === "Oxford Knee Score (OKS)") {
+                                  // console.log("📝 Period:",row.label+" "+columns[vIdx+1]+" "+ vIdx);
+                                }
 
                                 const filteredNotes = [];
                                 for (let i = 0; i < otherNotes.length; i++) {
@@ -3367,8 +3397,7 @@ payloadRight = {
 
                                   filteredNotes.push(currentLine);
                                 }
-                                
-                                
+
                                 // console.log(
                                 //   "📦 Others for cell:",
                                 //   otherNotes.length

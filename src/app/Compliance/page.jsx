@@ -607,21 +607,32 @@ const getNearestDeadlineNotCompleted = (patient, side) => {
   const [patientProgress, setPatientProgress] = useState([]);
 
   useEffect(() => {
-    const progressData = patients.map((patient) => {
-      let completed = 0;
-      let pending = 0;
-      let notAssigned = 0;
+  const today = new Date();
 
-      // Pick assigned questionnaires based on selected leg
-      const assignedQuestionnaires =
-        selectedLeg === "left"
-          ? patient.questionnaire_assigned_left
-          : patient.questionnaire_assigned_right;
+  const progressData = patients.map((patient) => {
+    let completed = 0;
+    let pending = 0;
+    let notAssigned = 0;
 
-      if (!assignedQuestionnaires || assignedQuestionnaires.length === 0) {
-        notAssigned = 1; // No questionnaires assigned
+    // Select questionnaires based on leg
+    const assignedQuestionnaires =
+      selectedLeg === "left"
+        ? patient.questionnaire_assigned_left
+        : patient.questionnaire_assigned_right;
+
+    if (!assignedQuestionnaires || assignedQuestionnaires.length === 0) {
+      notAssigned = 1; // No questionnaires assigned
+    } else {
+      // Filter by deadline
+      const relevant = assignedQuestionnaires.filter((q) => {
+        const deadline = new Date(q.deadline);
+        return deadline <= today;
+      });
+
+      if (relevant.length === 0) {
+        notAssigned = 1; // All questionnaires are for future periods
       } else {
-        assignedQuestionnaires.forEach((q) => {
+        relevant.forEach((q) => {
           if (q.completed === 1) {
             completed++;
           } else {
@@ -629,21 +640,23 @@ const getNearestDeadlineNotCompleted = (patient, side) => {
           }
         });
       }
+    }
 
-      // Calculate the total
-      const total = completed + pending + notAssigned;
+    // Total is always relevant + notAssigned (only one of them will be > 0)
+    const total = completed + pending + notAssigned;
 
-      return {
-        patientId: patient.uhid,
-        completed,
-        pending,
-        notAssigned,
-        total,
-      };
-    });
+    return {
+      patientId: patient.uhid,
+      completed,
+      pending,
+      notAssigned,
+      total,
+    };
+  });
 
-    setPatientProgress(progressData);
-  }, [patients, selectedLeg]); // 🔥 also depend on selectedLeg
+  setPatientProgress(progressData);
+}, [patients, selectedLeg]);
+
 
   useEffect(() => {
     if (patientProgress.length > 0) {
@@ -765,7 +778,7 @@ const filteredPatientsByDate1 = onlyPendingPatients.filter((patient) => {
         return formatted === selectedDate;
       }
     }
-            console.log("Today", selectedDate,deadline, today);
+            // console.log("Today", selectedDate,deadline, today);
 
     return false;
   });
