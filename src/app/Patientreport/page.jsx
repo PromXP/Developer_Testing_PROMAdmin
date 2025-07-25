@@ -1839,7 +1839,7 @@ payloadRight = {
       },
     };
 
-    console.log("Submission successful:", payload);
+    // console.log("Submission successful:", payload);
     try {
       const response = await fetch(
         `${API_URL}update-post-surgery-details-left`,
@@ -1866,7 +1866,7 @@ payloadRight = {
             deadline: calculateDeadline(
               surgerydateISO,
               periodOffsets[q.period]
-            ),
+            ).deadline,
             completed: q.completed ?? 0,
           })
         );
@@ -1890,7 +1890,7 @@ payloadRight = {
 
         if (!responseLeft.ok) {
           qsetIsSubmitting(false);
-          console.log("Left Surgery", responseLeft);
+          console.log("Left Surgery", resultLeft);
           showWarning(
             "Something went wrong while updating questionnaire deadlines."
           );
@@ -2080,7 +2080,7 @@ payloadRight = {
             deadline: calculateDeadline(
               surgerydateISOr,
               periodOffsets[q.period]
-            ),
+            ).deadline,
             completed: q.completed ?? 0,
           }));
 
@@ -2101,14 +2101,14 @@ payloadRight = {
 
         const resultRight = await responseRight.json();
 
-        if (!responseRight.ok) {
-          qsetIsSubmitting(false);
-          console.log("Right Surgery", resultRight);
-          showWarning(
-            "Something went wrong while updating questionnaire deadlines."
-          );
-          return;
-        }
+        // if (!responseRight.ok) {
+        //   qsetIsSubmitting(false);
+        //   console.log("Right Surgery", resultRight);
+        //   showWarning(
+        //     "Something went wrong while updating questionnaire deadlines."
+        //   );
+        //   return;
+        // }
 
         if (
           resultRight.message === "No new questionnaire(s) to add" ||
@@ -3321,7 +3321,7 @@ payloadRight = {
 
                                   displayVal = KOOSJR_MAP[val];
                                   
-                                  console.log("Row Values", row.label + " " + displayVal);
+                                  // console.log("Row Values", row.label + " " + displayVal);
 
                                   // Use mapped value for coloring
                                   bgColor = getColor(displayVal, 0, 100, false);
