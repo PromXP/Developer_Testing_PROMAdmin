@@ -2372,7 +2372,7 @@ const page = ({
                                 }
 
                                 if (relevant.length === 0)
-                                  return "NOT ASSIGNED";
+                                  return "NOT DUE";
 
                                 const allCompleted = relevant.every(
                                   (q) => q.completed === 1
