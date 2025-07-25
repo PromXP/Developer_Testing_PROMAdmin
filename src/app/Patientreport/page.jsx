@@ -2101,14 +2101,14 @@ payloadRight = {
 
         const resultRight = await responseRight.json();
 
-        // if (!responseRight.ok) {
-        //   qsetIsSubmitting(false);
-        //   console.log("Right Surgery", resultRight);
-        //   showWarning(
-        //     "Something went wrong while updating questionnaire deadlines."
-        //   );
-        //   return;
-        // }
+        if (!responseRight.ok) {
+          qsetIsSubmitting(false);
+          console.log("Right Surgery", resultRight);
+          showWarning(
+            "Something went wrong while updating questionnaire deadlines."
+          );
+          return;
+        }
 
         if (
           resultRight.message === "No new questionnaire(s) to add" ||
