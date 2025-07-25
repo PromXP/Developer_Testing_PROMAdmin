@@ -799,7 +799,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
       // if (hasTodayDeadlineInLeft || hasTodayDeadlineInRight) {
       //   handleSendremainder(); // Replace with your desired function
       // }
-      // handleSendremainder();
+      handleSendremainder();
       setTimeout(() => setWarning(""), 3000);
       // window.location.reload();
     } catch (err) {
