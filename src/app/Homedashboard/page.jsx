@@ -419,7 +419,7 @@ const page = ({
           ? patient?.questionnaire_assigned_left
           : patient?.questionnaire_assigned_right;
 
-      if (!questionnaires || questionnaires.length === 0) return false;
+      if (!questionnaires || questionnaires.length === 0) return true;
 
       const now = new Date();
       const currentMonth = now.getMonth()+1;
