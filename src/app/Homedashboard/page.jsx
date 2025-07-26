@@ -413,38 +413,38 @@ const page = ({
 
   const filteredPatients = patients
     // Filter: at least one questionnaire has a deadline in the current month
-    .filter((patient) => {
-      const questionnaires =
-        selectedLeg === "left"
-          ? patient?.questionnaire_assigned_left
-          : patient?.questionnaire_assigned_right;
+    // .filter((patient) => {
+    //   const questionnaires =
+    //     selectedLeg === "left"
+    //       ? patient?.questionnaire_assigned_left
+    //       : patient?.questionnaire_assigned_right;
 
-      if (!questionnaires || questionnaires.length === 0) return true;
+    //   if (!questionnaires || questionnaires.length === 0) return true;
 
-      const now = new Date();
-      const currentMonth = now.getMonth()+1;
-      const currentYear = now.getFullYear();
+    //   const now = new Date();
+    //   const currentMonth = now.getMonth()+1;
+    //   const currentYear = now.getFullYear();
 
-      return questionnaires.some((q) => {
-        const deadline = new Date(q.deadline);
+    //   return questionnaires.some((q) => {
+    //     const deadline = new Date(q.deadline);
 
-        // Only consider deadlines up to the end of current month
-        if (
-          deadline.getFullYear() < currentYear ||
-          (deadline.getFullYear() === currentYear &&
-            deadline.getMonth() <= currentMonth)
-        ) {
-          const isInCurrentMonth =
-            deadline.getMonth() === currentMonth &&
-            deadline.getFullYear() === currentYear;
-          const isNotCompleted = q.completed !== 1;
+    //     // Only consider deadlines up to the end of current month
+    //     if (
+    //       deadline.getFullYear() < currentYear ||
+    //       (deadline.getFullYear() === currentYear &&
+    //         deadline.getMonth() <= currentMonth)
+    //     ) {
+    //       const isInCurrentMonth =
+    //         deadline.getMonth() === currentMonth &&
+    //         deadline.getFullYear() === currentYear;
+    //       const isNotCompleted = q.completed !== 1;
 
-          // Include if in current month OR not completed yet
-          return isInCurrentMonth || isNotCompleted;
-        }
-        return false; // deadline in future beyond current month → ignore
-      });
-    })
+    //       // Include if in current month OR not completed yet
+    //       return isInCurrentMonth || isNotCompleted;
+    //     }
+    //     return false; // deadline in future beyond current month → ignore
+    //   });
+    // })
     .filter((patient) => {
       const status = patient.current_status?.toLowerCase() || "";
       const selectedFilter = patfilter.toLowerCase();
