@@ -331,7 +331,7 @@ export default function Home() {
               >
                 <div className="relative w-full">
                   <label className="absolute left-4 -top-2 bg-white px-1 text-[#005585] text-sm">
-                    Email / Phone / UHID
+                    Email / Phone / UEID
                   </label>
                   <input
                     type="text"
