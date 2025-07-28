@@ -50,6 +50,25 @@ export default function Home() {
   const [password, setPassword] = useState("");
   const [showPassword, setshowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const userData = localStorage.getItem("userData");
+    if (userData) {
+      const { identifier, password, role } = JSON.parse(userData);
+
+      // Optional: verify credentials with backend again if needed
+      axios
+        .post(API_URL + "login", { identifier, password, role })
+        .then(() => {
+          router.replace("/Landing");
+        })
+        .catch(() => {
+          // If login fails, clear stale credentials
+          localStorage.removeItem("userData");
+        });
+    }
+  }, []);
+
   const handleLogin = async () => {
     if (typeof window !== "undefined") {
       setLoading(true);
@@ -70,7 +89,7 @@ export default function Home() {
           })
         );
 
-        router.push("/Landing");
+        router.replace("/Landing");
       } catch (error) {
         showWarning("Login failed. Please check your credentials.");
         // alert("Login failed. Please check your credentials.");
@@ -80,13 +99,13 @@ export default function Home() {
     }
   };
 
-   const [showAlert, setShowAlert] = useState(false);
-    const [alertMessage, setAlertMessage] = useState("");
-    const showWarning = (message) => {
-      setAlertMessage(message);
-      setShowAlert(true);
-      setTimeout(() => setShowAlert(false), 4000);
-    };
+  const [showAlert, setShowAlert] = useState(false);
+  const [alertMessage, setAlertMessage] = useState("");
+  const showWarning = (message) => {
+    setAlertMessage(message);
+    setShowAlert(true);
+    setTimeout(() => setShowAlert(false), 4000);
+  };
 
   const [showForgotModal, setShowForgotModal] = useState(false);
   const [resetUhid, setResetUhid] = useState("");
@@ -117,8 +136,6 @@ export default function Home() {
     }
   };
 
-  
-
   return (
     <>
       {width > height && (
@@ -148,7 +165,13 @@ export default function Home() {
               </div>
 
               {/* Input Fields */}
-              <div className="w-full max-w-lg flex flex-col gap-8">
+              <form
+                className="w-full max-w-lg flex flex-col gap-8"
+                onSubmit={(e) => {
+                  e.preventDefault(); // Prevent default form submission
+                  handleLogin(); // Call your login function
+                }}
+              >
                 <div className="relative w-full">
                   <label className="absolute left-4 -top-2 bg-white px-1 text-[#005585] text-sm">
                     Email / Phone / UEID
@@ -182,6 +205,7 @@ export default function Home() {
 
                 <div className="text-left">
                   <button
+                    type="button"
                     className="text-sm text-[#005585] hover:underline focus:outline-none cursor-pointer"
                     onClick={() => setShowForgotModal(true)}
                   >
@@ -190,12 +214,12 @@ export default function Home() {
                 </div>
 
                 <button
+                  type="submit"
                   className="w-full bg-[#005585] text-lg text-white py-2.5 rounded-lg cursor-pointer"
-                  onClick={handleLogin}
                 >
                   {loading ? "Logging in..." : "Login"}
                 </button>
-              </div>
+              </form>
             </div>
 
             {/* Right Section - Image*/}
@@ -213,10 +237,12 @@ export default function Home() {
             </div>
           </div>
           {showForgotModal && (
-            <div className="fixed inset-0 flex justify-center items-center z-50"
-            style={{
-        backgroundColor: "rgba(0, 0, 0, 0.7)", // white with 50% opacity
-      }}>
+            <div
+              className="fixed inset-0 flex justify-center items-center z-50"
+              style={{
+                backgroundColor: "rgba(0, 0, 0, 0.7)", // white with 50% opacity
+              }}
+            >
               <div className="bg-white w-[90%] max-w-md p-6 rounded-lg shadow-lg flex flex-col gap-4">
                 <h2 className="text-xl font-semibold text-[#005585] text-center">
                   Reset Password
@@ -260,12 +286,12 @@ export default function Home() {
             </div>
           )}
           {showAlert && (
-                <div className="fixed top-8 left-1/2 transform -translate-x-1/2 z-50">
-                  <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-6 py-3 rounded-lg shadow-lg animate-fade-in-out">
-                    {alertMessage}
-                  </div>
-                </div>
-              )}
+            <div className="fixed top-8 left-1/2 transform -translate-x-1/2 z-50">
+              <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-6 py-3 rounded-lg shadow-lg animate-fade-in-out">
+                {alertMessage}
+              </div>
+            </div>
+          )}
         </>
       )}
 
@@ -331,7 +357,7 @@ export default function Home() {
                 <div className="text-left">
                   <button
                     className="text-sm text-[#005585] hover:underline focus:outline-none cursor-pointer"
-                    onClick={()=>setShowForgotModal(true)}
+                    onClick={() => setShowForgotModal(true)}
                   >
                     Forgot Password?
                   </button>
@@ -369,10 +395,12 @@ export default function Home() {
             </div>
           </div>
           {showForgotModal && (
-            <div className="fixed inset-0  flex justify-center items-center z-50"
-            style={{
-        backgroundColor: "rgba(0, 0, 0, 0.7)", // white with 50% opacity
-      }}>
+            <div
+              className="fixed inset-0  flex justify-center items-center z-50"
+              style={{
+                backgroundColor: "rgba(0, 0, 0, 0.7)", // white with 50% opacity
+              }}
+            >
               <div className="bg-white w-[90%] max-w-md p-6 rounded-lg shadow-lg flex flex-col gap-4">
                 <h2 className="text-xl font-semibold text-[#005585] text-center">
                   Reset Password
@@ -416,12 +444,12 @@ export default function Home() {
             </div>
           )}
           {showAlert && (
-                <div className="fixed top-8 left-1/2 transform -translate-x-1/2 z-50">
-                  <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-6 py-3 rounded-lg shadow-lg animate-fade-in-out">
-                    {alertMessage}
-                  </div>
-                </div>
-              )}
+            <div className="fixed top-8 left-1/2 transform -translate-x-1/2 z-50">
+              <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-6 py-3 rounded-lg shadow-lg animate-fade-in-out">
+                {alertMessage}
+              </div>
+            </div>
+          )}
         </>
       )}
     </>
