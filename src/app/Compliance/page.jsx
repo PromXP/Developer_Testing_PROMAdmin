@@ -195,13 +195,19 @@ const page = ({
   const [isOpenacc, setIsOpenacc] = useState(false);
   const [isOpenaccdoc, setIsOpenaccdoc] = useState(false);
 
-  const [selectedDate, setSelectedDate] = useState(
-    new Date().toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    })
-  );
+  const [selectedMonth, setSelectedMonth] = useState(""); // e.g., "Jul"
+  const [selectedYear, setSelectedYear] = useState(""); // e.g., "2025"
+
+  useEffect(() => {
+    const today = new Date();
+    const currentMonth = today.toLocaleString("en-GB", { month: "long" }); // "July"
+    const currentYear = today.getFullYear().toString(); // "2025"
+
+    setSelectedMonth(currentMonth);
+    setSelectedYear(currentYear);
+  }, []);
+
+  const [selectedDate, setSelectedDate] = useState("");
   const dateInputRef = useRef(null);
 
   const [selectedLeg, setSelectedLeg] = useState("left");
@@ -210,7 +216,7 @@ const page = ({
     dateInputRef.current?.showPicker();
   };
 
-    const today = new Date();
+  const today = new Date();
 
   const handleDateChange = (e) => {
     const dateValue = e.target.value;
@@ -692,7 +698,7 @@ const page = ({
     return baseDate;
   };
 
-    const isSameDay1 = (d1, d2) => {
+  const isSameDay1 = (d1, d2) => {
     return (
       d1.getDate() === d2.getDate() &&
       d1.getMonth() === d2.getMonth() &&
@@ -701,28 +707,25 @@ const page = ({
   };
 
   const filteredPatientsByDate = filteredPatients.filter((patient) => {
-    if (selectedDate === "") {
-      return true; // Show all patients by default
-    }
-
     const assignedQuestionnaires =
       selectedLeg === "left"
         ? patient.questionnaire_assigned_left
         : patient.questionnaire_assigned_right;
 
     if (!assignedQuestionnaires || assignedQuestionnaires.length === 0) {
-      return false; // No assigned questionnaires for selected leg
+      return false;
     }
 
-    // Check if patient has any questionnaire assigned with matching deadline
     return assignedQuestionnaires.some((q) => {
       if (q.completed === 0) {
         const deadline = getAdjustedDeadline(q);
 
-        if (selectedDate === "Today") {
-          return isSameDay1(deadline, today);
-        } else {
-          // Compare with formatted selectedDate
+        // 1. If filtering by exact date
+        if (selectedDate) {
+          if (selectedDate === "Today") {
+            return isSameDay1(deadline, today);
+          }
+
           const formatted = deadline.toLocaleDateString("en-GB", {
             day: "2-digit",
             month: "short",
@@ -730,54 +733,70 @@ const page = ({
           });
           return formatted === selectedDate;
         }
+
+        // 2. If filtering by month and year
+        if (selectedMonth && selectedYear) {
+          const deadlineMonth = deadline.toLocaleString("en-GB", {
+            month: "long",
+          }); // → "July"
+          const deadlineYear = deadline.getFullYear().toString();
+          return (
+            deadlineMonth === selectedMonth && deadlineYear === selectedYear
+          );
+        }
+
+        return true; // No filters selected, show all
       }
+
       return false;
     });
   });
 
-const onlyPendingPatients = filteredPatientsByDate.filter((patient) => {
-  const assigned = selectedLeg === "left"
-  ? patient.questionnaire_assigned_left
-  : patient.questionnaire_assigned_right;
+  const onlyPendingPatients = filteredPatientsByDate.filter((patient) => {
+    const assigned =
+      selectedLeg === "left"
+        ? patient.questionnaire_assigned_left
+        : patient.questionnaire_assigned_right;
 
-if (!assigned || assigned.length === 0) {
-  return false; // or whatever default
-}
+    if (!assigned || assigned.length === 0) {
+      return false; // or whatever default
+    }
 
-const surgeryDateStr = selectedLeg === "left"
-  ? patient?.post_surgery_details_left?.date_of_surgery
-  : patient?.post_surgery_details_right?.date_of_surgery;
+    const surgeryDateStr =
+      selectedLeg === "left"
+        ? patient?.post_surgery_details_left?.date_of_surgery
+        : patient?.post_surgery_details_right?.date_of_surgery;
 
-const currentPeriod = getPeriodFromSurgeryDate(surgeryDateStr, patient).toLowerCase();
-const periodOrder = ["pre op", "6w", "3m", "6m", "1y", "2y"];
+    const currentPeriod = getPeriodFromSurgeryDate(
+      surgeryDateStr,
+      patient
+    ).toLowerCase();
+    const periodOrder = ["pre op", "6w", "3m", "6m", "1y", "2y"];
 
-const assignedRelevant = assigned.filter((q) => {
-  const qPeriod = q.period?.toLowerCase();
-  return (
-    periodOrder.indexOf(qPeriod) !== -1 &&
-    periodOrder.indexOf(qPeriod) <= periodOrder.indexOf(currentPeriod)
-  );
-});
+    const assignedRelevant = assigned.filter((q) => {
+      const qPeriod = q.period?.toLowerCase();
+      return (
+        periodOrder.indexOf(qPeriod) !== -1 &&
+        periodOrder.indexOf(qPeriod) <= periodOrder.indexOf(currentPeriod)
+      );
+    });
 
-const incompleteRelevantExists = assignedRelevant.some((q) => {
-  const qPeriod = q.period?.toLowerCase();
-  const isPreOp = qPeriod === "pre op";
-  const deadline = new Date(q.deadline);
-  const surgeryDate = new Date(surgeryDateStr);
-  const today = new Date();
+    const incompleteRelevantExists = assignedRelevant.some((q) => {
+      const qPeriod = q.period?.toLowerCase();
+      const isPreOp = qPeriod === "pre op";
+      const deadline = new Date(q.deadline);
+      const surgeryDate = new Date(surgeryDateStr);
+      const today = new Date();
 
-  if (isPreOp) {
-    return q.completed === 0;
-  } else {
-    return q.completed === 0 && deadline <= today;
-  }
-});
+      if (isPreOp) {
+        return q.completed === 0;
+      } else {
+        return q.completed === 0 && deadline <= today;
+      }
+    });
 
-return incompleteRelevantExists;
-
-
-});
-
+    return incompleteRelevantExists;
+  });
 
   const formatDate = (date) => {
     const year = date.getFullYear();
@@ -792,13 +811,15 @@ return incompleteRelevantExists;
     dateInputRef.current.value = ""; // Reset the <input type="date"> to empty
   };
 
+  const handleClearMonthYear = () => {
+    setSelectedMonth(""); // Clear selected date
+    setSelectedYear("");
+  };
+
   const containerRef = useRef(null);
   const cardRef = useRef(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [cardsPerPage, setCardsPerPage] = useState(50);
-
-
-
 
   const filteredPatientsByDate1 = onlyPendingPatients.filter((patient) => {
     if (!selectedDate || selectedDate === "") return true; // Show all if cleared
@@ -830,113 +851,112 @@ return incompleteRelevantExists;
     });
   });
 
-const sortedPatients = onlyPendingPatients.sort((a, b) => {
-  const FAR_FUTURE = new Date(9999, 11, 31);
-  const now = new Date();
+  const sortedPatients = onlyPendingPatients.sort((a, b) => {
+    const FAR_FUTURE = new Date(9999, 11, 31);
+    const now = new Date();
 
-  const getAdjustedDeadline = (q, patient) => {
-    const deadline = new Date(q.deadline);
-    if (q.period === "Pre Op") {
-      const surgeryDateStr =
-        selectedLeg === "left"
-          ? patient?.post_surgery_details_left?.date_of_surgery
-          : patient?.post_surgery_details_right?.date_of_surgery;
+    const getAdjustedDeadline = (q, patient) => {
+      const deadline = new Date(q.deadline);
+      if (q.period === "Pre Op") {
+        const surgeryDateStr =
+          selectedLeg === "left"
+            ? patient?.post_surgery_details_left?.date_of_surgery
+            : patient?.post_surgery_details_right?.date_of_surgery;
 
-      if (surgeryDateStr) {
-        const surgeryDate = new Date(surgeryDateStr);
-        if (now < surgeryDate) {
-          return deadline; // Still eligible
+        if (surgeryDateStr) {
+          const surgeryDate = new Date(surgeryDateStr);
+          if (now < surgeryDate) {
+            return deadline; // Still eligible
+          }
         }
       }
+      return deadline <= now ? deadline : FAR_FUTURE; // Ignore future deadlines
+    };
+
+    const getNearestDeadline = (patient) => {
+      const assigned =
+        selectedLeg === "left"
+          ? patient.questionnaire_assigned_left
+          : patient.questionnaire_assigned_right;
+
+      const pending = assigned
+        .filter((q) => q.completed === 0)
+        .map((q) => getAdjustedDeadline(q, patient))
+        .sort((a, b) => a - b);
+
+      return pending.length > 0 ? pending[0] : FAR_FUTURE;
+    };
+
+    const getCompletionPercent = (patient) => {
+      const assigned =
+        selectedLeg === "left"
+          ? patient.questionnaire_assigned_left
+          : patient.questionnaire_assigned_right;
+
+      const relevant = assigned.filter((q) => {
+        const adjusted = getAdjustedDeadline(q, patient);
+        return adjusted !== FAR_FUTURE;
+      });
+
+      const total = relevant.length;
+      const completed = relevant.filter((q) => q.completed === 1).length;
+
+      return total > 0 ? (completed / total) * 100 : 0;
+    };
+
+    const getPatientStatus = (patient) => {
+      const assigned =
+        selectedLeg === "left"
+          ? patient.questionnaire_assigned_left
+          : patient.questionnaire_assigned_right;
+
+      const relevant = assigned.filter((q) => {
+        const adjusted = getAdjustedDeadline(q, patient);
+        return adjusted !== FAR_FUTURE;
+      });
+
+      if (!relevant || relevant.length === 0) return "not_assigned";
+
+      const completedCount = relevant.filter((q) => q.completed === 1).length;
+      if (completedCount === relevant.length) return "completed";
+      return "pending";
+    };
+
+    const getStatusRank = (patient) => {
+      const status = getPatientStatus(patient);
+      if (status === "completed") return 1;
+      if (status === "pending") return 2;
+      return 3; // not_assigned
+    };
+
+    // Main sort logic
+    const deadlineA = getNearestDeadline(a);
+    const deadlineB = getNearestDeadline(b);
+
+    const isNAA = deadlineA.getTime() === FAR_FUTURE.getTime();
+    const isNAB = deadlineB.getTime() === FAR_FUTURE.getTime();
+    const isPastA = deadlineA < now;
+    const isPastB = deadlineB < now;
+
+    if (sortAsc) {
+      if (isNAA && !isNAB) return -1;
+      if (!isNAA && isNAB) return 1;
+      if (isPastA && !isPastB) return 1;
+      if (!isPastA && isPastB) return -1;
+    } else {
+      if (isNAA && !isNAB) return 1;
+      if (!isNAA && isNAB) return -1;
+      if (isPastA && !isPastB) return -1;
+      if (!isPastA && isPastB) return 1;
     }
-    return deadline <= now ? deadline : FAR_FUTURE; // Ignore future deadlines
-  };
 
-  const getNearestDeadline = (patient) => {
-    const assigned =
-      selectedLeg === "left"
-        ? patient.questionnaire_assigned_left
-        : patient.questionnaire_assigned_right;
+    if (deadlineA < deadlineB) return sortAsc ? 1 : -1;
+    if (deadlineA > deadlineB) return sortAsc ? -1 : 1;
 
-    const pending = assigned
-      .filter((q) => q.completed === 0)
-      .map((q) => getAdjustedDeadline(q, patient))
-      .sort((a, b) => a - b);
-
-    return pending.length > 0 ? pending[0] : FAR_FUTURE;
-  };
-
-  const getCompletionPercent = (patient) => {
-    const assigned =
-      selectedLeg === "left"
-        ? patient.questionnaire_assigned_left
-        : patient.questionnaire_assigned_right;
-
-    const relevant = assigned.filter((q) => {
-      const adjusted = getAdjustedDeadline(q, patient);
-      return adjusted !== FAR_FUTURE;
-    });
-
-    const total = relevant.length;
-    const completed = relevant.filter((q) => q.completed === 1).length;
-
-    return total > 0 ? (completed / total) * 100 : 0;
-  };
-
-  const getPatientStatus = (patient) => {
-    const assigned =
-      selectedLeg === "left"
-        ? patient.questionnaire_assigned_left
-        : patient.questionnaire_assigned_right;
-
-    const relevant = assigned.filter((q) => {
-      const adjusted = getAdjustedDeadline(q, patient);
-      return adjusted !== FAR_FUTURE;
-    });
-
-    if (!relevant || relevant.length === 0) return "not_assigned";
-
-    const completedCount = relevant.filter((q) => q.completed === 1).length;
-    if (completedCount === relevant.length) return "completed";
-    return "pending";
-  };
-
-  const getStatusRank = (patient) => {
-    const status = getPatientStatus(patient);
-    if (status === "completed") return 1;
-    if (status === "pending") return 2;
-    return 3; // not_assigned
-  };
-
-  // Main sort logic
-  const deadlineA = getNearestDeadline(a);
-  const deadlineB = getNearestDeadline(b);
-
-  const isNAA = deadlineA.getTime() === FAR_FUTURE.getTime();
-  const isNAB = deadlineB.getTime() === FAR_FUTURE.getTime();
-  const isPastA = deadlineA < now;
-  const isPastB = deadlineB < now;
-
-  if (sortAsc) {
-    if (isNAA && !isNAB) return -1;
-    if (!isNAA && isNAB) return 1;
-    if (isPastA && !isPastB) return 1;
-    if (!isPastA && isPastB) return -1;
-  } else {
-    if (isNAA && !isNAB) return 1;
-    if (!isNAA && isNAB) return -1;
-    if (isPastA && !isPastB) return -1;
-    if (!isPastA && isPastB) return 1;
-  }
-
-  if (deadlineA < deadlineB) return sortAsc ? 1 : -1;
-  if (deadlineA > deadlineB) return sortAsc ? -1 : 1;
-
-  const compA = getCompletionPercent(a);
-  const compB = getCompletionPercent(b);
-  return !sortAsc ? compA - compB : compB - compA;
-});
-
+    const compA = getCompletionPercent(a);
+    const compB = getCompletionPercent(b);
+    return !sortAsc ? compA - compB : compB - compA;
+  });
 
   // Calculate total pages and current visible patients
   const totalPages = Math.ceil(sortedPatients.length / cardsPerPage);
@@ -1706,7 +1726,7 @@ const sortedPatients = onlyPendingPatients.sort((a, b) => {
                   </div>
                 </div>
 
-                <div className="flex flex-row">
+                <div className="flex flex-row gap-4">
                   <div
                     className="relative cursor-pointer"
                     onClick={openDatePicker}
@@ -1743,6 +1763,57 @@ const sortedPatients = onlyPendingPatients.sort((a, b) => {
                   {selectedDate && (
                     <button
                       onClick={handleClearDate}
+                      className="text-red-500 text-xs underline hover:text-red-700 cursor-pointer"
+                    >
+                      Clear
+                    </button>
+                  )}
+
+                  <select
+                    value={selectedMonth}
+                    onChange={(e) => setSelectedMonth(e.target.value)}
+                    className="text-black"
+                  >
+                    <option value="">Select Month</option>
+                    {[
+                      "January",
+                      "February",
+                      "March",
+                      "April",
+                      "May",
+                      "June",
+                      "July",
+                      "August",
+                      "September",
+                      "October",
+                      "November",
+                      "December",
+                    ].map((month) => (
+                      <option key={month} value={month}>
+                        {month}
+                      </option>
+                    ))}
+                  </select>
+
+                  <select
+                    value={selectedYear}
+                    onChange={(e) => setSelectedYear(e.target.value)}
+                    className="text-black"
+                  >
+                    <option value="">Select Year</option>
+                    {Array.from({ length: 51 }, (_, i) => {
+                      const year = 2020 + i;
+                      return (
+                        <option key={year} value={year.toString()}>
+                          {year}
+                        </option>
+                      );
+                    })}
+                  </select>
+
+                  {selectedMonth && selectedYear && (
+                    <button
+                      onClick={handleClearMonthYear}
                       className="text-red-500 text-xs underline hover:text-red-700 cursor-pointer"
                     >
                       Clear
