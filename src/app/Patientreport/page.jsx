@@ -1724,8 +1724,6 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
 
     if (relevant.length === 0) return 0;
 
-
-
     const completed = relevant.filter((q) => q.completed === 1).length;
     return Math.round((completed / relevant.length) * 100);
   };
@@ -2506,6 +2504,10 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                     width < 1095
                       ? "h-fit flex-col justify-between gap-8"
                       : "h-[45%] flex-row"
+                  } ${
+                    patient.activation_status === 0
+                      ? "pointer-events-none opacity-50"
+                      : ""
                   }`}
                 >
                   {/* <div
@@ -3089,7 +3091,11 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                   width < 1095
                     ? "h-fit flex-col justify-between gap-8"
                     : "h-[10%] flex-row justify-center"
-                }`}
+                } ${
+                                              patient.activation_status === 0
+                                                ? "pointer-events-none opacity-50"
+                                                : ""
+                                            }`}
               >
                 <div
                   className={`  px-4 py-2 flex flex-col mx-auto justify-between items-center ${
@@ -3143,7 +3149,7 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
               }
             ${
               width < 970 ? "flex-col justify-center items-center" : "flex-col"
-            }`}
+            } `}
             >
               <div
                 className={`bg-white rounded-2xl px-4 py-4 flex flex-col gap-4 shadow-lg h-[75%] ${
@@ -3201,7 +3207,11 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
 
                 <div className="w-full overflow-x-auto">
                   <table className="min-w-full table-fixed border-separate border-spacing-y-2">
-                    <thead className=" text-[#475467] text-[16px] font-medium text-center">
+                    <thead className={` text-[#475467] text-[16px] font-medium text-center ${
+                                                  patient.activation_status === 0
+                                                    ? "pointer-events-none opacity-50"
+                                                    : ""
+                                                }`}>
                       <tr>
                         <th
                           colSpan={columns.length}

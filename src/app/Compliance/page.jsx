@@ -387,6 +387,10 @@ const page = ({
       const subFilter = postopfilter.toLowerCase();
       const selectedLegSide = selectedLeg.toLowerCase(); // "left" or "right"
 
+      if(patient.activation_status === 0){
+          return false;
+      }
+
       const hasLeft =
         patient.questionnaire_assigned_left &&
         patient.questionnaire_assigned_left.length > 0;

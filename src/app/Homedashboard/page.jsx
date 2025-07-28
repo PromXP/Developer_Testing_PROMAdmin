@@ -17,6 +17,7 @@ import Manavatar from "@/app/assets/man.png";
 import Womanavatar from "@/app/assets/woman.png";
 import Mandocavatar from "@/app/assets/maledoc.png";
 import Womandocavatar from "@/app/assets/femaledoc.png";
+import Block from "@/app/assets/block.png";
 
 import {
   ChevronRightIcon,
@@ -871,8 +872,8 @@ const page = ({
       return allCompleted ? 3 : 2; // 3 = COMPLETED, 2 = PENDING
     };
 
-    const rankA = getStatusRank(a);
-    const rankB = getStatusRank(b);
+    const rankA = a.activation_status === 0 ? 99 : getStatusRank(a);
+    const rankB = b.activation_status === 0 ? 99 : getStatusRank(b);
 
     return sortByStatus ? rankA - rankB : rankB - rankA;
   });
@@ -1605,6 +1606,20 @@ const page = ({
     return periods[0]?.label || "Unknown";
   }
 
+  const toggleActivation = async (uhid) => {
+    try {
+      const response = await axios.patch(
+        API_URL + "patients/" + uhid + "/activation/toggle"
+      );
+      console.log("Activation toggle successful:", response.data);
+
+      const { activation_status } = response.data;
+      window.location.reload();
+    } catch (error) {
+      console.error("Activation toggle error:", error);
+    }
+  };
+
   return (
     <>
       <div className="flex flex-col lg:flex-row gap-4 w-[95%] mx-auto mt-4 items-center justify-between">
@@ -2207,7 +2222,7 @@ const page = ({
                             ? "flex-col justify-center items-center"
                             : "flex-row justify-between items-center"
                         }
-                ${width < 1000 ? "mb-2" : "mb-6"}`}
+                ${width < 1000 ? "mb-2" : "mb-6"} `}
                       >
                         <div
                           className={`${
@@ -2216,7 +2231,11 @@ const page = ({
                               : width < 530
                                 ? "w-full"
                                 : "w-[50%]"
-                          }`}
+                          } ${
+                              patient.activation_status === 0
+                                ? "pointer-events-none opacity-50"
+                                : ""
+                            }`}
                         >
                           <div
                             className={`flex gap-4 py-0  items-center  ${
@@ -2225,7 +2244,7 @@ const page = ({
                                 : width < 530
                                   ? "flex-col justify-center items-center"
                                   : "px-2 flex-row"
-                            }`}
+                            } `}
                           >
                             <Image
                               src={
@@ -2296,7 +2315,7 @@ const page = ({
                         </div>
 
                         <div
-                          className={`flex ${
+                          className={`flex items-center ${
                             width < 640 && width >= 530
                               ? "w-2/5 flex-col text-start"
                               : width < 530
@@ -2312,7 +2331,11 @@ const page = ({
                                   ? "flex-col items-center"
                                   : "flex-row"
                             } 
-                    ${width < 640 ? "w-full justify-end" : "w-[70%]"}`}
+                    ${width < 640 ? "w-full justify-end" : "w-[50%]"} ${
+                              patient.activation_status === 0
+                                ? "pointer-events-none opacity-50"
+                                : ""
+                            }`}
                           >
                             <div
                               className={` text-sm font-medium text-[#475467] ${
@@ -2423,7 +2446,7 @@ const page = ({
 
                           <div
                             className={` flex flex-row justify-end items-center ${
-                              width < 640 ? "w-full" : "w-[30%]"
+                              width < 640 ? "w-full" : "w-[40%]"
                             }`}
                           >
                             <div
@@ -2444,6 +2467,18 @@ const page = ({
                                 className="w-4 h-4 cursor-pointer"
                               />
                             </div>
+                          </div>
+
+                          <div
+                            className={` flex flex-row justify-end items-center ${
+                              width < 640 ? "w-full" : "w-[10%]"
+                            }`}
+                          >
+                            <Image
+                              src={Block}
+                              className="w-5 h-5 cursor-pointer"
+                              onClick={()=>{toggleActivation(patient.uhid)}}
+                            />
                           </div>
                         </div>
                       </div>
