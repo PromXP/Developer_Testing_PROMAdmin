@@ -322,7 +322,13 @@ export default function Home() {
               </div>
 
               {/* Input Fields */}
-              <div className="w-full max-w-lg flex flex-col gap-8">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault(); // prevent page reload
+                  handleLogin(); // call login
+                }}
+                className="w-full max-w-lg flex flex-col gap-8"
+              >
                 <div className="relative w-full">
                   <label className="absolute left-4 -top-2 bg-white px-1 text-[#005585] text-sm">
                     Email / Phone / UHID
@@ -356,6 +362,7 @@ export default function Home() {
 
                 <div className="text-left">
                   <button
+                    type="button"
                     className="text-sm text-[#005585] hover:underline focus:outline-none cursor-pointer"
                     onClick={() => setShowForgotModal(true)}
                   >
@@ -364,12 +371,12 @@ export default function Home() {
                 </div>
 
                 <button
+                  type="submit"
                   className="w-full bg-[#005585] text-lg text-white py-2.5 rounded-lg cursor-pointer"
-                  onClick={handleLogin}
                 >
                   {loading ? "Logging in..." : "Login"}
                 </button>
-              </div>
+              </form>
             </div>
 
             {/* Right Section - Image*/}
