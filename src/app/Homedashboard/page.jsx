@@ -184,11 +184,11 @@ const page = ({
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const storedUser = localStorage.getItem("userData");
+      const storedUser = sessionStorage.getItem("userData");
 
       if (storedUser) {
         const parsedUser = JSON.parse(storedUser);
-        console.log("Retrieved user from localStorage:", parsedUser);
+        console.log("Retrieved user from sessionStorage:", parsedUser);
 
         // if (parsedUser.password === "doctor@123") {
         //   setpassopen(true);
@@ -204,7 +204,7 @@ const page = ({
             });
 
             // Handle successful login response
-            localStorage.setItem(
+            sessionStorage.setItem(
               "userData",
               JSON.stringify({
                 identifier: parsedUser.identifier,
@@ -214,7 +214,7 @@ const page = ({
             );
 
             setUserData(response.data); // Store the full response data (e.g., tokens)
-            localStorage.setItem("uhid", response.data.user.uhid);
+            sessionStorage.setItem("uhid", response.data.user.uhid);
             // console.log(
             //   "Successfully logged in with stored credentials",
             //   response.data.user.uhid
@@ -239,7 +239,7 @@ const page = ({
 
   const postopoptions = ["ALL", "6W", "3M", "6M", "1Y", "2Y"];
 
-  // Load selected option from localStorage or default to "ALL"
+  // Load selected option from sessionStorage or default to "ALL"
   const [postopfilter, setpostopFitler] = useState("ALL");
 
   // const patientData = [
@@ -1606,15 +1606,39 @@ const page = ({
     return periods[0]?.label || "Unknown";
   }
 
-  const toggleActivation = async (uhid) => {
+  const [popupOpen, setPopupOpen] = useState(false);
+  const [terminationReason, setTerminationReason] = useState("");
+  const [terminateuhid, setterminateuhid] = useState("");
+
+  const showpop = (uhid) => {
+    setterminateuhid(uhid);
+    setPopupOpen(true);
+  };
+
+  const toggleActivation = async () => {
+    if(!terminateuhid){
+      showWarning("Patient UHID not found");
+      return;
+    }
+    if(!terminationReason){
+      showWarning("Enter Comment");
+      return;
+    }
     try {
+
       const response = await axios.patch(
-        API_URL + "patients/" + uhid + "/activation/toggle"
+        API_URL + "patients/" + terminateuhid + "/activation/toggle",
+        JSON.stringify(terminationReason),
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
       );
+
       console.log("Activation toggle successful:", response.data);
 
-      const { activation_status } = response.data;
-      window.location.reload();
+      window.location.reload(); // Or update state instead of full reload
     } catch (error) {
       console.error("Activation toggle error:", error);
     }
@@ -2232,10 +2256,10 @@ const page = ({
                                 ? "w-full"
                                 : "w-[50%]"
                           } ${
-                              patient.activation_status === 0
-                                ? "pointer-events-none opacity-50"
-                                : ""
-                            }`}
+                            patient.activation_status === 0
+                              ? "pointer-events-none opacity-50"
+                              : ""
+                          }`}
                         >
                           <div
                             className={`flex gap-4 py-0  items-center  ${
@@ -2332,10 +2356,10 @@ const page = ({
                                   : "flex-row"
                             } 
                     ${width < 640 ? "w-full justify-end" : "w-[50%]"} ${
-                              patient.activation_status === 0
-                                ? "pointer-events-none opacity-50"
-                                : ""
-                            }`}
+                      patient.activation_status === 0
+                        ? "pointer-events-none opacity-50"
+                        : ""
+                    }`}
                           >
                             <div
                               className={` text-sm font-medium text-[#475467] ${
@@ -2476,8 +2500,11 @@ const page = ({
                           >
                             <Image
                               src={Block}
+                              alt="Block"
                               className="w-5 h-5 cursor-pointer"
-                              onClick={()=>{toggleActivation(patient.uhid)}}
+                              onClick={() => {
+                                showpop(patient.uhid);
+                              }}
                             />
                           </div>
                         </div>
@@ -3635,6 +3662,56 @@ const page = ({
         <div className="fixed top-8 left-1/2 transform -translate-x-1/2 z-50">
           <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-6 py-3 rounded-lg shadow-lg animate-fade-in-out">
             {alertMessage}
+          </div>
+        </div>
+      )}
+
+      {popupOpen && (
+        <div
+          className="fixed inset-0 flex items-center justify-center z-50"
+          style={{
+            backgroundColor: "rgba(0, 0, 0, 0.7)", // white with 50% opacity
+          }}
+        >
+          <div className="bg-white rounded-lg p-6 w-[90%] max-w-md relative">
+            {/* Close Icon */}
+            <button
+              onClick={() => setPopupOpen(false)}
+              className="absolute top-3 right-3 text-gray-500 hover:text-black cursor-pointer"
+            >
+              ❌
+            </button>
+
+            {/* Popup Content */}
+            <h2 className="text-xl text-black font-bold mb-4 text-center">
+              CONFIRMATION
+            </h2>
+            <p className="text-gray-700 text-start mb-6">
+              COMMENT
+            </p>
+            {/* Input Field */}
+            <textarea
+              value={terminationReason}
+              onChange={(e) => setTerminationReason(e.target.value)}
+              placeholder="Enter reason..."
+              className="w-full text-black border border-gray-300 rounded p-2 mb-6 resize-none h-24 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+
+            {/* Buttons */}
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={toggleActivation}
+                className="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-6 rounded cursor-pointer"
+              >
+                Yes
+              </button>
+              <button
+                onClick={() => setPopupOpen(false)}
+                className="bg-gray-300 hover:bg-gray-400 text-black font-semibold py-2 px-6 rounded cursor-pointer"
+              >
+                No
+              </button>
+            </div>
           </div>
         </div>
       )}

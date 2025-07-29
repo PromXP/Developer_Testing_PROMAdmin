@@ -282,7 +282,7 @@ const page = () => {
             }`}
             onClick={() => {
               router.replace("/");
-              localStorage.removeItem("userData");
+              sessionStorage.removeItem("userData");
             }}
           >
             <svg

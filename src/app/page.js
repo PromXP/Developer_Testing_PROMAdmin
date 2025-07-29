@@ -51,23 +51,23 @@ export default function Home() {
   const [showPassword, setshowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const userData = localStorage.getItem("userData");
-    if (userData) {
-      const { identifier, password, role } = JSON.parse(userData);
+  // useEffect(() => {
+  //   const userData = sessionStorage.getItem("userData");
+  //   if (userData) {
+  //     const { identifier, password, role } = JSON.parse(userData);
 
-      // Optional: verify credentials with backend again if needed
-      axios
-        .post(API_URL + "login", { identifier, password, role })
-        .then(() => {
-          router.replace("/Landing");
-        })
-        .catch(() => {
-          // If login fails, clear stale credentials
-          localStorage.removeItem("userData");
-        });
-    }
-  }, []);
+  //     // Optional: verify credentials with backend again if needed
+  //     axios
+  //       .post(API_URL + "login", { identifier, password, role })
+  //       .then(() => {
+  //         router.replace("/Landing");
+  //       })
+  //       .catch(() => {
+  //         // If login fails, clear stale credentials
+  //         sessionStorage.removeItem("userData");
+  //       });
+  //   }
+  // }, []);
 
   const handleLogin = async () => {
     if (typeof window !== "undefined") {
@@ -79,8 +79,8 @@ export default function Home() {
           role: "admin",
         });
 
-        // Store only identifier, password, and role in localStorage
-        localStorage.setItem(
+        // Store only identifier, password, and role in sessionStorage
+        sessionStorage.setItem(
           "userData",
           JSON.stringify({
             identifier,

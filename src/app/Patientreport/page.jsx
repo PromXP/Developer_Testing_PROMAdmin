@@ -91,10 +91,10 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
     if (typeof window !== "undefined") {
       const uid = sessionStorage.getItem("uhid");
       const pass = sessionStorage.getItem("password");
-      // console.log("user from localStorage1 :", uid + " " + pass);
+      // console.log("user from sessionStorage :", uid + " " + pass);
 
       if (uid && pass) {
-        console.log("user from localStorage 2:", uid + " " + pass);
+        console.log("user from sessionStorage 2:", uid + " " + pass);
 
         // Attempt to log in again using the stored credentials
         const loginWithStoredUser = async () => {
@@ -930,10 +930,10 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
   const [userData, setUserData] = useState(null);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("userData");
+    const storedUser = sessionStorage.getItem("userData");
     if (storedUser) {
       const parsedUser = JSON.parse(storedUser);
-      // console.log("Retrieved user from localStorage:", parsedUser);
+      // console.log("Retrieved user from sessionStorage:", parsedUser);
       setUserData(parsedUser);
     }
   }, []);
