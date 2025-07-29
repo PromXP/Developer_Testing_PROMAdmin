@@ -2270,6 +2270,146 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
     return periods[0]?.label || "Unknown";
   }
 
+    const [selectedDateopd, setSelectedDateopd] = useState("");
+  const [isEditingopd, setIsEditingopd] = useState(false);
+  const [tempDateopd, setTempDateopd] = useState("");
+
+  useEffect(() => {
+  if (patient?.opd_appointment_date) {
+    const date = new Date(patient.opd_appointment_date);
+    const formatted = date.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+    setSelectedDateopd(formatted);
+  }
+}, [patient]);
+
+
+  const convertToISODateFormat1 = (dateStr) => {
+  // Example input: "02 Jul 2025"
+  const [day, monthStr, year] = dateStr.split(" ");
+  const months = {
+    Jan: "01", Feb: "02", Mar: "03", Apr: "04",
+    May: "05", Jun: "06", Jul: "07", Aug: "08",
+    Sep: "09", Oct: "10", Nov: "11", Dec: "12"
+  };
+  const month = months[monthStr];
+  return `${year}-${month}-${day}`;
+};
+
+
+  const postOPDAppointmentDate = async (uhid) => {
+  try {
+    const formattedForBackend = convertToISODateFormat1(tempDateopd); // from dd Mmm yyyy to yyyy-mm-dd
+    const response = await fetch(`${API_URL}patients/${uhid}/opd-appointment`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ opd_appointment_date: formattedForBackend }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.detail || "Failed to update OPD appointment date.");
+    }
+
+    showWarning("OPD date updated successfully!");
+  } catch (error) {
+    showWarning(error.message);
+  }
+};
+
+
+const handleManualDateChangeopd = (e) => {
+  let value = e.target.value.replace(/\D/g, ""); // Strip non-digits
+
+  // Format as dd-mm-yyyy while typing
+  if (value.length >= 3 && value.length <= 4) {
+    value = value.slice(0, 2) + "-" + value.slice(2);
+  } else if (value.length > 4 && value.length <= 8) {
+    value = value.slice(0, 2) + "-" + value.slice(2, 4) + "-" + value.slice(4);
+  } else if (value.length > 8) {
+    value = value.slice(0, 8); // Limit to 8 digits
+    value = value.slice(0, 2) + "-" + value.slice(2, 4) + "-" + value.slice(4);
+  }
+
+  setTempDateopd(value);
+
+  // Run validation only if full 10 characters
+  if (value.length === 10) {
+    const [dayStr, monthStr, yearStr] = value.split("-");
+    const day = parseInt(dayStr, 10);
+    const month = parseInt(monthStr, 10);
+    const year = parseInt(yearStr, 10);
+
+    const today = new Date();
+    const currentYear = today.getFullYear();
+
+    // Basic validations
+    if (
+      day < 1 ||
+      day > 31 ||
+      month < 1 ||
+      month > 12 ||
+      year < currentYear
+    ) {
+      showWarning("Please enter a valid OPD.");
+      setTempDateopd("");
+      return;
+    }
+
+    // Construct and validate date object
+    const manualDate = new Date(`${year}-${month}-${day}`);
+    if (
+      manualDate.getDate() !== day ||
+      manualDate.getMonth() + 1 !== month ||
+      manualDate.getFullYear() !== year
+    ) {
+      showWarning("Invalid date combination. Please enter a correct date.");
+      setTempDateopd("");
+      return;
+    }
+
+    // Check for today/future date
+    today.setHours(0, 0, 0, 0);
+    manualDate.setHours(0, 0, 0, 0);
+
+    if (manualDate < today) {
+      showWarning("OPD cannot be past date.");
+      setTempDateopd("");
+      return;
+    }
+
+    // Format and set date as "dd Mmm yyyy" (e.g., 02 Jul 1990)
+    const formattedDate = manualDate.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+
+    setTempDateopd(formattedDate);
+  }
+};
+
+
+  const handleSave = () => {
+    // Validate if needed
+    setSelectedDateopd(tempDateopd);
+    setIsEditingopd(false);
+     postOPDAppointmentDate(patient?.uhid); // Pass your UHID here
+  };
+
+  const handleCancel = () => {
+    setTempDateopd(selectedDateopd);
+    setIsEditingopd(false);
+  };
+
+  
+
   if (!isOpen) return null;
 
   return (
@@ -3214,10 +3354,49 @@ const page = ({ isOpen, onClose, patient1, doctor }) => {
                                                 }`}>
                       <tr>
                         <th
-                          colSpan={columns.length}
+                          colSpan={columns.length/2}
                           className="text-left text-sm text-black font-semibold pb-2 pr-2"
                         >
                           *N/A – Questionnaire Not Answered
+                        </th>
+                        <th
+                          colSpan={columns.length/2}
+                          className="text-left text-sm text-black font-semibold pb-2 pr-2"
+                        >
+                          {!isEditingopd ? (
+        <div className="flex items-center gap-2">
+          <span className="text-lg font-semibold text-black">
+            {selectedDateopd || "OPD"}
+          </span>
+          <PencilIcon
+            className="cursor-pointer w-4 h-4"
+            onClick={() => {
+              setIsEditingopd(true);
+              setTempDateopd(selectedDateopd);
+            }}
+          />
+        </div>
+      ) : (
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            placeholder="dd-mm-yyyy"
+            className="w-3/4 text-black py-2 px-3 rounded-sm text-lg font-semibold outline-none"
+            value={tempDateopd}
+            onChange={handleManualDateChangeopd}
+            maxLength={10}
+            style={{ backgroundColor: "rgba(217, 217, 217, 0.5)" }}
+          />
+          <ClipboardDocumentCheckIcon
+            className="cursor-pointer text-green-600 w-5 h-5"
+            onClick={handleSave}
+          />
+          <XMarkIcon
+            className="cursor-pointer text-red-600 w-5 h-5"
+            onClick={handleCancel}
+          />
+        </div>
+      )}
                         </th>
                       </tr>
                       <tr>
