@@ -1584,7 +1584,7 @@ const page = ({
       (today - surgeryDate) / (1000 * 60 * 60 * 24)
     );
 
-    if (diffInDays < 0) {
+    if (diffInDays <=0) {
       return "Pre Op";
     }
 
