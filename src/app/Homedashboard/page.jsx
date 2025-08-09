@@ -1584,7 +1584,7 @@ const page = ({
       (today - surgeryDate) / (1000 * 60 * 60 * 24)
     );
 
-    if (diffInDays <=0) {
+    if (diffInDays <= 0) {
       return "Pre Op";
     }
 
@@ -1609,23 +1609,24 @@ const page = ({
   const [popupOpen, setPopupOpen] = useState(false);
   const [terminationReason, setTerminationReason] = useState("");
   const [terminateuhid, setterminateuhid] = useState("");
+  const [terminatecomments, setterminatecomments] = useState([]);
 
-  const showpop = (uhid) => {
-    setterminateuhid(uhid);
+  const showpop = (patient) => {
+    setterminateuhid(patient.uhid);
+    setterminatecomments(patient?.activation_comments || []);
     setPopupOpen(true);
   };
 
   const toggleActivation = async () => {
-    if(!terminateuhid){
+    if (!terminateuhid) {
       showWarning("Patient UHID not found");
       return;
     }
-    if(!terminationReason){
+    if (!terminationReason) {
       showWarning("Enter Comment");
       return;
     }
     try {
-
       const response = await axios.patch(
         API_URL + "patients/" + terminateuhid + "/activation/toggle",
         JSON.stringify(terminationReason),
@@ -2503,7 +2504,7 @@ const page = ({
                               alt="Block"
                               className="w-5 h-5 cursor-pointer"
                               onClick={() => {
-                                showpop(patient.uhid);
+                                showpop(patient);
                               }}
                             />
                           </div>
@@ -3673,7 +3674,7 @@ const page = ({
             backgroundColor: "rgba(0, 0, 0, 0.7)", // white with 50% opacity
           }}
         >
-          <div className="bg-white rounded-lg p-6 w-[90%] max-w-md relative">
+          <div className="bg-white rounded-lg p-6 w-[90%] max-w-xl relative">
             {/* Close Icon */}
             <button
               onClick={() => setPopupOpen(false)}
@@ -3686,9 +3687,7 @@ const page = ({
             <h2 className="text-xl text-black font-bold mb-4 text-center">
               CONFIRMATION
             </h2>
-            <p className="text-gray-700 text-start mb-6">
-              COMMENT
-            </p>
+            <p className="text-gray-700 text-start mb-6">COMMENT</p>
             {/* Input Field */}
             <textarea
               value={terminationReason}
@@ -3712,6 +3711,58 @@ const page = ({
                 No
               </button>
             </div>
+
+            {terminatecomments.length > 0 && (
+              <div className="mt-6 max-h-48 overflow-auto">
+                <table className="w-full border-collapse border border-gray-300 text-black text-sm table-fixed">
+                  <thead>
+                    <tr className="bg-gray-200">
+                      <th className="border border-gray-300 px-2 py-1 text-center w-1/3">
+                        Date
+                      </th>
+                      <th className="border border-gray-300 px-2 py-1 text-center w-1/3">
+                        Activation Status
+                      </th>
+                      <th className="border border-gray-300 px-2 py-1 text-center w-1/3">
+                        Comment
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {terminatecomments.map((comment, idx) => {
+                      const parts = comment.split(",").map((p) => p.trim());
+                      const utcDateStr = parts[0];
+                      const utcDate = new Date(utcDateStr);
+                      const istOffset = 5 * 60 + 30; // IST offset in minutes
+                      const istDate = new Date(
+                        utcDate.getTime() + istOffset * 60 * 1000
+                      );
+                      const pad = (n) => (n < 10 ? "0" + n : n);
+                      const formattedDate = `${pad(istDate.getDate())}-${pad(istDate.getMonth() + 1)}-${istDate.getFullYear()} / ${pad(istDate.getHours())}:${pad(istDate.getMinutes())}`;
+
+                      return (
+                        <>
+                        <tr
+                          key={idx}
+                          className={`text-center bg-white`}
+                        >
+                          <td className="border border-gray-300 px-2 py-1 w-1/3">
+                            {formattedDate}
+                          </td>
+                          <td className="border border-gray-300 px-2 py-1 w-1/3">
+                            {parts[1] === "1" ? "Activated" : parts[1] === "0" ? "Deactivated" : parts[1]}
+                          </td>
+                          <td className="border border-gray-300 px-2 py-1 whitespace-normal break-words w-1/3">
+                            {parts[2]}
+                          </td>
+                        </tr>
+                        </>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -112,8 +112,6 @@ const page = ({ isOpenrem, onCloserem, patient, selectedLeg }) => {
     );
     // return;
 
-
-
     // sendRealTimeMessage();
     try {
       const res = await fetch(API_URL + "send/", {
@@ -122,6 +120,7 @@ const page = ({ isOpenrem, onCloserem, patient, selectedLeg }) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          name: patient.first_name+" "+patient.last_name,
           email: patient.email,
           subject: "Questionnaire Pending Reminder",
           message: message + "<br>Thank you with love,<br>XolabsHealth",
@@ -141,11 +140,12 @@ const page = ({ isOpenrem, onCloserem, patient, selectedLeg }) => {
       if (res.ok) {
         // alert("Email sent (check console for details)");
         // showWarning("Email sent Successfully");
-        sendwhatsapp();
+       
         // sendRealTimeMessage();
       } else {
         showWarning("Failed to send email. Check logs.");
       }
+       sendwhatsapp();
     } catch (error) {
       console.error("Error sending email:", error);
       showWarning("Failed to send email.");
@@ -195,7 +195,7 @@ const page = ({ isOpenrem, onCloserem, patient, selectedLeg }) => {
         user_name: patient?.first_name + " " + patient?.last_name,
         phone_number: "+91" + patient.phone_number,
         message: message,
-        flag: 0
+        flag: 0,
       }),
     });
 
@@ -210,6 +210,14 @@ const page = ({ isOpenrem, onCloserem, patient, selectedLeg }) => {
     showWarning("Reminder Sent Successfully");
     window.location.reload();
   };
+
+  const templates = [
+    "Your appointment is scheduled for tomorrow. Please be on time.",
+    "Reminder: Please complete your pending questionnaire.",
+    "Don't forget to bring your medical reports to the clinic.",
+    "Your surgery follow-up is scheduled next week.",
+    "Please update your contact information in the portal.",
+  ];
 
   if (!isOpenrem) return null;
   return (
@@ -333,18 +341,25 @@ const page = ({ isOpenrem, onCloserem, patient, selectedLeg }) => {
                 </div>
               </div>
 
-              <div className="w-full flex flex-col gap-2">
+              <div className="w-full max-w-3xl flex flex-col gap-2">
                 <p className="font-medium text-black text-base">
                   REMINDER MESSAGE
                 </p>
-                <textarea
-                  placeholder="Enter your message..."
-                  rows={3}
-                  className="w-full text-black px-4 py-2  text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  style={{ backgroundColor: "rgba(71, 84, 103, 0.1)" }}
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                />
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {templates.map((template, index) => (
+                    <div
+                      key={index}
+                      onClick={() => setMessage(template)}
+                      className={`border rounded-md px-4 py-3 text-sm text-black cursor-pointer hover:bg-blue-100 ${
+                        message === template
+                          ? "bg-blue-200 border-blue-500"
+                          : "bg-gray-100"
+                      }`}
+                    >
+                      {template}
+                    </div>
+                  ))}
+                </div>
               </div>
 
               <div className="w-full flex flex-row justify-center items-center">
