@@ -3733,29 +3733,47 @@ const page = ({
                       const parts = comment.split(",").map((p) => p.trim());
                       const utcDateStr = parts[0];
                       const utcDate = new Date(utcDateStr);
-                      const istOffset = 5 * 60 + 30; // IST offset in minutes
-                      const istDate = new Date(
-                        utcDate.getTime() + istOffset * 60 * 1000
+                      const dateOptions = {
+                        timeZone: "Asia/Kolkata",
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                      };
+
+                      const timeOptions = {
+                        timeZone: "Asia/Kolkata",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        hour12: false,
+                      };
+
+                      const datePart = utcDate
+                        .toLocaleDateString("en-GB", dateOptions)
+                        .replace(/\//g, "-");
+                      const timePart = utcDate.toLocaleTimeString(
+                        "en-GB",
+                        timeOptions
                       );
-                      const pad = (n) => (n < 10 ? "0" + n : n);
-                      const formattedDate = `${pad(istDate.getDate())}-${pad(istDate.getMonth() + 1)}-${istDate.getFullYear()} / ${pad(istDate.getHours())}:${pad(istDate.getMinutes())}`;
+
+                      const formattedDate = `${datePart} / ${timePart}`;
 
                       return (
                         <>
-                        <tr
-                          key={idx}
-                          className={`text-center bg-white`}
-                        >
-                          <td className="border border-gray-300 px-2 py-1 w-1/3">
-                            {formattedDate}
-                          </td>
-                          <td className="border border-gray-300 px-2 py-1 w-1/3">
-                            {parts[1] === "1" ? "Activated" : parts[1] === "0" ? "Deactivated" : parts[1]}
-                          </td>
-                          <td className="border border-gray-300 px-2 py-1 whitespace-normal break-words w-1/3">
-                            {parts[2]}
-                          </td>
-                        </tr>
+                          <tr key={idx} className={`text-center bg-white`}>
+                            <td className="border border-gray-300 px-2 py-1 w-1/3">
+                              {formattedDate}
+                            </td>
+                            <td className="border border-gray-300 px-2 py-1 w-1/3">
+                              {parts[1] === "1"
+                                ? "Activated"
+                                : parts[1] === "0"
+                                  ? "Deactivated"
+                                  : parts[1]}
+                            </td>
+                            <td className="border border-gray-300 px-2 py-1 whitespace-normal break-words w-1/3">
+                              {parts[2]}
+                            </td>
+                          </tr>
                         </>
                       );
                     })}
