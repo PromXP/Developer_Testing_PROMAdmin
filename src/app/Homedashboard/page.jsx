@@ -812,7 +812,7 @@ const page = ({
   const containerRef = useRef(null);
   const cardRef = useRef(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [cardsPerPage, setCardsPerPage] = useState(6);
+  const [cardsPerPage, setCardsPerPage] = useState(50);
 
   // Calculate total pages and current visible patients
   const totalPages = Math.ceil(filteredPatients.length / cardsPerPage);
