@@ -382,78 +382,61 @@ const page = ({
 
   const filteredPatients = patients
     .filter((patient) => {
+      // Skip deactivated patients
+      if (patient.activation_status === 0) return false;
+
+      // Determine which legs have assigned questionnaires
+      const hasLeft = patient.questionnaire_assigned_left?.length > 0;
+      const hasRight = patient.questionnaire_assigned_right?.length > 0;
+
+      // Determine status for each leg
       const status = patient.current_status?.toLowerCase() || "";
+      const statusLeft = status.includes("left");
+      const statusRight = status.includes("right");
+
+      // Match if either leg has questionnaires or status
+      const matchByQuestionnaire = hasLeft || hasRight;
+      const matchByStatus = statusLeft || statusRight;
+
+      if (!matchByQuestionnaire && !matchByStatus) return false;
+
+      // Selected filters
       const selectedFilter = patfilter.toLowerCase();
       const subFilter = postopfilter.toLowerCase();
-      const selectedLegSide = selectedLeg.toLowerCase(); // "left" or "right"
 
-      if(patient.activation_status === 0){
-          return false;
-      }
-
-      const hasLeft =
-        patient.questionnaire_assigned_left &&
-        patient.questionnaire_assigned_left.length > 0;
-      const hasRight =
-        patient.questionnaire_assigned_right &&
-        patient.questionnaire_assigned_right.length > 0;
-
-      let matchByQuestionnaire = false;
-      let matchByStatus = false;
-
-      // Always check questionnaire assigned
-      if (selectedLegSide === "left" && hasLeft) {
-        matchByQuestionnaire = true;
-      }
-      if (selectedLegSide === "right" && hasRight) {
-        matchByQuestionnaire = true;
-      }
-
-      // Always check current_status
-      if (status.includes("left") && selectedLegSide === "left") {
-        matchByStatus = true;
-      }
-      if (status.includes("right") && selectedLegSide === "right") {
-        matchByStatus = true;
-      }
-
-      // If neither match questionnaire nor status, don't show
-      if (!matchByQuestionnaire && !matchByStatus) {
-        return false;
-      }
-
-      if (selectedFilter === "all patients") {
-        return true;
-      }
-
-      const period1 = getCurrentPeriod(patient, selectedLegSide).toLowerCase();
-      const period = getPeriodFromSurgeryDate(
-        selectedLeg === "left"
-          ? patient?.post_surgery_details_left?.date_of_surgery
-          : patient?.post_surgery_details_right?.date_of_surgery,
+      // Periods for both legs
+      const periodLeft = getPeriodFromSurgeryDate(
+        patient?.post_surgery_details_left?.date_of_surgery,
         patient
       ).toLowerCase();
 
-      // console.log("Inside period", period);
+      const periodRight = getPeriodFromSurgeryDate(
+        patient?.post_surgery_details_right?.date_of_surgery,
+        patient
+      ).toLowerCase();
+
+      // Apply filters
+      if (selectedFilter === "all patients") return true;
 
       if (selectedFilter === "pre operative") {
-        return period.includes("pre");
+        return periodLeft.includes("pre") || periodRight.includes("pre");
       }
 
       if (selectedFilter === "post operative") {
         if (subFilter === "all") {
-          return !period.includes("pre");
+          return (!periodLeft.includes("pre") || !periodRight.includes("pre"));
         }
-        return !period.includes("pre") && period.includes(subFilter);
+        return (!periodLeft.includes("pre") && periodLeft.includes(subFilter)) ||
+              (!periodRight.includes("pre") && periodRight.includes(subFilter));
       }
 
       return false;
     })
     .filter((patient) => {
+      // Search term filter
       if (!searchTerm.trim()) return true;
 
       const term = searchTerm.toLowerCase();
-
       const first = patient.first_name?.toLowerCase() || "";
       const last = patient.last_name?.toLowerCase() || "";
       const fullName = `${first} ${last}`.trim();
@@ -461,10 +444,11 @@ const page = ({
       return (
         first.includes(term) ||
         last.includes(term) ||
-        fullName.includes(term) || // ✅ check "first last"
+        fullName.includes(term) ||
         patient.uhid?.toLowerCase().includes(term)
       );
-    });
+  });
+
 
   const convertToDateString = (utcDate) => {
     const date = new Date(utcDate); // Parse the UTC date string into a Date object
@@ -710,17 +694,18 @@ const page = ({
     );
   };
 
+
   const filteredPatientsByDate = filteredPatients.filter((patient) => {
-    const assignedQuestionnaires =
-      selectedLeg === "left"
-        ? patient.questionnaire_assigned_left
-        : patient.questionnaire_assigned_right;
+    
+    const assignedQuestionnairesLeft = patient.questionnaire_assigned_left || [];
+    const assignedQuestionnairesRight = patient.questionnaire_assigned_right || [];
 
-    if (!assignedQuestionnaires || assignedQuestionnaires.length === 0) {
-      return false;
-    }
+    // Combine both legs
+    const allAssigned = [...assignedQuestionnairesLeft, ...assignedQuestionnairesRight];
 
-    return assignedQuestionnaires.some((q) => {
+    if (allAssigned.length === 0) return false;
+
+    return allAssigned.some((q) => {
       if (q.completed === 0) {
         const deadline = getAdjustedDeadline(q);
 
@@ -740,13 +725,9 @@ const page = ({
 
         // 2. If filtering by month and year
         if (selectedMonth && selectedYear) {
-          const deadlineMonth = deadline.toLocaleString("en-GB", {
-            month: "long",
-          }); // → "July"
+          const deadlineMonth = deadline.toLocaleString("en-GB", { month: "long" }); // → "July"
           const deadlineYear = deadline.getFullYear().toString();
-          return (
-            deadlineMonth === selectedMonth && deadlineYear === selectedYear
-          );
+          return deadlineMonth === selectedMonth && deadlineYear === selectedYear;
         }
 
         return true; // No filters selected, show all
@@ -756,51 +737,52 @@ const page = ({
     });
   });
 
+
   const onlyPendingPatients = filteredPatientsByDate.filter((patient) => {
-    const assigned =
-      selectedLeg === "left"
-        ? patient.questionnaire_assigned_left
-        : patient.questionnaire_assigned_right;
+    const assignedLeft = (patient.questionnaire_assigned_left || []).map(q => ({
+      ...q,
+      leg: "left",
+    }));
 
-    if (!assigned || assigned.length === 0) {
-      return false; // or whatever default
-    }
+    const assignedRight = (patient.questionnaire_assigned_right || []).map(q => ({
+      ...q,
+      leg: "right",
+    }));
 
-    const surgeryDateStr =
-      selectedLeg === "left"
-        ? patient?.post_surgery_details_left?.date_of_surgery
-        : patient?.post_surgery_details_right?.date_of_surgery;
+    // Combine both legs with leg info
+    const allAssigned = [...assignedLeft, ...assignedRight];
 
-    const currentPeriod = getPeriodFromSurgeryDate(
-      surgeryDateStr,
-      patient
-    ).toLowerCase();
-    const periodOrder = ["pre op", "6w", "3m", "6m", "1y", "2y"];
 
-    const assignedRelevant = assigned.filter((q) => {
+    if (allAssigned.length === 0) return false;
+
+    const today = new Date();
+
+    return allAssigned.some((q) => {
       const qPeriod = q.period?.toLowerCase();
-      return (
-        periodOrder.indexOf(qPeriod) !== -1 &&
-        periodOrder.indexOf(qPeriod) <= periodOrder.indexOf(currentPeriod)
-      );
-    });
+      const periodOrder = ["pre op", "6w", "3m", "6m", "1y", "2y"];
 
-    const incompleteRelevantExists = assignedRelevant.some((q) => {
-      const qPeriod = q.period?.toLowerCase();
-      const isPreOp = qPeriod === "pre op";
-      const deadline = new Date(q.deadline);
+      // Determine surgery date based on leg
+      const surgeryDateStr =
+        q.leg === "left"
+          ? patient?.post_surgery_details_left?.date_of_surgery
+          : patient?.post_surgery_details_right?.date_of_surgery;
+
+      const currentPeriod = getPeriodFromSurgeryDate(surgeryDateStr, patient).toLowerCase();
       const surgeryDate = new Date(surgeryDateStr);
-      const today = new Date();
+      const deadline = new Date(q.deadline);
 
-      if (isPreOp) {
-        return q.completed === 0;
-      } else {
-        return q.completed === 0 && deadline <= today;
-      }
+      const isRelevantPeriod =
+        periodOrder.indexOf(qPeriod) !== -1 &&
+        periodOrder.indexOf(qPeriod) <= periodOrder.indexOf(currentPeriod);
+
+      if (!isRelevantPeriod) return false;
+
+      const isPreOp = qPeriod === "pre op";
+
+      return isPreOp ? q.completed === 0 : q.completed === 0 && deadline <= today;
     });
-
-    return incompleteRelevantExists;
   });
+
 
   const formatDate = (date) => {
     const year = date.getFullYear();
@@ -855,35 +837,36 @@ const page = ({
     });
   });
 
+
   const sortedPatients = onlyPendingPatients.sort((a, b) => {
     const FAR_FUTURE = new Date(9999, 11, 31);
     const now = new Date();
 
     const getAdjustedDeadline = (q, patient) => {
       const deadline = new Date(q.deadline);
-      if (q.period === "Pre Op") {
-        const surgeryDateStr =
-          selectedLeg === "left"
-            ? patient?.post_surgery_details_left?.date_of_surgery
-            : patient?.post_surgery_details_right?.date_of_surgery;
 
-        if (surgeryDateStr) {
-          const surgeryDate = new Date(surgeryDateStr);
-          if (now < surgeryDate) {
-            return deadline; // Still eligible
-          }
+      // Determine surgery date based on leg
+      const surgeryDateStr =
+        q.leg === "left"
+          ? patient?.post_surgery_details_left?.date_of_surgery
+          : patient?.post_surgery_details_right?.date_of_surgery;
+
+      if (q.period === "Pre Op" && surgeryDateStr) {
+        const surgeryDate = new Date(surgeryDateStr);
+        if (now < surgeryDate) {
+          return deadline; // Still eligible
         }
       }
+
       return deadline <= now ? deadline : FAR_FUTURE; // Ignore future deadlines
     };
 
     const getNearestDeadline = (patient) => {
-      const assigned =
-        selectedLeg === "left"
-          ? patient.questionnaire_assigned_left
-          : patient.questionnaire_assigned_right;
+      const assignedLeft = patient.questionnaire_assigned_left || [];
+      const assignedRight = patient.questionnaire_assigned_right || [];
+      const allAssigned = [...assignedLeft, ...assignedRight];
 
-      const pending = assigned
+      const pending = allAssigned
         .filter((q) => q.completed === 0)
         .map((q) => getAdjustedDeadline(q, patient))
         .sort((a, b) => a - b);
@@ -892,15 +875,11 @@ const page = ({
     };
 
     const getCompletionPercent = (patient) => {
-      const assigned =
-        selectedLeg === "left"
-          ? patient.questionnaire_assigned_left
-          : patient.questionnaire_assigned_right;
+      const assignedLeft = patient.questionnaire_assigned_left || [];
+      const assignedRight = patient.questionnaire_assigned_right || [];
+      const allAssigned = [...assignedLeft, ...assignedRight];
 
-      const relevant = assigned.filter((q) => {
-        const adjusted = getAdjustedDeadline(q, patient);
-        return adjusted !== FAR_FUTURE;
-      });
+      const relevant = allAssigned.filter((q) => getAdjustedDeadline(q, patient) !== FAR_FUTURE);
 
       const total = relevant.length;
       const completed = relevant.filter((q) => q.completed === 1).length;
@@ -909,15 +888,11 @@ const page = ({
     };
 
     const getPatientStatus = (patient) => {
-      const assigned =
-        selectedLeg === "left"
-          ? patient.questionnaire_assigned_left
-          : patient.questionnaire_assigned_right;
+      const assignedLeft = patient.questionnaire_assigned_left || [];
+      const assignedRight = patient.questionnaire_assigned_right || [];
+      const allAssigned = [...assignedLeft, ...assignedRight];
 
-      const relevant = assigned.filter((q) => {
-        const adjusted = getAdjustedDeadline(q, patient);
-        return adjusted !== FAR_FUTURE;
-      });
+      const relevant = allAssigned.filter((q) => getAdjustedDeadline(q, patient) !== FAR_FUTURE);
 
       if (!relevant || relevant.length === 0) return "not_assigned";
 
@@ -962,9 +937,114 @@ const page = ({
     return !sortAsc ? compA - compB : compB - compA;
   });
 
+    // Add completion rates for both legs
+  const periodOrder = ["pre op", "6w", "3m", "6m", "1y", "2y"];
+
+  const patientsWithCompletion = sortedPatients.map((patient) => {
+    const today = new Date();
+
+    // Get current period for each leg
+    const currentLeftPeriod = patient?.post_surgery_details_left?.date_of_surgery
+      ? getPeriodFromSurgeryDate1(patient.post_surgery_details_left.date_of_surgery, patient).toLowerCase()
+      : null;
+
+    const currentRightPeriod = patient?.post_surgery_details_right?.date_of_surgery
+      ? getPeriodFromSurgeryDate1(patient.post_surgery_details_right.date_of_surgery, patient).toLowerCase()
+      : null;
+
+    // Filter assignedLeft by current period
+    const assignedLeft = (patient.questionnaire_assigned_left || []).filter((q) => {
+      const qPeriod = q.period?.toLowerCase();
+      if (!qPeriod || !currentLeftPeriod) return false;
+      return periodOrder.indexOf(qPeriod) !== -1 &&
+            periodOrder.indexOf(qPeriod) <= periodOrder.indexOf(currentLeftPeriod);
+    });
+
+    // Filter assignedRight by current period
+    const assignedRight = (patient.questionnaire_assigned_right || []).filter((q) => {
+      const qPeriod = q.period?.toLowerCase();
+      if (!qPeriod || !currentRightPeriod) return false;
+      return periodOrder.indexOf(qPeriod) !== -1 &&
+            periodOrder.indexOf(qPeriod) <= periodOrder.indexOf(currentRightPeriod);
+    });
+
+    // Count completions
+    const completedLeft = assignedLeft.filter((q) => q.completed === 1).length;
+    const totalLeft = assignedLeft.length;
+
+    const completedRight = assignedRight.filter((q) => q.completed === 1).length;
+    const totalRight = assignedRight.length;
+
+    // Calculate percentages
+    patient.completed_left =
+      totalLeft > 0 ? Math.round((completedLeft / totalLeft) * 100) : 0;
+
+    patient.completed_right =
+      totalRight > 0 ? Math.round((completedRight / totalRight) * 100) : 0;
+
+    // Overall completion (both legs)
+    const totalOverall = totalLeft + totalRight;
+    const completedOverall = completedLeft + completedRight;
+    patient.completed_overall =
+      totalOverall > 0 ? Math.round((completedOverall / totalOverall) * 100) : 0;
+
+    if (patient.uhid === "PH0003") {
+      console.log("Score", completedLeft+" / "+completedRight+" / "+totalLeft+" / "+totalRight+" / "+totalOverall+" / "+completedOverall);
+      console.log("Patient Data:", patient);
+    }
+
+    return patient;
+  });
+
+
+function getPeriodFromSurgeryDate1(surgeryDateStr, patient) {
+  if (!surgeryDateStr) return "Not Found";
+
+  const surgeryDate = new Date(surgeryDateStr);
+
+  // Check for invalid or default placeholder date
+  if (
+    isNaN(surgeryDate) ||
+    surgeryDate.getFullYear() === 1 // Covers "0001-01-01T00:00:00.000+00:00"
+  ) {
+    return "Not Found";
+  }
+
+  const today = new Date();
+  const diffInDays = Math.floor(
+    (today - surgeryDate) / (1000 * 60 * 60 * 24)
+  );
+
+  if (diffInDays <= 0) {
+    return "Pre Op";
+  }
+
+  const periodOffsets = {
+    "6W": 42,
+    "3M": 90,
+    "6M": 180,
+    "1Y": 365,
+    "2Y": 730,
+  };
+
+  // Get all periods that have been completed
+  const completedPeriods = Object.entries(periodOffsets)
+    .filter(([label, offset]) => diffInDays >= offset)
+    .sort((a, b) => b[1] - a[1]); // sort by offset descending
+
+  // Return the latest completed period
+  if (completedPeriods.length > 0) {
+    return completedPeriods[0][0];
+  }
+
+  return "Pre Op"; // if surgery done but not yet reached 6W
+}
+
+
+
   // Calculate total pages and current visible patients
   const totalPages = Math.ceil(sortedPatients.length / cardsPerPage);
-  const paginatedPatients = sortedPatients.slice(
+  const paginatedPatients = patientsWithCompletion.slice(
     (currentPage - 1) * cardsPerPage,
     currentPage * cardsPerPage
   );
@@ -1700,18 +1780,20 @@ const page = ({
         >
           <div
             className={`flex  ${
-              width < 650 && width >= 530
-                ? "flex-col justify-center items-start gap-3"
+              width < 1100 && width >= 720
+                ? "flex-col justify-center items-start gap-2"
+                : width<720 && width >= 530
+                ? "flex-col justify-center items-center gap-2"
                 : width < 530
                   ? "flex-col justify-center items-center gap-3"
                   : "flex-row justify-between items-start"
             }`}
           >
-            <div className="flex flex-col justify-between">
+            <div className={` ${width < 1100 ? "w-full gap-4" : "w-fit"} flex flex-col justify-between`}>
               <p className="text-black text-2xl font-poppins font-semibold">
                 Patients Compliance
               </p>
-              <div className="flex flex-row gap-2 justify-center items-center">
+              <div className={` ${width < 1100 ? "w-full justify-between" : "w-fit justify-center"} ${width<720?"flex flex-col":"flex flex-row"}  gap-2  items-center`}>
                 <div className="flex mb-2 mt-2">
                   <div
                     className="flex items-start justify-start gap-2 text-sm font-medium text-black cursor-pointer"
@@ -1730,7 +1812,7 @@ const page = ({
                   </div>
                 </div>
 
-                <div className="flex flex-row gap-4">
+                <div className={`flex gap-4 ${width < 620 ? "flex-col" : "flex-row"}`}>
                   <div
                     className="relative cursor-pointer"
                     onClick={openDatePicker}
@@ -1847,28 +1929,7 @@ const page = ({
                   }`}
                 >
                   {" "}
-                  <div className="flex justify-end gap-2">
-                    <button
-                      onClick={() => setSelectedLeg("left")}
-                      className={`px-4 py-0.5 rounded-full font-semibold ${
-                        selectedLeg === "left"
-                          ? "bg-[#005585] text-white"
-                          : "bg-gray-300 text-black"
-                      }`}
-                    >
-                      Left
-                    </button>
-                    <button
-                      onClick={() => setSelectedLeg("right")}
-                      className={`px-4 py-0.5 rounded-full font-semibold ${
-                        selectedLeg === "right"
-                          ? "bg-[#005585] text-white"
-                          : "bg-gray-300 text-black"
-                      }`}
-                    >
-                      Right
-                    </button>
-                  </div>
+                  
                   <div className="flex bg-[#282B30] rounded-full p-1 w-fit items-center justify-center">
                     {options.map((option) => (
                       <div
@@ -1967,7 +2028,7 @@ const page = ({
 
           <div
             ref={containerRef}
-            className={` mt-4 ${
+            className={` ${
               width < 650 && width >= 450
                 ? patfilter.toLowerCase() === "post operative"
                   ? "h-[67%]"
@@ -1990,7 +2051,7 @@ const page = ({
             }`}
           >
             <div className="overflow-y-auto flex-1">
-              <div className="grid grid-cols-1 transition-all duration-300">
+              <div className="pt-4 grid grid-cols-1 transition-all duration-300">
                 {selectedBox === "patients" &&
                   paginatedPatients
                     .map((patient) => {
@@ -2123,16 +2184,18 @@ const page = ({
                         ref={patient.uhid ? cardRef : null}
                         key={patient.uhid}
                         style={{ backgroundColor: "rgba(0, 85, 133, 0.1)" }}
-                        className={`w-full rounded-lg flex py-2 px-3 ${
-                          width < 530
-                            ? "flex-col justify-center items-center"
+                        className={`w-full rounded-lg flex py-4 px-3 ${
+                        width <1300 && width >=710?"flex-col justify-between items-center gap-4":
+                          width < 710
+                            ? "flex-col justify-center items-center gap-4"
                             : "flex-row justify-between items-center"
                         }
                     ${width < 1000 ? "mb-2" : "mb-6"}`}
                       >
                         <div
                           className={`${
-                            width < 640 && width >= 530
+                            width <1300 && width >=710?"w-full":
+                            width < 710 && width >= 530
                               ? "w-3/5"
                               : width < 530
                                 ? "w-full"
@@ -2141,8 +2204,8 @@ const page = ({
                         >
                           <div
                             className={`flex gap-4 py-0  items-center  ${
-                              width < 710 && width >= 640
-                                ? "px-0 flex-row"
+                              width < 710 && width >= 530
+                                ? "px-0 flex-col justify-center"
                                 : width < 530
                                   ? "flex-col justify-center items-center"
                                   : "px-2 flex-row"
@@ -2171,7 +2234,7 @@ const page = ({
 
                             <div
                               className={`w-full flex items-center ${
-                                width < 710 ? "flex-col" : "flex-row"
+                                width < 710 ? "flex-col gap-2" : "flex-row"
                               }`}
                             >
                               <div
@@ -2184,7 +2247,7 @@ const page = ({
                                 >
                                   <p
                                     className={`text-[#475467] font-poppins font-medium text-base ${
-                                      width < 530 ? "w-full text-center" : ""
+                                      width < 710 ? "w-full text-center" : ""
                                     }`}
                                   >
                                     {patient.first_name +
@@ -2194,7 +2257,7 @@ const page = ({
                                 </div>
                                 <p
                                   className={`font-poppins font-medium text-sm text-[#475467] ${
-                                    width < 530 ? "text-center" : "text-start"
+                                    width < 710 ? "text-center" : "text-start"
                                   }`}
                                 >
                                   {getAge(patient.dob)}, {patient.gender}
@@ -2203,10 +2266,9 @@ const page = ({
 
                               <div
                                 className={`text-sm font-normal font-poppins text-[#475467]   ${
-                                  width < 710 && width >= 530
-                                    ? "w-full text-start"
-                                    : width < 530
-                                      ? "w-full text-center"
+                                  width < 710
+                                    ? "w-full text-center"
+                                    
                                       : "w-[15%] text-center"
                                 }`}
                               >
@@ -2214,22 +2276,28 @@ const page = ({
                               </div>
 
                               <div
-                                className={`text-sm font-normal font-poppins text-[#475467]   ${
+                                className={`text-sm font-normal flex  font-poppins  text-[#475467]   ${
                                   width < 710 && width >= 530
-                                    ? "w-full text-start"
+                                    ? "w-full text-center flex-row justify-between"
                                     : width < 530
-                                      ? "w-full text-center"
-                                      : "w-[35%] text-end"
+                                      ? "w-[35%] text-center gap-6 flex-col"
+                                      : "w-[35%] text-end gap-6 flex-col"
                                 }`}
                               >
-                                {getPeriodFromSurgeryDate(
-                                  selectedLeg === "left"
-                                    ? patient?.post_surgery_details_left
-                                        ?.date_of_surgery
-                                    : patient?.post_surgery_details_right
-                                        ?.date_of_surgery,
-                                  patient
-                                )}
+                                <span>
+                                  Left:{" "}
+                                  {getPeriodFromSurgeryDate(
+                                    patient?.post_surgery_details_left?.date_of_surgery,
+                                    patient
+                                  )}
+                                </span>
+                                <span>
+                                  Right:{" "}
+                                  {getPeriodFromSurgeryDate(
+                                    patient?.post_surgery_details_right?.date_of_surgery,
+                                    patient
+                                  )}
+                                </span>
                               </div>
                             </div>
                           </div>
@@ -2237,42 +2305,56 @@ const page = ({
 
                         <div
                           className={`flex ${
-                            width < 640 && width >= 530
-                              ? "w-2/5 flex-col text-start"
-                              : width < 530
-                                ? "w-full flex-col text-start"
-                                : "w-[60%] flex-row"
+                            width >=1300?"w-[60%] flex-row justify-between" :
+                            width <1300 && width >=710
+                            ? "w-full flex-row justify-between text-end":
+                              width < 710 && width >= 530
+                                ? "w-full flex-col text-start gap-2 justify-center"
+                                  : "w-full flex-col text-start"
+                                
                           }`}
                         >
                           <div
-                            className={` flex ${
-                              width <= 750 && width >= 530
-                                ? "flex-col items-center justify-center gap-2"
+                            className={` flex  ${
+                              width <= 710 && width >= 530
+                                ? "flex-col items-center justify-center gap-4 w-full"
                                 : width < 530
-                                  ? "flex-col items-center gap-2"
-                                  : "flex-row items-center"
-                            } 
-                        ${width < 640 ? "w-full justify-end" : "w-[80%]"}`}
+                                  ? "flex-col items-center gap-2 w-full"
+                                  : "flex-row items-center justify-between w-[80%]"
+                            } `}
                           >
-                            <div
-                              className={` text-sm font-medium text-[#475467] ${
-                                width <= 750 && width >= 530
-                                  ? "w-3/4 text-center"
+                           <div
+                              className={`text-sm flex  gap-6 font-medium text-[#475467] ${
+                                width<1300 && width>710?"w-[30%] text-start flex-col ":
+                                width <= 710 && width >= 530
+                                  ? "w-3/4 text-center flex-row justify-between"
                                   : width < 530
-                                    ? "w-full text-center"
-                                    : "w-[30%] text-center"
-                              }`}
+                                    ? "w-full text-center flex-col"
+                                    : "w-[30%] text-end flex-col"
+                              }
+                              
+                              `}
                             >
-                              {(() => {
-                                const item = getNearestDeadlineNotCompleted(
-                                  patient,
-                                  selectedLeg
-                                );
-                                return item
-                                  ? `${new Date(item.deadline).toLocaleDateString()}`
-                                  : "NA";
-                              })()}
+                              <span>
+                                Left:{" "}
+                                {(() => {
+                                  const item = getNearestDeadlineNotCompleted(patient, "left");
+                                  return item
+                                    ? new Date(item.deadline).toLocaleDateString()
+                                    : "NA";
+                                })()}
+                              </span>
+                              <span>
+                                Right:{" "}
+                                {(() => {
+                                  const item = getNearestDeadlineNotCompleted(patient, "right");
+                                  return item
+                                    ? new Date(item.deadline).toLocaleDateString()
+                                    : "NA";
+                                })()}
+                              </span>
                             </div>
+
 
                             <div
                               className={`text-sm font-medium text-black flex items-center justify-center ${
@@ -2283,85 +2365,84 @@ const page = ({
                                     : "w-[40%] text-center"
                               }`}
                             >
-                              <div className="w-1/2 flex flex-col items-center justify-center">
-                                <div
-                                  className={`w-full flex flex-col items-center relative group ${
-                                    (selectedLeg === "left" &&
-                                      (!patient.questionnaire_assigned_left ||
-                                        patient.questionnaire_assigned_left
-                                          .length === 0)) ||
-                                    (selectedLeg === "right" &&
-                                      (!patient.questionnaire_assigned_right ||
-                                        patient.questionnaire_assigned_right
-                                          .length === 0))
-                                      ? "pointer-events-none opacity-50"
-                                      : ""
-                                  }`}
-                                >
-                                  {/* Hover Percentage Text */}
-                                  <div
-                                    className="absolute -top-7 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out text-sm font-semibold text-black
-    group-hover:border-2 group-hover:border-black group-hover:px-3 group-hover:rounded-lg"
-                                  >
-                                    {Math.round(
-                                      (patient.completed / patient.total) * 100
-                                    )}
-                                    %
-                                  </div>
+                              <div className={` ${width<710 && width>=530 ? "flex-row justify-between w-full" : "flex-col justify-center w-1/2"}  flex items-center gap-3`}>
 
-                                  {/* Progress Bar Container */}
+                                {/* Left Leg Progress */}
+                                <div className={`${width < 710 && width >= 530 ? "w-1/2" : "w-full"} flex-col items-center relative group`}>
                                   <div
-                                    className="relative w-full h-3  overflow-hidden bg-white cursor-pointer"
-                                    style={{
-                                      backgroundSize: "20px 20px",
-                                    }}
-                                    onClick={() => handleViewcomp(patient)}
+                                    className="absolute bg-white -top-7 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out text-sm font-semibold text-black
+                                              group-hover:border-2 group-hover:border-black group-hover:px-3 group-hover:rounded-lg"
                                   >
-                                    {/* Filled Progress */}
+                                    {patient.completed_left}%
+                                  </div>
+                                  <div
+                                    className="relative w-full h-3 overflow-hidden bg-white cursor-pointer"
+                                    style={{ backgroundSize: "20px 20px" }}
+                                    onClick={() => handleViewcomp(patient, "left")}
+                                  >
                                     <div
                                       className={`h-full transition-all duration-500 ${
-                                        (patient.completed / patient.total) *
-                                          100 >
-                                        80
+                                        patient.completed_left > 80
                                           ? "bg-green-500"
-                                          : (patient.completed /
-                                                patient.total) *
-                                                100 >=
-                                              51
-                                            ? "bg-yellow-400"
-                                            : (patient.completed /
-                                                  patient.total) *
-                                                  100 >=
-                                                21
-                                              ? "bg-orange-400"
-                                              : (patient.completed /
-                                                    patient.total) *
-                                                    100 >
-                                                  0
-                                                ? "bg-red-500"
-                                                : "bg-red-500"
+                                          : patient.completed_left >= 51
+                                          ? "bg-yellow-400"
+                                          : patient.completed_left >= 21
+                                          ? "bg-orange-400"
+                                          : patient.completed_left > 0
+                                          ? "bg-red-500"
+                                          : "bg-red-500"
                                       }`}
                                       style={{
-                                        width: `${(patient.completed / patient.total) * 100 > 0 ? (patient.completed / patient.total) * 100 : 2}%`,
-                                        backgroundImage:
-                                          (patient.completed / patient.total) *
-                                            100 >
-                                          0
-                                            ? "url('/stripes.svg')"
-                                            : "none",
+                                        width: `${patient.completed_left || 2}%`,
+                                        backgroundImage: patient.completed_left > 0 ? "url('/stripes.svg')" : "none",
                                         backgroundRepeat: "repeat",
                                         backgroundSize: "20px 20px",
-                                        animation:
-                                          (patient.completed / patient.total) *
-                                            100 >
-                                          0
-                                            ? "2s linear infinite"
-                                            : "none",
+                                        animation: patient.completed_left > 0 ? "2s linear infinite" : "none",
                                       }}
                                     ></div>
                                   </div>
+                                  <div className="text-xs text-gray-600 mt-1">Left Leg</div>
                                 </div>
+
+                                {/* Right Leg Progress */}
+                                <div className={`${width < 710 && width >= 530 ? "w-1/2" : "w-full"} flex flex-col items-center relative group`}>
+                                  <div
+                                    className="absolute bg-white -top-7 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out text-sm font-semibold text-black
+                                              group-hover:border-2 group-hover:border-black group-hover:px-3 group-hover:rounded-lg"
+                                  >
+                                    {patient.completed_right}%
+                                  </div>
+                                  <div
+                                    className="relative w-full h-3 overflow-hidden bg-white cursor-pointer"
+                                    style={{ backgroundSize: "20px 20px" }}
+                                    onClick={() => handleViewcomp(patient, "right")}
+                                  >
+                                    <div
+                                      className={`h-full transition-all duration-500 ${
+                                        patient.completed_right > 80
+                                          ? "bg-green-500"
+                                          : patient.completed_right >= 51
+                                          ? "bg-yellow-400"
+                                          : patient.completed_right >= 21
+                                          ? "bg-orange-400"
+                                          : patient.completed_right > 0
+                                          ? "bg-red-500"
+                                          : "bg-red-500"
+                                      }`}
+                                      style={{
+                                        width: `${patient.completed_right || 2}%`,
+                                        backgroundImage: patient.completed_right > 0 ? "url('/stripes.svg')" : "none",
+                                        backgroundRepeat: "repeat",
+                                        backgroundSize: "20px 20px",
+                                        animation: patient.completed_right > 0 ? "2s linear infinite" : "none",
+                                      }}
+                                    ></div>
+                                  </div>
+                                  <div className="text-xs text-gray-600 mt-1">Right Leg</div>
+                                </div>
+
                               </div>
+
                             </div>
 
                             <div
@@ -2375,33 +2456,25 @@ const page = ({
                             >
                               <button
                                 className={`w-2/3 rounded-full p-1 ${
-                                  (patient.completed / patient.total) * 100 ===
-                                    100 ||
-                                  (selectedLeg === "left" &&
-                                    (!patient.questionnaire_assigned_left ||
-                                      patient.questionnaire_assigned_left
-                                        .length === 0)) ||
-                                  (selectedLeg === "right" &&
+                                  (
+                                    // condition for disabling
+                                    (patient.completed_left === 100 && patient.completed_right === 100) ||
+                                    ((!patient.questionnaire_assigned_left ||
+                                      patient.questionnaire_assigned_left.length === 0) &&
                                     (!patient.questionnaire_assigned_right ||
-                                      patient.questionnaire_assigned_right
-                                        .length === 0))
+                                      patient.questionnaire_assigned_right.length === 0))
+                                  )
                                     ? "bg-gray-400 cursor-not-allowed"
                                     : "bg-[#005585] cursor-pointer"
                                 } text-white`}
                                 onClick={() => {
                                   if (
-                                    (patient.completed / patient.total) *
-                                      100 !==
-                                      100 &&
                                     !(
-                                      (selectedLeg === "left" &&
-                                        (!patient.questionnaire_assigned_left ||
-                                          patient.questionnaire_assigned_left
-                                            .length === 0)) ||
-                                      (selectedLeg === "right" &&
-                                        (!patient.questionnaire_assigned_right ||
-                                          patient.questionnaire_assigned_right
-                                            .length === 0))
+                                      (patient.completed_left === 100 && patient.completed_right === 100) ||
+                                      ((!patient.questionnaire_assigned_left ||
+                                        patient.questionnaire_assigned_left.length === 0) &&
+                                      (!patient.questionnaire_assigned_right ||
+                                        patient.questionnaire_assigned_right.length === 0))
                                     )
                                   ) {
                                     setSelectedPatient(patient);
@@ -2409,36 +2482,37 @@ const page = ({
                                   }
                                 }}
                                 disabled={
-                                  (patient.completed / patient.total) * 100 ===
-                                    100 ||
-                                  (selectedLeg === "left" &&
-                                    (!patient.questionnaire_assigned_left ||
-                                      patient.questionnaire_assigned_left
-                                        .length === 0)) ||
-                                  (selectedLeg === "right" &&
-                                    (!patient.questionnaire_assigned_right ||
-                                      patient.questionnaire_assigned_right
-                                        .length === 0))
+                                  (patient.completed_left === 100 && patient.completed_right === 100) ||
+                                  ((!patient.questionnaire_assigned_left ||
+                                    patient.questionnaire_assigned_left.length === 0) &&
+                                  (!patient.questionnaire_assigned_right ||
+                                    patient.questionnaire_assigned_right.length === 0))
                                 }
                               >
                                 NOTIFY
                               </button>
+
                             </div>
                           </div>
 
                           <div
-                            className={` flex flex-row justify-center items-center ${
-                              width < 640 ? "w-full" : "w-[20%]"
-                            }`}
+                            className={` flex flex-row  items-center ${
+                              width < 710 ? "w-full" : "w-[20%]"
+                            }
+                            ${width<1300 && width >710?" justify-end ":"justify-center"}
+                            `}
                           >
                             <div
-                              className={`flex flex-row gap-1 items-center ${
+                              className={`flex flex-row gap-1  ${
+                                
                                 width < 640 && width >= 530
                                   ? "w-3/4 justify-center"
                                   : width < 530
                                     ? "w-full justify-center"
                                     : ""
-                              }`}
+                              }
+                              
+                              `}
                               onClick={() => handleViewReport(patient)}
                             >
                               <div className="text-sm font-medium border-b-2 text-[#476367] border-blue-gray-500 cursor-pointer">

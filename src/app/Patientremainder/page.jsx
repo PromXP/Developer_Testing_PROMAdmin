@@ -68,30 +68,27 @@ const page = ({ isOpenrem, onCloserem, patient, selectedLeg }) => {
   const [contentswitch, setcontentswitch] = useState(false);
   const [followupcontent, setfollowupcontent] = useState([]);
 
-  if (selectedLeg === "left") {
-    if (patient?.questionnaire_assigned_left?.length > 0) {
-      patient.questionnaire_assigned_left.forEach((q) => {
-        if (q.completed === 1) {
-          completedItems.push(q.name);
-        } else {
-          pendingItems.push(q.name);
-          period.push(q.period);
-        }
-      });
-    }
+  if (patient?.questionnaire_assigned_left?.length > 0) {
+    patient.questionnaire_assigned_left.forEach((q) => {
+      if (q.completed === 1) {
+        completedItems.push({ name: q.name, period: q.period, leg: "Left" });
+      } else {
+        pendingItems.push({ name: q.name, period: q.period, leg: "Left" });
+      }
+    });
   }
-  if (selectedLeg === "right") {
-    if (patient?.questionnaire_assigned_right?.length > 0) {
-      patient.questionnaire_assigned_right.forEach((q) => {
-        if (q.completed === 1) {
-          completedItems.push(q.name);
-        } else {
-          pendingItems.push(q.name);
-          period.push(q.period);
-        }
-      });
-    }
+
+  if (patient?.questionnaire_assigned_right?.length > 0) {
+    patient.questionnaire_assigned_right.forEach((q) => {
+      if (q.completed === 1) {
+        completedItems.push({ name: q.name, period: q.period, leg: "Right" });
+      } else {
+        pendingItems.push({ name: q.name, period: q.period, leg: "Right" });
+      }
+    });
   }
+
+
 
   const [message, setMessage] = useState("");
   const [showAlert, setShowAlert] = useState(false);
@@ -294,6 +291,7 @@ const page = ({ isOpenrem, onCloserem, patient, selectedLeg }) => {
                     onClick={() => {
                       setMessage("");
                       onCloserem(); // if onCloserem handles popup close
+                      setcontentswitch(false);
                     }}
                   />
                 </div>
@@ -340,6 +338,9 @@ const page = ({ isOpenrem, onCloserem, patient, selectedLeg }) => {
                                 <th className="px-4 py-2 text-left text-black font-semibold">
                                   Period
                                 </th>
+                                <th className="px-4 py-2 text-left text-black font-semibold">
+                                  Knee
+                                </th>
                               </tr>
                             </thead>
                             <tbody>
@@ -350,10 +351,13 @@ const page = ({ isOpenrem, onCloserem, patient, selectedLeg }) => {
                                       {index + 1}
                                     </td>
                                     <td className="px-4 py-2 text-black">
-                                      {item}
+                                      {item.name}
                                     </td>
                                     <td className="px-4 py-2 text-black text-center">
-                                      {period[index]}
+                                      {item.period}
+                                    </td>
+                                    <td className="px-4 py-2 text-black text-center">
+                                      {item.leg}
                                     </td>
                                   </tr>
                                 ))
@@ -374,7 +378,7 @@ const page = ({ isOpenrem, onCloserem, patient, selectedLeg }) => {
                     </div>
                   </div>
 
-                  <div className="w-full max-w-3xl flex flex-col gap-2">
+                  <div className="w-full max-w-4xl flex flex-col gap-2">
                     <p className="font-medium text-black text-base">
                       REMINDER MESSAGE
                     </p>
