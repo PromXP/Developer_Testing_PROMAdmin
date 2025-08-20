@@ -248,12 +248,13 @@ const page = ({ isOpenrem, onCloserem, patient, selectedLeg }) => {
   };
 
   const templates = [
-    "Your appointment is scheduled for tomorrow. Please be on time.",
-    "Reminder: Please complete your pending questionnaire.",
-    "Don't forget to bring your medical reports to the clinic.",
-    "Your surgery follow-up is scheduled next week.",
-    "Please update your contact information in the portal.",
-  ];
+  "This is a reminder to complete your pending health questionnaire. Please fill it in at your earliest convenience to help us provide better care.",
+  "Your medical questionnaire is still pending. Kindly complete it before your upcoming appointment.",
+  "Reminder: Your health questionnaire is due. Completing it on time ensures that your doctor has the necessary information for your care.",
+  "Your post-surgery questionnaire is pending. Please complete it today so we can track your recovery progress.",
+  "Please take a few minutes to complete your assigned questionnaire. This helps us prepare for your consultation and provide the best care."
+];
+
 
   if (!isOpenrem) return null;
   return (
